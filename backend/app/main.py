@@ -95,6 +95,9 @@ app.add_middleware(
 
 # Include routers with prefixes
 app.include_router(events.router, prefix="/api/v1")
+app.include_router(volunteers.router, prefix="/api/v1")
+app.include_router(resources.router, prefix="/api/v1")
+app.include_router(locations.router, prefix="/api/v1")
 
 
 @app.on_event("startup")

@@ -9,3 +9,14 @@ services:
     ports:
       - "5432:5432"
     restart: always
+
+  backend:
+    build: ./backend
+    container_name: backend
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    restart: always
