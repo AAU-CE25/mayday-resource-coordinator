@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
-from database import create_db_and_tables
-from api.routes import events, volunteers, resources, locations
-from core.config import settings
+from app.database import create_db_and_tables
+from app.api.routes import events, volunteers, resources, locations
+from app.core.config import settings
 
 # Enhanced FastAPI app with custom OpenAPI
 app = FastAPI(
