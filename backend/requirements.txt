@@ -4,3 +4,4 @@ sqlmodel==0.0.14
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 alembic==1.12.1
+pydantic-settings==2.0.3
