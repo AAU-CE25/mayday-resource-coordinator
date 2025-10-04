@@ -5,7 +5,7 @@ from app.core.config import settings
 # Create engine - use computed database URL
 engine = create_engine(
     settings.database_url_computed,
-    echo=settings.debug,
+    echo=True,
     pool_pre_ping=True,  # Validates connections before use
 )
 
@@ -13,7 +13,7 @@ def create_db_and_tables():
     try:
         SQLModel.metadata.create_all(engine)
     except Exception as e:
-        raise
+        print(f"Error creating database tables: {e}")
 
 def get_session():
     with Session(engine) as session:

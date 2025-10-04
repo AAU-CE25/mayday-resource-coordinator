@@ -28,3 +28,30 @@ Phase 3: Application Deployment
 Phase 4: CI/CD Pipeline
 # 9. Set up GitHub Actions
 # 10. Test automated deployment
+
+
+                      +---------------------+
+                      |     .env file       |
+                      |  (secrets, config)  |
+                      +----------+----------+
+                                 |
+                                 v
+                      +---------------------+
+                      |   config.py         |
+                      |  (Settings class)   |
+                      +----------+----------+
+                                 |
+                                 v
++---------------------+    +---------------------+      +---------------------+
+|     main.py         |--> |   database.py       | ---> |   PostgreSQL DB     |
+| (FastAPI startup,   |    | (engine, session)   |      |                     |
+|  loads routers,     |    +----------+----------+      +---------------------+
+|  init tables)       |               ^
++----------+----------+               |
+           |                          |
+           v                          |
++---------------------+     +---------------------+
+|     routers/        |<--->|    models.py        |
+| (API endpoints)     |     | (SQLModel classes)  |
++---------------------+     +---------------------+
+
