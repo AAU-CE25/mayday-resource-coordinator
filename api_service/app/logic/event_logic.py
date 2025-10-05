@@ -1,6 +1,5 @@
 from app.models import Event
 from app.data_access import EventDAO
-from sqlmodel import select
 
 class EventLogic:
     def create_event(event: Event):

@@ -47,4 +47,4 @@ class LocationDAO:
                 return False
             session.delete(location)
             session.commit()
-            return True
+            return  {"ok": True}
