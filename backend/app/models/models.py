@@ -2,15 +2,15 @@ from sqlmodel import SQLModel, Field
 from datetime import datetime
 
 class Event(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-    location_id: int = Field(default=None, foreign_key="location.id")
+    id: int = Field(primary_key=True)
     description: str
     datetime: datetime
     priority: int
     status: str
+    location_id: int = Field(default=None, foreign_key="location.id")
 
 class ResourceNeeded(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str
     resource_type: str
     description: str
@@ -19,7 +19,7 @@ class ResourceNeeded(SQLModel, table=True):
     event_id: int = Field(foreign_key="event.id")
 
 class ResourceAvailable(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str
     resource_type: str
     quantity: int
@@ -29,7 +29,7 @@ class ResourceAvailable(SQLModel, table=True):
     is_allocated: bool
 
 class Volunteer(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int = Field(primary_key=True)
     name: str
     email: str
     phonenumber: str
