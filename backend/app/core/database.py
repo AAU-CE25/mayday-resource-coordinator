@@ -14,7 +14,7 @@ def init_db():
         print(settings.database_url_computed)
         SQLModel.metadata.create_all(engine)
     except Exception as e:
-        raise
+        print(f"Error creating database tables: {e}")
 
 def get_session():
     with Session(engine) as session:
