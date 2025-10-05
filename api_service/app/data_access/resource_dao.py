@@ -47,7 +47,7 @@ class ResourceDAO:
                 return False
             session.delete(resource)
             session.commit()
-            return True
+            return {"ok": True}
 
     @staticmethod
     def create_resource_needed(resource: ResourceNeeded) -> ResourceNeeded:
@@ -93,4 +93,4 @@ class ResourceDAO:
                 return False
             session.delete(resource)
             session.commit()
-            return True
+            return {"ok": True}
