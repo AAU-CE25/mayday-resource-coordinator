@@ -47,4 +47,4 @@ class VolunteerDAO:
                 return False
             session.delete(volunteer)
             session.commit()
-            return True
+            return {"ok": True}

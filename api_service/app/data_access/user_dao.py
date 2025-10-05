@@ -47,4 +47,4 @@ class UserDAO:
                 return False
             session.delete(user)
             session.commit()
-            return True
+            return {"ok": True}
