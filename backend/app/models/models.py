@@ -3,7 +3,7 @@ from datetime import datetime
 
 class Event(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
-    location_id: int = Field(foreign_key="location.id")
+    location_id: int = Field(default=None, foreign_key="location.id")
     description: str
     datetime: datetime
     priority: int
