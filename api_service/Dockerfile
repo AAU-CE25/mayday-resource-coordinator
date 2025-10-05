@@ -4,17 +4,18 @@ FROM python:3.11-slim
 # ---------- Set working directory ----------
 WORKDIR /application
 
-# ---------- Install dependencies ----------
-COPY requirements.txt .
+# ---------- Copy dependencies ----------
+COPY api_service/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---------- Copy project ----------
-COPY . .
+# ---------- Copy source code ----------
+# We assume build context is the project root!
+COPY api_service ./api_service
+COPY domain ./domain
 
 # ---------- Expose FastAPI port ----------
 EXPOSE 8000
 
-# ---------- Command to run FastAPI ----------
-# Use uvicorn to start the server
-CMD ["python3", "run.py"]
+# ---------- Run FastAPI app ----------
+CMD ["uvicorn", "api_service.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

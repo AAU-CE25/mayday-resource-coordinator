@@ -3,19 +3,32 @@ services:
     image: postgres:15
     container_name: postgres_db
     restart: always
-    enviroment:
-      - .env   # Load Postgres env vars from .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: mydatabase
+      POSTGRES_HOST: db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mydatabase"]
+      interval: 2s
+      retries: 10
+      start_period: 5s
   web:
     image: api_service:latest
     container_name: api_service
+    depends_on:
+      db:
+        condition: service_healthy
     restart: always
-    enviroment:
-      - .env   # App also loads from same .env
+    environment:
+      DATABASE_URL: postgresql://postgres:example@db:5432/mydatabase
     ports:
       - "8000:8000"
-    command: python3 run.py
+    command: "uvicorn api_service.app.main:app --host 0.0.0.0 --port 8000"
+  
+volumes:
+  postgres_data:
