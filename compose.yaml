@@ -18,6 +18,9 @@ services:
       retries: 10
       start_period: 5s
   web:
+    build:
+      context: .
+      dockerfile: api_service/Dockerfile
     image: api_service:latest
     container_name: api_service
     depends_on:
