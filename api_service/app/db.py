@@ -23,3 +23,4 @@ def check_database_health():
         return True
     except Exception:
         return False
+    
