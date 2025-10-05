@@ -17,7 +17,6 @@ def parse_cors(v: Any) -> list[str] | str:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # env_file="../.env",      # <--- tells Pydantic where to look
         env_ignore_empty=True,   # ignore empty values instead of raising
         extra="ignore",          # ignore extra vars not defined in Settings
     )

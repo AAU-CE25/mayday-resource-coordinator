@@ -1,19 +1,27 @@
 # api_service/app/core/config.py
-from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
-    database_url: str | None = Field(default=None, env="DATABASE_URL")
+    model_config = SettingsConfigDict(
+        env_ignore_empty=True,   # ignore empty values instead of raising
+        extra="ignore",          # ignore extra vars not defined in Settings
+    )
+
+    # Database credentials
+    DATABASE_URL: Optional[str] = None
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str 
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int = 5432
 
     @property
     def database_url_computed(self) -> str:
-        """
-        If DATABASE_URL is not set, fall back to SQLite (for local development).
-        """
-        if self.database_url:
-            print("Using DATABASE_URL from environment")
-            return self.database_url
-        print("DATABASE_URL not set, falling back to SQLite")
-        return "sqlite:///./local.db"
+        """Compute database URL from components or use direct URL"""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
 
 settings = Settings()

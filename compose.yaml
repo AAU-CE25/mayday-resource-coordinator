@@ -1,22 +1,36 @@
 services:
-  postgres:
-    container_name: postgres_container
+  db:
     image: postgres:18
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       retries: 5
       start_period: 30s
       timeout: 10s
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: mydatabase
-      POSTGRES_HOST: db
-    ports:
-      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+
+  prestart:
+    image: api_service:latest
+    build:
+      context: ./backend
+    container_name: prestart
+    networks:
+      - default
+    depends_on:
+        db:
+          condition: service_healthy
+          restart: true
+    command: bash scripts/prestart.sh
+    env_file:
+      - .env
 
  # For the API service
   web:
@@ -29,6 +43,12 @@ services:
       db:
         condition: service_healthy
     restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    networks:
+      - default
 
   adminer:
     image: adminer
@@ -38,41 +58,27 @@ services:
     networks:
       -  default
     depends_on:
-      - postgres
-
-  prestart:
-    image: backend
-    build:
-      context: ./backend
-    container_name: prestart
-    networks:
-      - default
-    depends_on:
-      postgres:
+      db:
         condition: service_healthy
-        restart: true
-    command: bash scripts/prestart.sh
-    env_file:
-      - .env
 
-  backend:
-    image: backend
-    build:
-      context: ./backend
-    container_name: backend
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-        restart: true
-      prestart:
-        condition: service_completed_successfully
-    networks:
-      - default
+  # backend:
+  #   image: backend
+  #   build:
+  #     context: ./backend
+  #   container_name: backend
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "8000:8000"
+  #   restart: always
+  #   depends_on:
+        # db:
+        #   condition: service_healthy
+  #       restart: true
+  #     prestart:
+  #       condition: service_completed_successfully
+  #   networks:
+  #     - default
 
 
   # frontend:
@@ -83,3 +89,6 @@ services:
   #   ports:
   #     - "3000:3000"
   #   restart: unless-stopped
+
+volumes:
+  app-db-data:

@@ -2,7 +2,11 @@
 FROM python:3.11-slim
 
 # ---------- Set working directory ----------
-WORKDIR /application
+WORKDIR /app/
+
+# ---------- Install system dependencies ----------
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends
 
 # ---------- Copy dependencies ----------
 COPY api_service/requirements.txt .
@@ -18,4 +22,4 @@ COPY domain ./domain
 EXPOSE 8000
 
 # ---------- Run FastAPI app ----------
-CMD ["uvicorn", "api_service.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -24,8 +24,4 @@ coverage.xml
 *.swp
 *.swo
 
-.env
-.env.local
-.env.*.local
-
 *.db
