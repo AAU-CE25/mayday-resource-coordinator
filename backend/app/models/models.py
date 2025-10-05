@@ -44,3 +44,9 @@ class Location(SQLModel, table=True):
     postcode: str
     latitude: float
     longitude: float
+
+
+class User(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str
+    email: str
