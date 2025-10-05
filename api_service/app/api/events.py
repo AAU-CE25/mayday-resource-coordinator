@@ -71,3 +71,50 @@ def create_event(event: Event):
     - **status**: Current status of the event
     """
     return EventLogic.create_event(event)
+
+@router.put(
+    "/{event_id}", 
+    response_model=Event,
+    summary="Update event",
+    description="Update an existing disaster event",
+    responses={
+        200: {"description": "Event updated"},
+        404: {"description": "Event not found"}
+    }
+)
+def update_event(event_id: int, event: Event):
+    """
+    Update an existing disaster event.
+    
+    - **event_id**: The ID of the event to update
+    - **location_id**: ID of the location where the event occurred
+    - **description**: Detailed description of the event
+    - **datetime**: When the event occurred
+    - **priority**: Priority level (1-5, where 5 is highest)
+    - **status**: Current status of the event
+    """
+    db_event = EventLogic.get_event(event_id)
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return EventLogic.update_event(event_id, event.dict(exclude_unset=True))
+
+@router.delete(
+    "/{event_id}", 
+    status_code=204,
+    summary="Delete event",
+    description="Delete a disaster event",
+    responses={
+        204: {"description": "Event deleted"},
+        404: {"description": "Event not found"}
+    }
+)
+def delete_event(event_id: int):
+    """
+    Delete a disaster event.
+    
+    - **event_id**: The ID of the event to delete
+    """
+    event = EventLogic.get_event(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return EventLogic.delete_event(event_id)

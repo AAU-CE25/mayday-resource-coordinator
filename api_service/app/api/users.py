@@ -20,3 +20,17 @@ def read_user(user_id: int):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.put("/{user_id}", response_model=User)
+def update_user(user_id: int, user: User):
+    db_user = UserLogic.get_user(user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserLogic.update_user(user_id, user.dict(exclude_unset=True))    
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int):
+    user = UserLogic.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserLogic.delete_user(user_id)
