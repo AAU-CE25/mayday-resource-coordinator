@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
-from app.models import Event
-from app.db import engine
+
+from api_service.app.models import Event
+from api_service.app.db import engine
 
 class EventDAO:
     @staticmethod

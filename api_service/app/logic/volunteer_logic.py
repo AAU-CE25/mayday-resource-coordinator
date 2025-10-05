@@ -1,5 +1,5 @@
-from app.models import Volunteer
-from app.data_access import VolunteerDAO
+from api_service.app.models import Volunteer
+from api_service.app.data_access import VolunteerDAO
 
 class VolunteerLogic:
     def create_volunteer(volunteer: Volunteer):

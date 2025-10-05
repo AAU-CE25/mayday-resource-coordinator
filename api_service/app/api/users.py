@@ -1,14 +1,15 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from app.models import User
-from app.logic import UserLogic
+from api_service.app.models import User
+from domain.schemas import UserCreate
+from api_service.app.logic import UserLogic
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", response_model=User)
-def create_user_endpoint(user: User):
-    return UserLogic.create_user(user)
+def create_user_endpoint(userCreate: UserCreate):
+    return UserLogic.create_user(userCreate)
 
 @router.get("/", response_model=List[User])
 def read_users():

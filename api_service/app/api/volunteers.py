@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Volunteer
 
-from app.logic import VolunteerLogic
+from api_service.app.models import Volunteer
+from api_service.app.logic import VolunteerLogic
 
 router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 

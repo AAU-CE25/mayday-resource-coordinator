@@ -1,5 +1,5 @@
-from app.models import Event
-from app.data_access import EventDAO
+from api_service.app.models import Event
+from api_service.app.data_access import EventDAO
 
 class EventLogic:
     def create_event(event: Event):

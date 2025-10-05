@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
-from app.models import Volunteer
-from app.db import engine
+
+from api_service.app.models import Volunteer
+from api_service.app.db import engine
 
 class VolunteerDAO:
     @staticmethod

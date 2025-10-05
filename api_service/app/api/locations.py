@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from app.models import Location
-from app.logic import LocationLogic
+from api_service.app.models import Location
+from api_service.app.logic import LocationLogic
 
 router = APIRouter(prefix="/locations", tags=["locations"])
 

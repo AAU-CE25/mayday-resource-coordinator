@@ -1,6 +1,6 @@
 import uvicorn
 
-if __name__ == "__main__":
+def run():
     uvicorn.run(
         "app.main:app",  # module:app
         host="0.0.0.0",

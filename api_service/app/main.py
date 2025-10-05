@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from app.db import create_db_and_tables, check_database_health
-from app.api import user_router, event_router, location_router, resource_router, volunteer_router
+from .db import create_db_and_tables, check_database_health
+from .api import user_router, event_router, location_router, resource_router, volunteer_router
 
 create_db_and_tables()
 

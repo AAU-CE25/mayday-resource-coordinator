@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
-from app.models import Location
-from app.db import engine
+
+from api_service.app.models import Location
+from api_service.app.db import engine
 
 class LocationDAO:
     @staticmethod

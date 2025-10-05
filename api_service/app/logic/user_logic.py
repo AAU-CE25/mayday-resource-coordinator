@@ -1,9 +1,10 @@
-from app.models import User
-from app.data_access import UserDAO
+
+from domain.schemas import UserCreate
+from api_service.app.data_access import UserDAO
 
 class UserLogic:
-    def create_user(user: User):
-        return UserDAO.create_user(user)
+    def create_user(userCreate: UserCreate):
+        return UserDAO.create_user(userCreate)
 
     def get_user(user_id: int):
         return UserDAO.get_user(user_id)

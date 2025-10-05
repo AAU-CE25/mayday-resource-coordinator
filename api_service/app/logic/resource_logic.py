@@ -1,5 +1,5 @@
-from app.models import ResourceAvailable, ResourceNeeded
-from app.data_access import ResourceDAO
+from api_service.app.models import ResourceAvailable, ResourceNeeded
+from api_service.app.data_access import ResourceDAO
 
 class ResourceLogic:
     def create_resource_needed(resource: ResourceNeeded):

@@ -1,5 +1,5 @@
-from app.models import Location
-from app.data_access import LocationDAO
+from api_service.app.models import Location
+from api_service.app.data_access import LocationDAO
 
 class LocationLogic:
     def create_location(location: Location):

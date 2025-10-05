@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import ResourceAvailable, ResourceNeeded
-from app.logic import ResourceLogic
+from api_service.app.models import ResourceAvailable, ResourceNeeded
+from api_service.app.logic import ResourceLogic
 
 router = APIRouter(prefix="/resources", tags=["resources"])
 

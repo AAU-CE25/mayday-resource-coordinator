@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
-from sqlmodel import Session, select
 from typing import List, Optional
-from app.models import Event
-from app.db import get_session
 
-from app.logic import EventLogic
+from api_service.app.models import Event
+from api_service.app.logic import EventLogic
 
 router = APIRouter(prefix="/events", tags=["events"])
 

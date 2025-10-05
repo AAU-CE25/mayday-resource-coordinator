@@ -1,16 +1,32 @@
 from sqlmodel import Session, select
-from app.models import User
-from app.db import engine
+
+from api_service.app.models import User
+from domain.schemas import UserCreate
+from api_service.app.db import engine
 
 class UserDAO:
     @staticmethod
-    def create_user(user: User) -> User:
+    def create_user(user_data: UserCreate) -> User:
         """Create and persist a new user."""
         with Session(engine) as session:
-            session.add(user)
+            # Get current max id
+            last_user = session.query(User).order_by(User.id.desc()).first()
+            new_id = last_user.id + 1 if last_user else 0
+
+            # Create new User instance
+            new_user = User(
+                id=new_id,
+                name=user_data.name,
+                email=user_data.email,
+                # ... add other fields here ...
+            )
+
+            # Persist to DB
+            session.add(new_user)
             session.commit()
-            session.refresh(user)
-            return user
+            session.refresh(new_user)
+
+            return new_user
 
     @staticmethod
     def get_user(user_id: int) -> User | None:
