@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime as dt
+from typing import Optional
 
 # ------------------ User ------------------
 class UserCreate(BaseModel):
@@ -14,18 +15,18 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
-
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 # ------------------ Location ------------------
 class LocationCreate(BaseModel):
-    region: str
-    address: str
-    postcode: str
-    latitude: float
-    longitude: float
+    region: Optional[str] = None
+    address: Optional[str] = None
+    postcode: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class LocationUpdate(BaseModel):
     region: str | None = None
@@ -41,36 +42,34 @@ class LocationResponse(BaseModel):
     postcode: str
     latitude: float
     longitude: float
-
-    class Config:
-        from_attributes = True
-
+    model_config = {
+        "from_attributes": True
+    }
 
 # ------------------ Event ------------------
 class EventCreate(BaseModel):
-    location_id: int
     description: str
-    datetime: dt
     priority: int
-    status: str = "active"
+    status: str 
+    location: LocationCreate
 
 class EventUpdate(BaseModel):
-    location_id: int | None = None
     description: str | None = None
-    datetime: dt | None = None
     priority: int | None = None
     status: str | None = None
+    location: LocationUpdate | None = None
 
 class EventResponse(BaseModel):
     id: int
-    location_id: int
     description: str
-    datetime: dt
     priority: int
     status: str
-
-    class Config:
-        from_attributes = True
+    create_time: dt
+    modified_time: dt
+    location: LocationResponse
+    model_config = {
+        "from_attributes": True
+    }
 
 
 # ------------------ ResourceNeeded ------------------
@@ -98,9 +97,9 @@ class ResourceNeededResponse(BaseModel):
     quantity: int
     is_fulfilled: bool
     event_id: int
-
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 # ------------------ ResourceAvailable ------------------
@@ -131,9 +130,9 @@ class ResourceAvailableResponse(BaseModel):
     status: str
     volunteer_id: int
     is_allocated: bool
-
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 # ------------------ Volunteer ------------------
@@ -161,6 +160,6 @@ class VolunteerResponse(BaseModel):
     availability: str
     event_id: int
     location_id: int
-
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

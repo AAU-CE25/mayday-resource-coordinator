@@ -1,10 +1,12 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+from typing import Optional
 
 class Event(SQLModel, table=True):
-    id: int = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     description: str
-    datetime: datetime
+    create_time: Optional[datetime] = Field(default=None)
+    modified_time: Optional[datetime] = Field(default=None)
     priority: int
     status: str
     location_id: int = Field(default=None, foreign_key="location.id")
@@ -38,7 +40,7 @@ class Volunteer(SQLModel, table=True):
     location_id: int = Field(default=None, foreign_key="location.id")
 
 class Location(SQLModel, table=True):
-    id: int = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     region: str
     address: str
     postcode: str

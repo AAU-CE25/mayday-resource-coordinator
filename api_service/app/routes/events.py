@@ -53,7 +53,7 @@ def get_event(event_id: int):
 
 @router.post(
     "/", 
-    response_model=EventCreate,
+    response_model=EventResponse,
     status_code=201,
     summary="Create new event",
     description="Create a new disaster event"

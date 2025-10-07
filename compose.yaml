@@ -18,6 +18,23 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
+  # For the API service
+  web:
+    image: api_service:latest
+    build:
+      context: .
+      dockerfile: api_service/Dockerfile
+    container_name: api_service
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    networks:
+      - default
   
   adminer:
     image: adminer
@@ -29,6 +46,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  
         
   # frontend:
   #   build: ./frontend

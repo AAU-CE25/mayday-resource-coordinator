@@ -4,6 +4,7 @@ from api_service.app.models import Location
 from api_service.app.db import engine
 
 class LocationDAO:
+
     @staticmethod
     def create_location(location: Location) -> Location:
         """Create and persist a new location."""
@@ -12,6 +13,7 @@ class LocationDAO:
             session.commit()
             session.refresh(location)
             return location
+
 
     @staticmethod
     def get_location(location_id: int) -> Location | None:
