@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
+from typing import Optional
 
 from domain import EventCreate, EventResponse, EventUpdate
 from api_service.app.logic import EventLogic
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/events", tags=["events"])
 
 @router.get(
     "/", 
-    response_model=List[EventResponse],
+    response_model=list[EventResponse],
     summary="Get all events",
     description="Retrieve a list of all disaster events with optional filtering",
     response_description="List of events"
@@ -27,6 +27,7 @@ def get_events(
     - **priority**: Filter by priority level (1-5)
     - **status**: Filter by event status
     """
+
     events = EventLogic.get_events(skip=skip, limit=limit, priority=priority, status=status)
     return events
 

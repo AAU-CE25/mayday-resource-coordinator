@@ -17,10 +17,17 @@ class LocationLogic:
 
     def get_location(location_id: int) -> LocationResponse | None:
         response_location = LocationDAO.get_location(location_id)
-        return LocationResponse.model_validate(response_location)
+        if response_location:
+            return LocationResponse.model_validate(response_location)
+        return None
 
-    def get_locations():
-        return LocationDAO.get_locations()
+    def get_locations() -> list[LocationResponse]:
+        location_list = LocationDAO.get_locations()
+        result: list[LocationResponse]= []
+        for loc in location_list:
+            result.append(LocationResponse.model_validate(loc))
+
+        return result
 
     def update_location(location_update: LocationUpdate) -> LocationResponse | None:
         _location = Location(**location_update.model_dump())

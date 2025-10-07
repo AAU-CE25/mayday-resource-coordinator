@@ -40,34 +40,24 @@ class EventLogic:
         response_event = EventDAO.get_event(event_id)
         if not response_event:
             return None
-
-        # Load the associated location if it exists
+        
         location = None
+        # Load the associated location if it exists
         if response_event.location_id:
-            location = LocationLogic.get_location(response_event.location_id)
-            location = LocationResponse.model_validate(location)
-
+            location = LocationLogic.get_location(response_event.location_id) 
+        if not location:
+            return None
         # Validate the event including nested location
         return EventResponse.model_validate({
             **response_event.model_dump(),  # Event fields
-            "location": location
+            "location": location.model_dump()
         })
 
     def get_events(skip: int, limit: int, priority: int | None = None, status: str | None = None) -> list[EventResponse]:
         events = EventDAO.get_events(skip, limit, priority, status)
         result: list[EventResponse] = []
-
         for event in events:
-            location = None
-            if event.location_id:
-                loc = LocationLogic.get_location(event.location_id)
-                location = LocationResponse.model_validate(loc)
-
-            validated_event = EventResponse.model_validate({
-                **event.model_dump(),
-                "location": location
-            })
-            result.append(validated_event)
+            result.append(EventLogic.get_event(event.id))
 
         return result
 
