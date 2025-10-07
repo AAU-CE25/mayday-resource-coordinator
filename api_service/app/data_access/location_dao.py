@@ -28,18 +28,23 @@ class LocationDAO:
             return session.exec(select(Location)).all()
 
     @staticmethod
-    def update_location(location_id: int, location_data: dict) -> Location | None:
-        """Update a location by ID."""
+    def update_location(location_update: Location) -> Location | None:
+        """Update an existing location by ID."""
         with Session(engine) as session:
-            location = session.get(Location, location_id)
-            if not location:
-                return None
-            for key, value in location_data.items():
-                setattr(location, key, value)
-            session.add(location)
+            # Fetch the existing record first
+            existing = session.get(Location, location_update.id)
+            if not existing:
+                return None  # Don't insert new row
+
+            # Copy updated fields from input object
+            for key, value in location_update.model_dump().items():
+                if key != "id" and value is not None:
+                    setattr(existing, key, value)
+
+            session.add(existing)
             session.commit()
-            session.refresh(location)
-            return location
+            session.refresh(existing)
+            return existing
 
     @staticmethod
     def delete_location(location_id: int) -> bool:

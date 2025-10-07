@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from domain import EventCreate, EventResponse, LocationResponse
+from domain import EventCreate, EventResponse, EventUpdate, LocationResponse
 from api_service.app.data_access import EventDAO
 from .location_logic import LocationLogic
 from ..models import Event
@@ -37,13 +37,49 @@ class EventLogic:
         return validated_event
 
     def get_event(event_id: int) -> EventResponse | None:
-        return EventDAO.get_event(event_id)
+        response_event = EventDAO.get_event(event_id)
+        if not response_event:
+            return None
 
-    def get_events(skip, limit, priority, status) -> list[EventResponse]:
-        return EventDAO.get_events(skip, limit, priority, status)
+        # Load the associated location if it exists
+        location = None
+        if response_event.location_id:
+            location = LocationLogic.get_location(response_event.location_id)
+            location = LocationResponse.model_validate(location)
 
-    def update_event(event_id: int, event_data: dict) -> EventResponse | None:
-        return EventDAO.update_event(event_id, event_data)
+        # Validate the event including nested location
+        return EventResponse.model_validate({
+            **response_event.model_dump(),  # Event fields
+            "location": location
+        })
+
+    def get_events(skip: int, limit: int, priority: int | None = None, status: str | None = None) -> list[EventResponse]:
+        events = EventDAO.get_events(skip, limit, priority, status)
+        result: list[EventResponse] = []
+
+        for event in events:
+            location = None
+            if event.location_id:
+                loc = LocationLogic.get_location(event.location_id)
+                location = LocationResponse.model_validate(loc)
+
+            validated_event = EventResponse.model_validate({
+                **event.model_dump(),
+                "location": location
+            })
+            result.append(validated_event)
+
+        return result
+
+    def update_event(event_update: EventUpdate) -> EventResponse | None:
+        _event = Event(**event_update.model_dump())
+        if event_update.location:
+            # Update the location if location data is provided
+            updated_location = LocationLogic.create_location(event_update.location)
+            _event.location_id = updated_location.id
+        
+                
+        return EventDAO.update_event(_event)
 
     def delete_event(event_id: int):
         return EventDAO.delete_event(event_id)

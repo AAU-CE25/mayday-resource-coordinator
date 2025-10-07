@@ -1,6 +1,6 @@
 from api_service.app.models import Location
 from api_service.app.data_access import LocationDAO
-from domain.schemas import LocationCreate, LocationResponse
+from domain.schemas import LocationCreate, LocationResponse, LocationUpdate
 
 class LocationLogic:
     def create_location(location: LocationCreate) -> LocationResponse:
@@ -15,14 +15,17 @@ class LocationLogic:
         validated_location = LocationResponse.model_validate(response_location)
         return validated_location
 
-    def get_location(location_id: int):
-        return LocationDAO.get_location(location_id)
+    def get_location(location_id: int) -> LocationResponse | None:
+        response_location = LocationDAO.get_location(location_id)
+        return LocationResponse.model_validate(response_location)
 
     def get_locations():
         return LocationDAO.get_locations()
 
-    def update_location(location_id: int, location_data: dict):
-        return LocationDAO.update_location(location_id, location_data)
+    def update_location(location_update: LocationUpdate) -> LocationResponse | None:
+        _location = Location(**location_update.model_dump())
+        response_location = LocationDAO.update_location(_location)
+        return LocationResponse.model_validate(response_location)
 
     def delete_location(location_id: int):
         return LocationDAO.delete_location(location_id)

@@ -29,6 +29,7 @@ class LocationCreate(BaseModel):
     longitude: Optional[float] = None
 
 class LocationUpdate(BaseModel):
+    id: int
     region: str | None = None
     address: str | None = None
     postcode: str | None = None
@@ -54,10 +55,11 @@ class EventCreate(BaseModel):
     location: LocationCreate
 
 class EventUpdate(BaseModel):
+    id: int
     description: str | None = None
     priority: int | None = None
     status: str | None = None
-    location: LocationUpdate | None = None
+    location: LocationCreate | None = None
 
 class EventResponse(BaseModel):
     id: int

@@ -94,7 +94,7 @@ def update_event(event_id: int, event: EventUpdate):
     db_event = EventLogic.get_event(event_id)
     if not db_event:
         raise HTTPException(status_code=404, detail="Event not found")
-    return EventLogic.update_event(event_id, event.dict(exclude_unset=True))
+    return EventLogic.update_event(event_id, event)
 
 @router.delete(
     "/{event_id}", 

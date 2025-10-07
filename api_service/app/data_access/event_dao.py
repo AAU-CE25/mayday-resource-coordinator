@@ -22,7 +22,7 @@ class EventDAO:
             return session.get(Event, event_id)
 
     @staticmethod
-    def get_events(query, skip, limit, priority, status) -> list[Event]:
+    def get_events(skip, limit, priority, status) -> list[Event]:
         """Retrieve events."""
         query = select(Event)
     
@@ -34,18 +34,21 @@ class EventDAO:
             return session.exec(query.offset(skip).limit(limit)).all()
 
     @staticmethod
-    def update_event(event_id: int, event_data: dict) -> Event | None:
+    def update_event(event_update : Event) -> Event | None:
         """Update an event by ID."""
         with Session(engine) as session:
-            event = session.get(Event, event_id)
-            if not event:
-                return None
-            for key, value in event_data.items():
-                setattr(event, key, value)
-            session.add(event)
+            # Fetch the existing record first
+            existing = session.get(Event, event_update.id)
+            if not existing:
+                return None # Don't insert new row
+            for key, value in event_update.model_dump().items():
+                if key != "id" and value is not None:
+                    setattr(existing, key, value)
+        
+            session.add(existing)
             session.commit()
-            session.refresh(event)
-            return event
+            session.refresh(existing)
+            return existing
 
     @staticmethod
     def delete_event(event_id: int) -> bool:
