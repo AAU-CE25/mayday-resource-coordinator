@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 
-from api_service.app.models import Event
+from domain import EventCreate, EventResponse, EventUpdate
 from api_service.app.logic import EventLogic
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 @router.get(
     "/", 
-    response_model=List[Event],
+    response_model=List[EventResponse],
     summary="Get all events",
     description="Retrieve a list of all disaster events with optional filtering",
     response_description="List of events"
@@ -32,7 +32,7 @@ def get_events(
 
 @router.get(
     "/{event_id}", 
-    response_model=Event,
+    response_model=EventResponse,
     summary="Get event by ID",
     description="Retrieve a specific event by its ID",
     responses={
@@ -53,12 +53,12 @@ def get_event(event_id: int):
 
 @router.post(
     "/", 
-    response_model=Event,
+    response_model=EventCreate,
     status_code=201,
     summary="Create new event",
     description="Create a new disaster event"
 )
-def create_event(event: Event):
+def create_event(event: EventCreate):
     """
     Create a new disaster event.
     
@@ -72,7 +72,7 @@ def create_event(event: Event):
 
 @router.put(
     "/{event_id}", 
-    response_model=Event,
+    response_model=EventResponse,
     summary="Update event",
     description="Update an existing disaster event",
     responses={
@@ -80,7 +80,7 @@ def create_event(event: Event):
         404: {"description": "Event not found"}
     }
 )
-def update_event(event_id: int, event: Event):
+def update_event(event_id: int, event: EventUpdate):
     """
     Update an existing disaster event.
     
