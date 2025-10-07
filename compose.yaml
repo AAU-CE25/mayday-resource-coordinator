@@ -19,7 +19,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
   prestart:
-    image: prestart_api_service
+    image: prestart_api_service:latest
     build:
       context: .
       dockerfile: api_service/Dockerfile
