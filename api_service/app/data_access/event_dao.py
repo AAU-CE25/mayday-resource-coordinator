@@ -1,11 +1,12 @@
 from sqlmodel import Session, select
 
 from api_service.app.models import Event
+from domain.schemas import EventCreate, EventResponse, EventUpdate
 from api_service.app.db import engine
 
 class EventDAO:
     @staticmethod
-    def create_event(event: Event) -> Event:
+    def create_event(event: EventCreate) -> EventResponse:
         """Create and persist a new event."""
         with Session(engine) as session:
             session.add(event)
@@ -14,13 +15,13 @@ class EventDAO:
             return event
 
     @staticmethod
-    def get_event(event_id: int) -> Event | None:
+    def get_event(event_id: int) -> EventResponse | None:
         """Retrieve an event by ID."""
         with Session(engine) as session:
             return session.get(Event, event_id)
 
     @staticmethod
-    def get_events(query, skip, limit, priority, status) -> list[Event]:
+    def get_events(query, skip, limit, priority, status) -> list[EventResponse]:
         """Retrieve events."""
         query = select(Event)
     
@@ -32,7 +33,7 @@ class EventDAO:
             return session.exec(query.offset(skip).limit(limit)).all()
 
     @staticmethod
-    def update_event(event_id: int, event_data: dict) -> Event | None:
+    def update_event(event_id: int, event_data: dict) -> EventResponse | None:
         """Update an event by ID."""
         with Session(engine) as session:
             event = session.get(Event, event_id)
