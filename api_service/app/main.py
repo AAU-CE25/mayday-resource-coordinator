@@ -4,7 +4,7 @@ from .routes import user_router, event_router, location_router, resource_router,
 
 create_db_and_tables()
 
-app = FastAPI(title="MDay API Service")
+app = FastAPI(title="MDay API Service V2")
 
 # Include user API router
 app.include_router(user_router)

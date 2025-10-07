@@ -6,13 +6,27 @@ from api_service.app.db import engine
 
 class EventDAO:
     @staticmethod
-    def create_event(event: EventCreate) -> EventResponse:
-        """Create and persist a new event."""
+    def create_event(event_data: EventCreate) -> Event:
+        """Create and persist a new Event from an EventCreate object."""
         with Session(engine) as session:
-            session.add(event)
+            # Get the maximum ID or default to 0
+            max_id = session.exec(select(Event.id).order_by(Event.id.desc())).first() or 0
+            
+            # Create the new Event object
+            new_event = Event(
+                id=max_id + 1,
+                description=event_data.description,
+                datetime=event_data.datetime,
+                priority=event_data.priority,
+                status=event_data.status,
+                location_id=event_data.location_id,
+            )
+
+            # Save and return the persisted event
+            session.add(new_event)
             session.commit()
-            session.refresh(event)
-            return event
+            session.refresh(new_event)
+            return new_event
 
     @staticmethod
     def get_event(event_id: int) -> EventResponse | None:

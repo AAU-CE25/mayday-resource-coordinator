@@ -18,40 +18,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
-  prestart:
-    image: prestart_api_service
-    build:
-      context: .
-      dockerfile: api_service/Dockerfile
-    container_name: prestart
-    networks:
-      - default
-    depends_on:
-        db:
-          condition: service_healthy
-          restart: true
-    command: bash scripts/prestart.sh
-    env_file:
-      - .env
-
- # For the API service
-  web:
-    image: api_service:latest
-    build:
-      context: .
-      dockerfile: api_service/Dockerfile
-    container_name: api_service
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: always
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
-    networks:
-      - default
-
+  
   adminer:
     image: adminer
     restart: always
@@ -62,27 +29,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
-  # backend:
-  #   image: backend
-  #   build:
-  #     context: ./backend
-  #   container_name: backend
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - "8000:8000"
-  #   restart: always
-  #   depends_on:
-        # db:
-        #   condition: service_healthy
-  #       restart: true
-  #     prestart:
-  #       condition: service_completed_successfully
-  #   networks:
-  #     - default
-
-
+        
   # frontend:
   #   build: ./frontend
   #   container_name: frontend_container
