@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:18
+    container_name: postgres_db
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -17,27 +18,13 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
-  prestart:
-    image: api_service:latest
-    build:
-      context: ./backend
-    container_name: prestart
-    networks:
-      - default
-    depends_on:
-        db:
-          condition: service_healthy
-          restart: true
-    command: bash scripts/prestart.sh
-    env_file:
-      - .env
+
 
  # For the API service
   web:
     build:
       context: .
       dockerfile: api_service/Dockerfile
-    image: api_service:latest
     container_name: api_service
     depends_on:
       db:
@@ -45,11 +32,15 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_DB=${POSTGRES_DB?Variable not set}  
     ports:
       - "8000:8000"
     networks:
       - default
-
+      
   adminer:
     image: adminer
     restart: always
@@ -61,34 +52,6 @@ services:
       db:
         condition: service_healthy
 
-  # backend:
-  #   image: backend
-  #   build:
-  #     context: ./backend
-  #   container_name: backend
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - "8000:8000"
-  #   restart: always
-  #   depends_on:
-        # db:
-        #   condition: service_healthy
-  #       restart: true
-  #     prestart:
-  #       condition: service_completed_successfully
-  #   networks:
-  #     - default
-
-
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend_container
-  #   depends_on:
-  #     - fastapi
-  #   ports:
-  #     - "3000:3000"
-  #   restart: unless-stopped
 
 volumes:
   app-db-data:
