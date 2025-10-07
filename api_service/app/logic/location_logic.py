@@ -5,11 +5,7 @@ from domain.schemas import LocationCreate, LocationResponse, LocationUpdate
 class LocationLogic:
     def create_location(location: LocationCreate) -> LocationResponse:
         new_location = Location(
-                region=location.region,
-                address=location.address,
-                postcode=location.postcode,
-                longitude=location.longitude,
-                latitude=location.latitude,
+                **location.model_dump()
             )
         response_location = LocationDAO.create_location(new_location)
         validated_location = LocationResponse.model_validate(response_location)
