@@ -18,9 +18,10 @@ services:
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
   prestart:
-    image: api_service:latest
+    image: api_service
     build:
-      context: ./backend
+      context: .
+      dockerfile: api_service/Dockerfile
     container_name: prestart
     networks:
       - default
@@ -34,10 +35,10 @@ services:
 
  # For the API service
   web:
+    image: api_service
     build:
       context: .
       dockerfile: api_service/Dockerfile
-    image: api_service:latest
     container_name: api_service
     depends_on:
       db:
