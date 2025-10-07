@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:18
+    container_name: postgres_db
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -18,9 +19,10 @@ services:
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
   prestart:
-    image: api_service:latest
+    image: prestart_api_service
     build:
-      context: ./backend
+      context: .
+      dockerfile: api_service/Dockerfile
     container_name: prestart
     networks:
       - default
@@ -34,10 +36,10 @@ services:
 
  # For the API service
   web:
+    image: api_service:latest
     build:
       context: .
       dockerfile: api_service/Dockerfile
-    image: api_service:latest
     container_name: api_service
     depends_on:
       db:
