@@ -3,6 +3,8 @@ services:
     image: postgres:18
     container_name: postgres_db
     restart: always
+    ports:
+      - "5432:5432" 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -13,10 +15,6 @@ services:
       - app-db-data:/var/lib/postgresql/data/pgdata
     env_file:
       - .env
-    environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
   # For the API service
   web:
