@@ -1,0 +1,15 @@
+[
+  {
+    "name": "api",
+    "image": "myrepo/api:latest",
+    "essential": true,
+    "portMappings": [{"containerPort": 8080, "protocol": "tcp"}]
+  },
+  {
+    "name": "db",
+    "image": "postgres:18",
+    "essential": true,
+    "environment": [{"name": "POSTGRES_DB", "value": "userdb"}],
+    "mountPoints": [{"sourceVolume": "user-volume", "containerPath": "/var/lib/postgresql/data"}]
+  }
+]
