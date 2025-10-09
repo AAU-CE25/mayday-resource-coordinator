@@ -5,8 +5,8 @@ from typing import Optional
 class Event(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     description: str
-    create_time: Optional[datetime] = Field(default=None)
-    modified_time: Optional[datetime] = Field(default=None)
+    create_time: datetime = Field(default=None)
+    modified_time: datetime = Field(default=None)
     priority: int
     status: str
     location_id: int = Field(default=None, foreign_key="location.id")
