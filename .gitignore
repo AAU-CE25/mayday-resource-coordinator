@@ -219,3 +219,8 @@ __marimo__/
 mayday-venv/*
 
 *.db
+
+.terraform/
+.terraform.lock.hcl
+
+*.zip

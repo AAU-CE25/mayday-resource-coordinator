@@ -1,0 +1,68 @@
+name: Deploy Provisionoing Service
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_API_REPO: ${{ secrets.ECR_API_REPO }}
+      ECR_DB_REPO: ${{ secrets.ECR_DB_REPO }}
+
+    steps:
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧰 Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.0
+
+      - name: 🔑 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<YOUR_ACCOUNT_ID>:role/<YOUR_DEPLOY_ROLE> # or comment out if using keys
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🐍 Package Lambda
+        run: |
+          cd  lambda
+          zip -r ../lambda.zip .
+          cd ..
+
+      - name: 🐳 Build & Push ECS Images
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+          echo "🚀 Building API image..."
+          docker build -t $ECR_API_REPO:latest -f ecs/Dockerfile.api ecs
+          docker tag $ECR_API_REPO:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/$ECR_API_REPO:latest
+          docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/$ECR_API_REPO:latest
+
+          echo "🚀 Building DB image..."
+          docker build -t $ECR_DB_REPO:latest -f ecs/Dockerfile.db ecs
+          docker tag $ECR_DB_REPO:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/$ECR_DB_REPO:latest
+          docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/$ECR_DB_REPO:latest
+
+      - name: 🌍 Terraform Init & Apply
+        working-directory: terraform
+        run: |
+          terraform init -upgrade
+          terraform apply -auto-approve
+
+      - name: 📤 Terraform Outputs
+        working-directory: terraform
+        run: terraform output
