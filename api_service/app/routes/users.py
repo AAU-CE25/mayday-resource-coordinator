@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
-
-
 from domain.schemas import UserCreate, UserResponse, UserUpdate
 from api_service.app.logic import UserLogic
 
@@ -14,8 +12,8 @@ def create_user_endpoint(userCreate: UserCreate):
 
 @router.get("/", response_model=list[UserResponse])
 def read_users(
-    skip: int = Query(0, ge=0, description="Number of events to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of events to return")
+    skip: int = Query(0, ge=0, description="Number of rows to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of rows to return")
 ):
     return UserLogic.get_users(skip=skip, limit=limit)
 

@@ -31,13 +31,12 @@ class ResourceAvailable(SQLModel, table=True):
     is_allocated: bool
 
 class Volunteer(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    name: str
-    email: str
+    id: int = Field(primary_key=True) 
     phonenumber: str
     availability: str
     event_id: int = Field(default=None, foreign_key="event.id")
     location_id: int = Field(default=None, foreign_key="location.id")
+    user_id: int = Field(foreign_key="user.id")  
 
 class Location(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

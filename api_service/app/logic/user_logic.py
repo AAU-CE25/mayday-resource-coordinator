@@ -26,9 +26,9 @@ class UserLogic:
 
     def update_user(user_update: UserUpdate) -> UserResponse | None:
         _user = User(**user_update.model_dump())
-        response_location = UserDAO.update_user(_user)
-        if response_location:
-            return UserResponse.model_validate(response_location)
+        response_user= UserDAO.update_user(_user)
+        if response_user:
+            return UserResponse.model_validate(response_user)
         return None
 
     def delete_user(user_id: int):

@@ -4,10 +4,18 @@ from api_service.app.models import User
 from api_service.app.db import engine
 
 class UserDAO:
-    @staticmethod
     def create_user(user_data: User) -> User:
-        """Create and persist a new user."""
+        """Create and persist a new user if email doesn't exist; return existing otherwise."""
         with Session(engine) as session:
+            # Check if a user with the same email already exists
+            query = select(User).where(User.email == user_data.email)
+            existing_user = session.exec(query).first()
+
+            if existing_user:
+                # Return the existing user (avoid duplicates)
+                return existing_user
+
+            # Otherwise, create and persist the new user
             session.add(user_data)
             session.commit()
             session.refresh(user_data)

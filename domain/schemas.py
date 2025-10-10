@@ -140,8 +140,7 @@ class ResourceAvailableResponse(BaseModel):
 
 # ------------------ Volunteer ------------------
 class VolunteerCreate(BaseModel):
-    name: str
-    email: str
+    user: UserCreate
     phonenumber: str
     availability: str
     event_id: int
@@ -157,8 +156,7 @@ class VolunteerUpdate(BaseModel):
 
 class VolunteerResponse(BaseModel):
     id: int
-    name: str
-    email: str
+    user: UserResponse
     phonenumber: str
     availability: str
     event_id: int
