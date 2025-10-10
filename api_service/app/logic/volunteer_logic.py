@@ -8,13 +8,10 @@ class VolunteerLogic:
         #returs existing if exists
         _existing_user: UserResponse = UserLogic.create_user(volunteerCreate.user)
 
-        new_volunteer = Volunteer(
-            user_id = _existing_user.id,
-            phonenumber=volunteerCreate.phonenumber,
-            availability=volunteerCreate.availability,
-            event_id=volunteerCreate.event_id,
-            location_id=volunteerCreate.location_id
-            )
+        new_volunteer = Volunteer({
+            **volunteerCreate.model_dump(exclude={"user"}),  # Exclude nested user data
+            "user_id": _existing_user.id
+        })
         volunteer = VolunteerDAO.create_volunteer(new_volunteer)
         return VolunteerResponse.model_validate({
             **volunteer.model_dump(),

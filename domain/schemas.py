@@ -143,15 +143,14 @@ class VolunteerCreate(BaseModel):
     user: UserCreate
     phonenumber: str
     availability: str
-    event_id: int
-    location_id: int
+    location_id: int | None = None
 
 class VolunteerUpdate(BaseModel):
+    id: int 
     name: str | None = None
     email: str | None = None
     phonenumber: str | None = None
     availability: str | None = None
-    event_id: int | None = None
     location_id: int | None = None
 
 class VolunteerResponse(BaseModel):
@@ -159,7 +158,6 @@ class VolunteerResponse(BaseModel):
     user: UserResponse
     phonenumber: str
     availability: str
-    event_id: int
     location_id: int
     model_config = {
         "from_attributes": True

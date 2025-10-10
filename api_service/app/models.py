@@ -34,7 +34,6 @@ class Volunteer(SQLModel, table=True):
     id: int = Field(primary_key=True) 
     phonenumber: str
     availability: str
-    event_id: int = Field(default=None, foreign_key="event.id")
     location_id: int = Field(default=None, foreign_key="location.id")
     user_id: int = Field(foreign_key="user.id")  
 
@@ -45,7 +44,6 @@ class Location(SQLModel, table=True):
     postcode: str
     latitude: float
     longitude: float
-
 
 class User(SQLModel, table=True):
     id: int = Field(primary_key=True)
