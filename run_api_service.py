@@ -1,5 +1,10 @@
 import uvicorn
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 if __name__ == "__main__":
     uvicorn.run(
     "api_service.app.main:app",  # module:app

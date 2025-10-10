@@ -21,6 +21,7 @@ class Settings(BaseSettings):
         """Compute database URL from components or use direct URL"""
         if self.DATABASE_URL:
             return self.DATABASE_URL
+        print(f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}")
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 
