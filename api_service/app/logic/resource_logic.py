@@ -1,9 +1,18 @@
 from api_service.app.models import ResourceAvailable, ResourceNeeded
 from api_service.app.data_access import ResourceDAO
+from domain import ResourceNeededCreate
 
 class ResourceLogic:
-    def create_resource_needed(resource: ResourceNeeded):
-        return ResourceDAO.create_resource_needed(resource)
+    def create_resource_needed(resource: ResourceNeededCreate):
+        new_resource_needed = ResourceNeeded(
+            name=resource.name,
+            resource_type=resource.resource_type,
+            description=resource.description,
+            quantity=resource.quantity,
+            is_fulfilled=resource.is_fulfilled,
+            event_id=resource.event_id
+        )
+        return ResourceDAO.create_resource_needed(new_resource_needed)
 
     def get_resource_needed(resource_id: int):
         return ResourceDAO.get_resource_needed(resource_id)
