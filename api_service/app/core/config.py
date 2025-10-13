@@ -8,6 +8,9 @@ class Settings(BaseSettings):
         extra="ignore",          # ignore extra vars not defined in Settings
     )
 
+    # Appl settings
+    ENVIRONMENT: str = "local"
+
     # Database credentials
     DATABASE_URL: Optional[str] = None
     POSTGRES_USER: str
