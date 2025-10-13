@@ -1,0 +1,1 @@
+# auth.py (or inside your main.py) from datetime import datetime, timedeltafrom jose import JWTError, jwtfrom fastapi import Depends, HTTPException, statusfrom fastapi.security import OAuth2PasswordBearer
