@@ -22,28 +22,31 @@ class UserResponse(BaseModel):
 
 
 # ------------------ Location ------------------
-class LocationCreate(BaseModel):
-    region: Optional[str] = None
-    address: Optional[str] = None
+class LocationAddress:
+    street: Optional[str] = None
+    city: Optional[str] = None
     postcode: Optional[str] = None
+    country: Optional[str] = None
+
+class LocationGeocode(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
+class LocationCreate(BaseModel):
+    address: LocationAddress| None = None
+    geocode: LocationGeocode | None = None
+    source: str
+    
+
 class LocationUpdate(BaseModel):
     id: int
-    region: str | None = None
-    address: str | None = None
-    postcode: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    address: LocationAddress| None = None
+    geocode: LocationGeocode | None = None
 
 class LocationResponse(BaseModel):
     id: int
-    region: str
-    address: str
-    postcode: str
-    latitude: float
-    longitude: float
+    address: LocationAddress| None = None
+    geocode: LocationGeocode | None = None
     model_config = {
         "from_attributes": True
     }
