@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
+from api_service.app.core import settings
 
-SECRET_KEY = "super_secret_key"  # load from .env later
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
