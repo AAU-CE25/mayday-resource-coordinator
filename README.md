@@ -1,4 +1,5 @@
 Rememeber to set the .env and the .env.docker
+
 In .env.docker, POSTGRES_DB must = db
 
 EXAMPLE:
