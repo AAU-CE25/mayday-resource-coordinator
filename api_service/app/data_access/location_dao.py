@@ -20,6 +20,17 @@ class LocationDAO:
         """Retrieve a location by ID."""
         with Session(engine) as session:
             return session.get(Location, location_id)
+        
+    @staticmethod
+    def get_location_by_coordinates(latitude: float, longitude: float) -> Location | None:
+        """Retrieve a location by its coordinates."""
+        with Session(engine) as session:
+            query = select(Location).where(
+                (Location.latitude == latitude) &
+                (Location.longitude == longitude)
+            )
+            return session.exec(query).first()
+        
 
     @staticmethod
     def get_locations() -> list[Location]:

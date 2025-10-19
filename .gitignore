@@ -224,3 +224,5 @@ mayday-venv/*
 
 *.zip
 temp/
+
+osm_data/

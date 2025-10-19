@@ -10,7 +10,7 @@ class OSMClient:
             "format": "json",
             "limit": 1
         }
-        headers = {"User-Agent": "MyApp/1.0"}
+        headers = {"Aalborg University Computer Engineering": "Semester Project CE1 - Mayday Resource Coordinator (wg38up@student.aau.dk)"}
 
         response = requests.get(OSMClient.BASE_URL, params=params, headers=headers)
         response.raise_for_status()
@@ -22,18 +22,4 @@ class OSMClient:
         return float(data[0]["lat"]), float(data[0]["lon"])
     @staticmethod
     def get_address_from_coordinates(lat: float, lon: float):
-        params = {
-            "lat": lat,
-            "lon": lon,
-            "format": "json"
-        }
-        headers = {"User-Agent": "MyApp/1.0"}
-
-        response = requests.get("https://nominatim.openstreetmap.org/reverse", params=params, headers=headers)
-        response.raise_for_status()
-
-        data = response.json()
-        if "error" in data:
-            return None
-
-        return data.get("address", {})
+        raise NotImplementedError("Reverse geocoding not implemented yet.")

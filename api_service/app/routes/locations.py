@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from api_service.app.logic import LocationLogic
-from domain.schemas import LocationAddress, LocationGeocode, LocationCreate, LocationResponse, LocationUpdate
+from domain.schemas import LocationAddress, LocationCreate, LocationResponse, LocationUpdate
 
 router = APIRouter(prefix="/locations", tags=["locations"])
 
@@ -11,8 +11,9 @@ def create_location(location: LocationAddress):
     return LocationLogic.create_location(_location)
 
 @router.post("/geocode", response_model=LocationResponse)
-def create_location(location: LocationGeocode):
-    _location = LocationCreate(geocode=location, source="geocode")
+def create_location(latitude: float = Query(0, ge=-90, le=90),
+                     longitude: float = Query(0, ge=-180, le=180)):
+    _location = LocationCreate(latitude=latitude, longitude=longitude, source="geocode")
     return LocationLogic.create_location(_location)
 
 @router.get("/", response_model=list[LocationResponse])
