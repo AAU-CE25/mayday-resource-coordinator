@@ -5,6 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
+    # Appl settings
+    ENVIRONMENT: str = "local"
+
+    # Database credentials
+    DATABASE_URL: Optional[str] = None
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str

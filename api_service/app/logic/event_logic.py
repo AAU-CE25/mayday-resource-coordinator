@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-
 from domain import EventCreate, EventResponse, EventUpdate, LocationResponse
 from api_service.app.data_access import EventDAO
 from .location_logic import LocationLogic
@@ -68,7 +67,6 @@ class EventLogic:
             updated_location = LocationLogic.create_location(event_update.location)
             _event.location_id = updated_location.id
         
-                
         return EventDAO.update_event(_event)
 
     def delete_event(event_id: int):
