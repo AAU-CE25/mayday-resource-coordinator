@@ -1,11 +1,12 @@
-Rememeber to set the .env
+Rememeber to set the .env and the .env.docker
+In .env.docker, POSTGRES_DB must = db
 
 EXAMPLE:
 
 Postgres settings
 POSTGRES_USER=myuser 
 POSTGRES_PASSWORD=mypassword 
-POSTGRES_DB=mydb 
+POSTGRES_DB=127.0.0.1
 POSTGRES_HOST=db 
 POSTGRES_PORT=5432
 
