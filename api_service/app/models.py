@@ -39,6 +39,7 @@ class Volunteer(SQLModel, table=True):
 
 class Location(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    full_address: Optional[str] = None
     street: Optional[str] = None
     city: Optional[str] = None
     postcode: Optional[str] = None

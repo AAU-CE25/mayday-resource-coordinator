@@ -5,10 +5,19 @@ from domain.schemas import LocationCreate, LocationResponse, LocationUpdate, Loc
 
 class LocationLogic:
     def create_location(location: LocationCreate) -> LocationResponse:
-        if location.source == "geocode":
-            existing_location = LocationLogic.get_location_by_coordinates(location.latitude, location.longitude)
-            if existing_location:
-                return existing_location
+        # Check for existing location
+        existing_location: Location | None = None
+        if location.source == "address":
+            full_address = ", ".join(
+                filter(None, [location.address.street, location.address.city, location.address.postcode, location.address.country])
+            )
+            existing_location = LocationDAO.get_location_by_full_address(full_address)
+        elif location.source == "geocode":
+            existing_location = LocationDAO.get_location_by_coordinates(location.latitude, location.longitude)
+        if existing_location:
+            return LocationLogic.validate_location_response(existing_location)
+        
+        # Create new location if not found
         _location = LocationLogic.enhance_location(location)
         response_location = LocationDAO.create_location(_location)
         return LocationLogic.validate_location_response(response_location)
@@ -52,15 +61,22 @@ class LocationLogic:
         _location = location
         if location.source == "address" and location.address:
             _location.latitude, _location.longitude = LocationLogic.create_location_from_address(location.address)
+            full_address = ", ".join(
+                filter(None, [location.address.street, location.address.city, location.address.postcode, location.address.country])
+            )
         elif location.source == "geocode" and location.latitude and location.longitude:
             _location.address = LocationLogic.create_address_from_location(location.latitude, location.longitude)
+            full_address = ", ".join(
+                filter(None, [_location.address.street, _location.address.city, _location.address.postcode, _location.address.country])
+            )
         result : Location = Location(
             city=_location.address.city,
             country=_location.address.country,
             street=_location.address.street,
             postcode=_location.address.postcode,
             longitude=_location.longitude,
-            latitude=_location.latitude
+            latitude=_location.latitude,
+            full_address=full_address
         )
         return result
     
