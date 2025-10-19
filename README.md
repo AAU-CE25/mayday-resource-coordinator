@@ -1,19 +1,31 @@
-Rememeber to set the .env
+Rememeber to set the .env and the .env.docker
+
+In .env.docker, POSTGRES_DB must = db
 
 EXAMPLE:
 
 Postgres settings
-POSTGRES_USER=myuser 
-POSTGRES_PASSWORD=mypassword 
-POSTGRES_DB=mydb 
-POSTGRES_HOST=db 
-POSTGRES_PORT=5432
 
+POSTGRES_USER=myuser
+
+POSTGRES_PASSWORD=mypassword 
+
+POSTGRES_DB=127.0.0.1
+
+POSTGRES_HOST=db 
+
+POSTGRES_PORT=5432
+______________________
 App Configuration
+
 SECRET_KEY=your-super-secret-key-for-development 
+
 DEBUG=true 
+
 ENVIRONMENT=development 
+
 APP_NAME=disaster-response-api APP_VERSION=1.0.0
+
 
 prestart:
     image: prestart_api_service
