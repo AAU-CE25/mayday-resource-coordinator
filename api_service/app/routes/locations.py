@@ -7,13 +7,13 @@ router = APIRouter(prefix="/locations", tags=["locations"])
 
 @router.post("/address", response_model=LocationResponse)
 def create_location(location: LocationAddress):
-    _location = LocationCreate(address=location, source="address")
+    _location = LocationCreate(address=location)
     return LocationLogic.create_location(_location)
 
-@router.post("/geocode", response_model=LocationResponse)
+@router.get("/geocode", response_model=LocationResponse)
 def create_location(latitude: float = Query(0, ge=-90, le=90),
                      longitude: float = Query(0, ge=-180, le=180)):
-    #_location = LocationCreate(latitude=latitude, longitude=longitude, source="geocode")
+    #_location = LocationCreate(latitude=latitude, longitude=longitude)
     #return LocationLogic.create_location(_location)
     raise HTTPException(status_code=501, detail="Geocode location creation not implemented yet")
 

@@ -32,7 +32,6 @@ class LocationCreate(BaseModel):
     address: LocationAddress| None = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    source: str  # "address" or "geocode"
     
 
 class LocationUpdate(BaseModel):
