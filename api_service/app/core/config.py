@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
+from typing import Optional
 
 # Load .env file before anything else
 load_dotenv()
