@@ -2,6 +2,7 @@ from sqlmodel import Session, select
 
 from api_service.app.models import User
 from api_service.app.db import engine
+from domain.exceptions import UserExistsException
 
 class UserDAO:
     def create_user(user_data: User) -> User:
@@ -12,8 +13,7 @@ class UserDAO:
             existing_user = session.exec(query).first()
 
             if existing_user:
-                # Return the existing user (avoid duplicates)
-                return existing_user
+                raise UserExistsException("User already exists with this email.")
 
             # Otherwise, create and persist the new user
             session.add(user_data)

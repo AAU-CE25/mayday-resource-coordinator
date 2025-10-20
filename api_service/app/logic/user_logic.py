@@ -1,5 +1,5 @@
 
-from domain.schemas import UserCreate, UserResponse, UserUpdate
+from domain.schemas import UserCreate, UserResponse, UserUpdate, UserLogin
 from ..models import User
 from api_service.app.data_access import UserDAO
 

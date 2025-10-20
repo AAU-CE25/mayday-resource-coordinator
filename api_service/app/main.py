@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from .db import create_db_and_tables, check_database_health
-from .routes import user_router, event_router, location_router, resource_router, volunteer_router
+from .routes import auth_router, user_router, event_router, location_router, resource_router, volunteer_router
 
 create_db_and_tables()
 
 app = FastAPI(title="MDay API Service")
 
 # Include user API router
+app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(event_router)
 app.include_router(location_router)

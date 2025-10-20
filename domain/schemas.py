@@ -6,6 +6,8 @@ from typing import Optional
 class UserCreate(BaseModel):
     name: str
     email: str
+    password: str
+    role: str | None = "SUV"
 
 class UserUpdate(BaseModel):
     id: int
@@ -19,7 +21,13 @@ class UserResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+class UserLogin(BaseModel):
+    email: str
+    password: str
 
+class UserToken(BaseModel):
+    access_token: str
+    token_type: str
 
 # ------------------ Location ------------------
 class LocationAddress(BaseModel):
