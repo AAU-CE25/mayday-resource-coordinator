@@ -52,10 +52,32 @@ services:
   #   build: ./frontend
   #   container_name: frontend_container
   #   depends_on:
-  #     - fastapi
+  #     - web
   #   ports:
-  #     - "3000:3000"
+  #     - "5173:5173"
   #   restart: unless-stopped
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   ports:
+  #     - "5173:5173"
+  #   container_name: frontend_container
+  #   restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend_container
+    ports:
+      - "5173:5173"
+    depends_on:
+      - web
+    environment:
+      - VITE_API_URL=http://api_service:8000
+    networks:
+      - default
 
 volumes:
   app-db-data:
+
