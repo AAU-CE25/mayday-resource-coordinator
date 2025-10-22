@@ -1,28 +1,33 @@
-# api_service/app/core/config.py
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
 from typing import Optional
 
+# Load .env file before anything else
+load_dotenv()
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_ignore_empty=True,   # ignore empty values instead of raising
-        extra="ignore",          # ignore extra vars not defined in Settings
-    )
+    # Appl settings
+    ENVIRONMENT: str = "local"
 
     # Database credentials
     DATABASE_URL: Optional[str] = None
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
-    POSTGRES_DB: str 
+    POSTGRES_DB: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int = 5432
 
+    SECRET_KEY: str
+    DEBUG: bool = False
+    ENVIRONMENT: str = "development"
+    APP_NAME: str = "disaster-response-api"
+    APP_VERSION: str = "1.0.0"
+
     @property
     def database_url_computed(self) -> str:
-        """Compute database URL from components or use direct URL"""
-        if self.DATABASE_URL:
-            return self.DATABASE_URL
-        print(f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}")
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-
+        return (
+            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
 settings = Settings()
