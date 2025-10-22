@@ -2,7 +2,7 @@ import random
 from faker import Faker
 from datetime import datetime
 import json
-from domain.schemas import LocationCreate, ResourceNeededCreate, EventCreate
+# from domain.schemas import LocationCreate, ResourceNeededCreate, EventCreate
 
 fake = Faker()
 
