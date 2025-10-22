@@ -76,7 +76,7 @@ export function MapView({ selectedEvent, onEventSelect }: MapViewProps) {
   }, [events, onEventSelect])
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative z-0 h-full w-full">
       <div ref={mapRef} className="h-full w-full" />
     </div>
   )

@@ -14,7 +14,7 @@ interface SidePanelProps {
 
 export function SidePanel({ activeTab, onTabChange, selectedEvent, onEventSelect }: SidePanelProps) {
   return (
-    <div className="w-96 border-l border-border bg-card">
+    <div className="relative z-10 w-96 border-l border-border bg-card">
       <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as any)} className="h-full">
         <TabsList className="w-full rounded-none border-b border-border bg-secondary">
           <TabsTrigger value="events" className="flex-1">
