@@ -1,8 +1,12 @@
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+import { NextRequest, NextResponse } from "next/server";
+
+
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+
   const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
 
   try {
-    const response = await fetch(`${BACKEND_URL}/notifications/${params.id}/read`, {
+    const response = await fetch(`${BACKEND_URL}/notifications/${(await context.params).id}/read`, {
       method: "POST",
     })
 

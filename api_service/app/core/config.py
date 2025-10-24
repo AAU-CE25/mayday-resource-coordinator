@@ -25,6 +25,8 @@ class Settings(BaseSettings):
 
     @property
     def database_url_computed(self) -> str:
+        if self.ENVIRONMENT == "local" and self.DATABASE_URL:
+            return self.DATABASE_URL
         return (
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
