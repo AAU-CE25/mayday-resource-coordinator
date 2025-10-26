@@ -14,10 +14,10 @@ services:
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
     env_file:
-      - .env.docker
+      - .env
 
   # For the API service
-  web:
+  api_service:
     image: api_service:latest
     build:
       context: .
@@ -46,35 +46,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
-  
-        
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend_container
-  #   depends_on:
-  #     - web
-  #   ports:
-  #     - "5173:5173"
-  #   restart: unless-stopped
-
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   ports:
-  #     - "5173:5173"
-  #   container_name: frontend_container
-  #   restart: always
 
   frontend:
+    image: frontend:latest
     build:
       context: ./frontend
     container_name: frontend_container
     ports:
-      - "5173:5173"
+      - "3000:3000"
     depends_on:
-      - web
-    environment:
-      - VITE_API_URL=http://api_service:8000
+      - api_service
+    restart: always
+    env_file:
+      - .env
     networks:
       - default
 

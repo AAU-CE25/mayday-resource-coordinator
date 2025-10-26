@@ -1,18 +1,22 @@
-# Use Node 22 (Vite requires Node >= 20.19)
-FROM node:22-alpine
-
-# Set working directory
+# ---- Builder stage ----
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package.json and install dependencies first (better cache)
 COPY package*.json ./
 RUN npm install
 
-# Copy source code
 COPY . .
+RUN npm run build
 
-# Expose the port Vite runs on
-EXPOSE 5173
+# ---- Runner stage ----
+FROM node:20-alpine AS runner
+WORKDIR /app
 
-# Start Vite dev server, binding to all interfaces
-CMD ["npm", "run", "dev", "--", "--host"]
+ENV NODE_ENV=production
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+
+EXPOSE 3000
+CMD ["npm", "start"]
