@@ -1,4 +1,5 @@
 from sqlmodel import Session, select
+from fuzzywuzzy import fuzz
 
 from api_service.app.models import Location
 from api_service.app.db import engine
@@ -20,6 +21,30 @@ class LocationDAO:
         """Retrieve a location by ID."""
         with Session(engine) as session:
             return session.get(Location, location_id)
+        
+    @staticmethod
+    def get_location_by_coordinates(latitude: float, longitude: float, tolerance: float = 0.0001) -> Location | None:
+        """Retrieve a location by its coordinates, allowing for a small variance."""
+        with Session(engine) as session:
+            query = select(Location).where(
+                (Location.latitude >= latitude - tolerance) &
+                (Location.latitude <= latitude + tolerance) &
+                (Location.longitude >= longitude - tolerance) &
+                (Location.longitude <= longitude + tolerance)
+            )
+            return session.exec(query).first()
+
+    @staticmethod
+    def get_location_by_full_address(full_address: str, threshold: int = 85) -> Location | None:
+        """ Retrieve a location by fuzzy matching its full address. """
+        with Session(engine) as session:
+            locations = session.exec(select(Location)).all()
+            for loc in locations:
+                if loc.full_address:
+                    ratio = fuzz.token_set_ratio(full_address, loc.full_address)
+                    if ratio >= threshold:
+                        return loc
+        return None
 
     @staticmethod
     def get_locations() -> list[Location]:

@@ -6,6 +6,8 @@ from typing import Optional
 class UserCreate(BaseModel):
     name: str
     email: str
+    password: str
+    role: str | None = "SUV"
 
 class UserUpdate(BaseModel):
     id: int
@@ -19,31 +21,38 @@ class UserResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+class UserLogin(BaseModel):
+    email: str
+    password: str
 
+class UserToken(BaseModel):
+    access_token: str
+    token_type: str
 
 # ------------------ Location ------------------
-class LocationCreate(BaseModel):
-    region: Optional[str] = None
-    address: Optional[str] = None
+class LocationAddress(BaseModel):
+    street: Optional[str] = None
+    city: Optional[str] = None
     postcode: Optional[str] = None
+    country: Optional[str] = None
+
+class LocationCreate(BaseModel):
+    address: LocationAddress| None = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    
 
 class LocationUpdate(BaseModel):
     id: int
-    region: str | None = None
-    address: str | None = None
-    postcode: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    address: LocationAddress| None = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class LocationResponse(BaseModel):
     id: int
-    region: str
-    address: str
-    postcode: str
-    latitude: float
-    longitude: float
+    address: LocationAddress| None = None
+    latitude: float | None = None
+    longitude: float | None = None
     model_config = {
         "from_attributes": True
     }
@@ -140,28 +149,24 @@ class ResourceAvailableResponse(BaseModel):
 
 # ------------------ Volunteer ------------------
 class VolunteerCreate(BaseModel):
-    name: str
-    email: str
+    user: UserCreate
     phonenumber: str
     availability: str
-    event_id: int
-    location_id: int
+    location_id: int | None = None
 
 class VolunteerUpdate(BaseModel):
+    id: int 
     name: str | None = None
     email: str | None = None
     phonenumber: str | None = None
     availability: str | None = None
-    event_id: int | None = None
     location_id: int | None = None
 
 class VolunteerResponse(BaseModel):
     id: int
-    name: str
-    email: str
+    user: UserResponse
     phonenumber: str
     availability: str
-    event_id: int
     location_id: int
     model_config = {
         "from_attributes": True

@@ -14,7 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -219,3 +218,10 @@ __marimo__/
 mayday-venv/*
 
 *.db
+.terraform/
+.terraform.lock.hcl
+
+*.zip
+temp/
+
+osm_data/
