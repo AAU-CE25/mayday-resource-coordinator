@@ -5,7 +5,7 @@ export async function GET() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
-    const response = await fetch(`${BACKEND_URL}/event`, {
+    const response = await fetch(`${BACKEND_URL}/events`, {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
@@ -17,7 +17,7 @@ export async function GET() {
     const data = await response.json()
     return Response.json(data)
   } catch (error) {
-    console.error("[v0] Error fetching events:", error)
+    console.error(error)
     console.log("[v0] Using mock data - ensure BACKEND_URL is set and backend is running")
 
     return Response.json([
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const response = await fetch(`${BACKEND_URL}/event`, {
+    const response = await fetch(`${BACKEND_URL}/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

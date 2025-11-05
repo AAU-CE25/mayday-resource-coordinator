@@ -5,7 +5,7 @@ export async function GET() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-    const response = await fetch(`${BACKEND_URL}/resourceAvailable`, {
+    const response = await fetch(`${BACKEND_URL}/resources/available`, {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
@@ -76,6 +76,9 @@ export async function GET() {
     })
   }
 }
+
+
+// MAKE SURE THE POST WILL FUNCTION AS IT SHOULD (resources is the bad endpoint)
 
 export async function POST(request: Request) {
   const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"

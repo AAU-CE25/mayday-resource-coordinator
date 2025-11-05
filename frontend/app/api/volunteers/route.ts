@@ -5,7 +5,7 @@ export async function GET() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-    const response = await fetch(`${BACKEND_URL}/volunteer`, {
+    const response = await fetch(`${BACKEND_URL}/volunteers`, {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
