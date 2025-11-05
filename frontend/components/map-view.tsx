@@ -8,6 +8,37 @@ interface MapViewProps {
   onEventSelect: (eventId: string | null) => void
 }
 
+const getMarkerColor = (status: string): string => {
+  switch (status) {
+    case "active":
+      return "#ef4444" // red for active emergencies
+    case "pending":
+      return "#f97316" // orange for pending
+    case "resolved":
+      return "#22c55e" // green for resolved
+    case "on_hold":
+      return "#eab308" // yellow for on hold
+    default:
+      return "#6b7280" // gray as fallback
+  }
+}
+
+const createMarkerIcon = (L: any, color: string) => {
+  return L.icon({
+    iconUrl: `data:image/svg+xml;base64,${btoa(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" stroke="white" strokeWidth="2">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+      </svg>`,
+    )}`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    shadowSize: [41, 41],
+    shadowAnchor: [13, 41],
+  })
+}
+
 export function MapView({ selectedEvent, onEventSelect }: MapViewProps) {
   const { data: events } = useEvents()
   const mapRef = useRef<HTMLDivElement>(null)
@@ -28,7 +59,7 @@ export function MapView({ selectedEvent, onEventSelect }: MapViewProps) {
       })
 
       // Initialize map
-      const map = L.map(mapRef.current).setView([-12.8432905, 175.065665], 13)
+      const map = L.map(mapRef.current).setView([55.6761, 12.5683], 11)
       leafletMapRef.current = map
 
       // Add OpenStreetMap tiles
@@ -39,26 +70,30 @@ export function MapView({ selectedEvent, onEventSelect }: MapViewProps) {
       // Add markers for events
       if (events) {
         events.forEach((event: any) => {
-          const marker = L.marker([event.location.latitude, event.location.longitude]).addTo(map)
+          const markerColor = getMarkerColor(event.status)
+          const customIcon = createMarkerIcon(L, markerColor)
+          const marker = L.marker([event.location.latitude, event.location.longitude], {
+            icon: customIcon,
+          }).addTo(map)
 
           const priorityColor = event.priority === 1 ? "bg-chart-5" : event.priority === 2 ? "bg-chart-4" : "bg-chart-3"
           const statusColor =
             event.status === "active" ? "bg-chart-5" : event.status === "pending" ? "bg-chart-4" : "bg-chart-3"
 
           marker.bindPopup(`
-            <div class="p-2">
-              <h3 class="font-semibold text-foreground">${event.description}</h3>
-              <p class="text-sm text-muted-foreground">${event.location.address}</p>
-              <div class="mt-2 flex items-center gap-2">
-                <span class="rounded px-2 py-1 text-xs font-medium ${priorityColor} text-white">
-                  Priority ${event.priority}
-                </span>
-                <span class="rounded px-2 py-1 text-xs font-medium ${statusColor} text-white">
-                  ${event.status}
-                </span>
-              </div>
+          <div class="p-3 rounded-lg" style="background-color: rgba(20, 20, 20, 0.95); backdrop-filter: blur(4px);">
+            <h3 class="font-semibold text-white">${event.description}</h3>
+            <p class="text-sm text-gray-300 mt-1">${event.location.address.street}</p>
+            <div class="mt-3 flex items-center gap-2">
+              <span class="rounded px-2 py-1 text-xs font-medium ${priorityColor} text-white">
+                Priority ${event.priority}
+              </span>
+              <span class="rounded px-2 py-1 text-xs font-medium ${statusColor} text-white">
+                ${event.status}
+              </span>
             </div>
-          `)
+          </div>
+        `)
 
           marker.on("click", () => {
             onEventSelect(event.id)
