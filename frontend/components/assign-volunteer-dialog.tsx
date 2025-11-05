@@ -58,7 +58,7 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
         })
 
         mutate("/api/volunteers")
-        mutate("/api/event")
+        mutate("/api/events")
 
         setSelectedEventId("")
         onOpenChange(false)

@@ -63,7 +63,7 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
         })
 
         // Refresh events list
-        mutate("/api/event")
+        mutate("/api/events")
 
         // Reset form and close dialog
         setFormData({
