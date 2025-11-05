@@ -12,6 +12,14 @@ engine = create_engine(
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
+def drop_db_and_tables():
+    """Drop all tables. Use with caution (destructive).
+
+    This is useful in development or test environments when the models
+    changed and the database schema needs to be rebuilt.
+    """
+    SQLModel.metadata.drop_all(engine)
+
 def get_session():
     with Session(engine) as session:
         yield session

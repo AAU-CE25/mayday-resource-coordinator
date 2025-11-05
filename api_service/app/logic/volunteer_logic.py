@@ -8,10 +8,10 @@ class VolunteerLogic:
         #returs existing if exists
         _existing_user: UserResponse = UserLogic.create_user(volunteerCreate.user)
 
-        new_volunteer = Volunteer({
+        new_volunteer = Volunteer(
             **volunteerCreate.model_dump(exclude={"user"}),  # Exclude nested user data
-            "user_id": _existing_user.id
-        })
+            user_id=_existing_user.id
+        )
         volunteer = VolunteerDAO.create_volunteer(new_volunteer)
         return VolunteerResponse.model_validate({
             **volunteer.model_dump(),
@@ -34,6 +34,8 @@ class VolunteerLogic:
             **response_volunteer.model_dump(),  # Event fields
             "user": user.model_dump()
         })
+        return response_volunteer
+
 
     def get_volunteers(skip: int, limit: int) -> list[VolunteerResponse]:
         volunteers = VolunteerDAO.get_volunteers(skip, limit)
