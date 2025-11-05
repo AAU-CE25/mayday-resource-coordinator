@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "disaster-response-api"
     APP_VERSION: str = "1.0.0"
 
+    REVERSE_GEOCODING_ENABLED: bool = False # OSM geocoding
+
     @property
     def database_url_computed(self) -> str:
         if self.ENVIRONMENT == "local" and self.DATABASE_URL:
