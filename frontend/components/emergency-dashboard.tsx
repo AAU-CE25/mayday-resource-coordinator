@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MapView } from "./map-view"
+import MapView from "./map-view"
 import { SidePanel } from "./side-panel"
 import { Header } from "./dashboard-header"
 import { MonitoringStats } from "./monitoring-stats"
@@ -30,9 +30,9 @@ export function EmergencyDashboard() {
             statusFilter={mapStatusFilter}
             onStatusChange={setMapStatusFilter}
           />
-          <MapView 
-            selectedEvent={selectedEvent} 
-            onEventSelect={setSelectedEvent} 
+          <MapView
+            selectedEvent={selectedEvent}
+            onEventSelect={setSelectedEvent}
             searchQuery={mapSearchQuery}
             priorityFilter={mapPriorityFilter}
             statusFilter={mapStatusFilter}

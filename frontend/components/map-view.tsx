@@ -4,8 +4,11 @@ import { useEffect, useRef } from "react"
 import { useEvents } from "@/hooks/use-events"
 
 interface MapViewProps {
-  selectedEvent: string | null
-  onEventSelect: (eventId: string | null) => void
+  selectedEvent: string | null;
+  onEventSelect: (eventId: string | null) => void;
+  searchQuery: string;
+  priorityFilter: string;
+  statusFilter: string;
 }
 
 const getMarkerColor = (status: string): string => {
@@ -39,56 +42,70 @@ const createMarkerIcon = (L: any, color: string) => {
   })
 }
 
-export function MapView({ selectedEvent, onEventSelect }: MapViewProps) {
+export default function MapView({
+  selectedEvent,
+  onEventSelect,
+  searchQuery,
+  priorityFilter,
+  statusFilter,
+}: MapViewProps) {
   const { data: events } = useEvents()
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<any>(null)
 
   useEffect(() => {
-    if (typeof window === "undefined" || !mapRef.current || leafletMapRef.current) return
+    if (typeof window === "undefined" || !mapRef.current) return
 
     import("leaflet").then((L) => {
-      if (!mapRef.current || leafletMapRef.current) return
+      // Initialize or reuse map
+      if (!leafletMapRef.current && mapRef.current) {
+        const map = L.map(mapRef.current).setView([55.6761, 12.5683], 11)
+        leafletMapRef.current = map
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map)
+      }
 
-      // Fix default marker icon paths
-      delete (L.Icon.Default.prototype as any)._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      const map = leafletMapRef.current
+
+      // Remove old markers
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer)
+        }
       })
 
-      // Initialize map
-      const map = L.map(mapRef.current).setView([55.6761, 12.5683], 11)
-      leafletMapRef.current = map
+      // Filter events
+      let filtered = events || []
+      if (priorityFilter !== "all") {
+        filtered = filtered.filter((e: any) => e.priority === parseInt(priorityFilter))
+      }
+      if (statusFilter !== "all") {
+        filtered = filtered.filter((e: any) => e.status === statusFilter)
+      }
+      if (searchQuery.trim() !== "") {
+        filtered = filtered.filter((e: any) =>
+          e.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      }
 
-      // Add OpenStreetMap tiles
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map)
+      // Add filtered markers
+      filtered.forEach((event: any) => {
+        const markerColor = getMarkerColor(event.status)
+        const customIcon = createMarkerIcon(L, markerColor)
+        const marker = L.marker([event.location.latitude, event.location.longitude], {
+          icon: customIcon,
+        }).addTo(map)
 
-      // Add markers for events
-      if (events) {
-        events.forEach((event: any) => {
-          const markerColor = getMarkerColor(event.status)
-          const customIcon = createMarkerIcon(L, markerColor)
-          const marker = L.marker([event.location.latitude, event.location.longitude], {
-            icon: customIcon,
-          }).addTo(map)
-
-          const priorityColor = event.priority === 1 ? "bg-chart-5" : event.priority === 2 ? "bg-chart-4" : "bg-chart-3"
-          const statusColor =
-            event.status === "active" ? "bg-chart-5" : event.status === "pending" ? "bg-chart-4" : "bg-chart-3"
-
-          marker.bindPopup(`
+        marker.bindPopup(`
           <div class="p-3 rounded-lg" style="background-color: rgba(20, 20, 20, 0.95); backdrop-filter: blur(4px);">
             <h3 class="font-semibold text-white">${event.description}</h3>
             <p class="text-sm text-gray-300 mt-1">${event.location.address.street}</p>
             <div class="mt-3 flex items-center gap-2">
-              <span class="rounded px-2 py-1 text-xs font-medium ${priorityColor} text-white">
+              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}">
                 Priority ${event.priority}
               </span>
-              <span class="rounded px-2 py-1 text-xs font-medium ${statusColor} text-white">
+              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}">
                 ${event.status}
               </span>
             </div>
@@ -99,16 +116,8 @@ export function MapView({ selectedEvent, onEventSelect }: MapViewProps) {
             onEventSelect(event.id)
           })
         })
-      }
-    })
-
-    return () => {
-      if (leafletMapRef.current) {
-        leafletMapRef.current.remove()
-        leafletMapRef.current = null
-      }
-    }
-  }, [events, onEventSelect])
+      })
+  }, [events, searchQuery, priorityFilter, statusFilter])
 
   return (
     <div className="relative z-0 h-full w-full">
