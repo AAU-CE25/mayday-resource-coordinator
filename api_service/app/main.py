@@ -10,6 +10,7 @@ app = FastAPI(title="MDay API Service")
 
 # Add CORS middleware before including routers
 origins = [
+    "http://localhost:3000",   # Frontend dev server
     "http://localhost:5173",   # React dev server (Vite default)
     "http://127.0.0.1:5173",
     "http://frontend_container:3000",   # optional - if frontend runs in Docker
