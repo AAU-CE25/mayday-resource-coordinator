@@ -1,11 +1,12 @@
-"use client"
+'use client'
 
-import useSWR from "swr"
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api-client'
 
 export function useStats() {
-  return useSWR("/api/stats", fetcher, {
-    refreshInterval: 3000, // More frequent updates for stats
+  return useQuery({
+    queryKey: ['stats'],
+    queryFn: () => api.get('/stats/'),
+    refetchInterval: 3000
   })
 }

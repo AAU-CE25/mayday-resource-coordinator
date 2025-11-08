@@ -1,11 +1,12 @@
-"use client"
+'use client'
 
-import useSWR from "swr"
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api-client'
 
 export function useEvents() {
-  return useSWR("/api/events", fetcher, {
-    refreshInterval: 5000, // Refresh every 5 seconds for real-time updates
+  return useQuery({
+    queryKey: ['events'],
+    queryFn: () => api.get('/events/'),
+    refetchInterval: 5000
   })
 }
