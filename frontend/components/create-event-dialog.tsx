@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { mutate } from "swr"
+import { api } from "@/lib/api-client"
 
 interface CreateEventDialogProps {
   open: boolean
@@ -41,20 +42,16 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: formData.description,
-          priority: Number.parseInt(formData.priority),
-          status: formData.status,
-          location: {
-            address: formData.address,
-            latitude: Number.parseFloat(formData.latitude) || -12.8432905,
-            longitude: Number.parseFloat(formData.longitude) || 175.065665,
-          },
-        }),
-      })
+      const response = await api.post("/events/", {
+      description: formData.description,
+      priority: Number.parseInt(formData.priority),
+      status: formData.status,
+      location: {
+        address: formData.address,
+        latitude: Number.parseFloat(formData.latitude),
+        longitude: Number.parseFloat(formData.longitude),
+      },
+    })
 
       if (response.ok) {
         toast({
@@ -63,7 +60,7 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
         })
 
         // Refresh events list
-        mutate("/api/events")
+        mutate("events")
 
         // Reset form and close dialog
         setFormData({

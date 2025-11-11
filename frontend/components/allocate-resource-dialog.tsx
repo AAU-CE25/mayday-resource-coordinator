@@ -60,8 +60,8 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
           description: `${resource.name} has been allocated to the event.`,
         })
 
-        mutate("/api/resources")
-        mutate("/api/events")
+        mutate("resources")
+        mutate("events")
 
         setSelectedEventId("")
         setQuantity("1")

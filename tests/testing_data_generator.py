@@ -123,14 +123,16 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
     # --- Volunteers ---
     for _ in range(num_volunteers):
         volunteer_data = generate_random_volunteer()
-        response = post_json("volunteers", volunteer_data)
+        print(volunteer_data)
+        # response = post_json("volunteers", volunteer_data)
         if response:
             created_volunteers.append(response)
 
     # --- Events ---
     for _ in range(num_events):
         event_data = generate_random_event()
-        response = post_json("events/ingest/", event_data)
+        print(event_data)
+        # response = post_json("events/ingest/", event_data)
         if response:
             created_events.append(response)
 
@@ -144,10 +146,11 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
         volunteer_id = volunteer.get("id") or volunteer.get("volunteer", {}).get("id")
         if volunteer_id:
             resource_data = generate_random_resource_available(volunteer_id)
-            post_json("resources/available/", resource_data)
+            print(resource_data)
+            # post_json("resources/available/", resource_data)
 
     print(f"\n✅ Seed complete: {len(created_volunteers)} volunteers, {len(created_events)} events, {num_resources} resources available.")
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
-    seed_test_data(num_volunteers=2, num_events=2, num_resources=2)
+    seed_test_data(num_volunteers=0, num_events=2, num_resources=0)
