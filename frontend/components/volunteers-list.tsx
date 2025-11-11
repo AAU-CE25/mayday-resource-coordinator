@@ -21,9 +21,9 @@ export function VolunteersList() {
 
   const filteredVolunteers = volunteers?.filter((volunteer: any) => {
     const matchesSearch =
-      volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      volunteer.phone?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || volunteer.status === statusFilter
+      volunteer.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      volunteer.phonenumber.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || volunteer.availability === statusFilter
 
     return matchesSearch && matchesStatus
   })
@@ -79,18 +79,18 @@ export function VolunteersList() {
               <div className="flex items-start gap-3">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                    volunteer.status === "available"
+                    volunteer.availability === "available"
                       ? "bg-chart-2/20"
-                      : volunteer.status === "assigned"
+                      : volunteer.availability === "assigned"
                         ? "bg-chart-4/20"
                         : "bg-muted"
                   }`}
                 >
                   <User
                     className={`h-5 w-5 ${
-                      volunteer.status === "available"
+                      volunteer.availability === "available"
                         ? "text-chart-2"
-                        : volunteer.status === "assigned"
+                        : volunteer.availability === "assigned"
                           ? "text-chart-4"
                           : "text-muted-foreground"
                     }`}
@@ -99,20 +99,20 @@ export function VolunteersList() {
 
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground">{volunteer.name}</h3>
-                    {volunteer.status === "available" ? (
+                    <h3 className="font-semibold text-foreground">{volunteer.user.name}</h3>
+                    {volunteer.availability === "available" ? (
                       <UserCheck className="h-4 w-4 text-chart-2" />
-                    ) : volunteer.status === "assigned" ? (
+                    ) : volunteer.availability === "assigned" ? (
                       <UserCheck className="h-4 w-4 text-chart-4" />
                     ) : (
                       <UserX className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
 
-                  {volunteer.phone && (
+                  {volunteer.phonenumber && (
                     <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                       <Phone className="h-3 w-3" />
-                      <span>{volunteer.phone}</span>
+                      <span>{volunteer.phonenumber}</span>
                     </div>
                   )}
 
@@ -126,14 +126,14 @@ export function VolunteersList() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Badge
                       variant={
-                        volunteer.status === "available"
+                        volunteer.availability === "available"
                           ? "default"
-                          : volunteer.status === "assigned"
+                          : volunteer.availability === "assigned"
                             ? "secondary"
                             : "outline"
                       }
                     >
-                      {volunteer.status || "Available"}
+                      {volunteer.availability || "Available"}
                     </Badge>
                     {volunteer.skills &&
                       volunteer.skills.map((skill: string, idx: number) => (
@@ -151,7 +151,7 @@ export function VolunteersList() {
                     </div>
                   )}
 
-                  {volunteer.status === "available" && (
+                  {volunteer.availability === "available" && (
                     <Button
                       size="sm"
                       variant="outline"

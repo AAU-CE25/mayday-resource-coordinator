@@ -37,6 +37,10 @@ class LocationAddress(BaseModel):
     country: Optional[str] = None
 
 class LocationCreate(BaseModel):
+    street: Optional[str] = None
+    city: Optional[str] = None
+    postcode: Optional[str] = None
+    country: Optional[str] = None
     address: LocationAddress| None = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -167,7 +171,18 @@ class VolunteerResponse(BaseModel):
     user: UserResponse
     phonenumber: str
     availability: str
-    location_id: int
+    location_id: int | None = None
+    model_config = {
+        "from_attributes": True
+    }
+
+
+# ------------------ Stats ------------------
+class StatsResponse(BaseModel):
+    activeEvents: int
+    totalVolunteers: int
+    resourcesAvailable: int
+    totalLocations: int
     model_config = {
         "from_attributes": True
     }

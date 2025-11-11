@@ -141,13 +141,17 @@
 }
 
 .leaflet-popup-content-wrapper {
-  background: oklch(0.16 0 0);
+  background: rgba(20, 20, 20, 0.95) !important;
   color: oklch(0.98 0 0);
   border: 1px solid oklch(0.25 0 0);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .leaflet-popup-tip {
-  background: oklch(0.16 0 0);
+  background: rgba(20, 20, 20, 0.95) !important;
+  border-top-color: oklch(0.25 0 0) !important;
 }
 
 .leaflet-control-zoom a {

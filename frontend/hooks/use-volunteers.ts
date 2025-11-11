@@ -1,11 +1,12 @@
-"use client"
+'use client'
 
-import useSWR from "swr"
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api-client'
 
 export function useVolunteers() {
-  return useSWR("/api/volunteers", fetcher, {
-    refreshInterval: 5000,
+  return useQuery({
+    queryKey: ['volunteers'],
+    queryFn: () => api.get('/volunteers/'),
+    refetchInterval: 5000
   })
 }

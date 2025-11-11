@@ -79,8 +79,8 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
           description: "The volunteer has been successfully registered.",
         })
 
-        mutate("/api/volunteers")
-        mutate("/api/stats")
+        mutate("/volunteers")
+        mutate("/stats")
 
         setFormData({
           name: "",

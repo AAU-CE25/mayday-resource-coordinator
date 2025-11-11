@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { useEvents } from "@/hooks/use-events"
 import { mutate } from "swr"
+import { formatAddress } from "@/lib/utils"
 
 interface AllocateResourceDialogProps {
   open: boolean
@@ -59,8 +60,8 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
           description: `${resource.name} has been allocated to the event.`,
         })
 
-        mutate("/api/resources")
-        mutate("/api/event")
+        mutate("resources")
+        mutate("events")
 
         setSelectedEventId("")
         setQuantity("1")
@@ -111,7 +112,7 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
                   ) : (
                     activeEvents.map((event: any) => (
                       <SelectItem key={event.id} value={event.id}>
-                        {event.description} - {event.location.address}
+                        {event.description} - {formatAddress(event.location)}
                       </SelectItem>
                     ))
                   )}

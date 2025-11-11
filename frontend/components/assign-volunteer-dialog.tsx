@@ -57,8 +57,8 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
           description: `${volunteer.name} has been assigned to the event.`,
         })
 
-        mutate("/api/volunteers")
-        mutate("/api/event")
+        mutate("volunteers")
+        mutate("events")
 
         setSelectedEventId("")
         onOpenChange(false)

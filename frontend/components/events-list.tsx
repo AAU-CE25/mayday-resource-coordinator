@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { MapPin, AlertCircle, Plus, Search, Filter } from "lucide-react"
 import { CreateEventDialog } from "./create-event-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { formatAddress } from "@/lib/utils"
 
 interface EventsListProps {
   selectedEvent: string | null
@@ -23,9 +24,10 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   const filteredEvents = events?.filter((event: any) => {
+    const locStr = formatAddress(event.location).toLowerCase()
     const matchesSearch =
       event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.location.address.toLowerCase().includes(searchQuery.toLowerCase())
+      locStr.includes(searchQuery.toLowerCase())
     const matchesPriority = priorityFilter === "all" || event.priority.toString() === priorityFilter
     const matchesStatus = statusFilter === "all" || event.status === statusFilter
 
@@ -107,7 +109,7 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
 
                   <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="h-3 w-3" />
-                    <span>{event.location.address}</span>
+                    <span>{event.location.address.street}</span>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -151,3 +153,6 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
     </div>
   )
 }
+
+// add default export so both named and default imports work
+export default EventsList

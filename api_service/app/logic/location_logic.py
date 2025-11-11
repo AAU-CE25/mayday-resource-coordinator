@@ -2,24 +2,37 @@ from api_service.app.models import Location
 from api_service.app.data_access import LocationDAO
 from api_service.app.clients import OSMClient
 from domain.schemas import LocationCreate, LocationResponse, LocationUpdate, LocationAddress
+from api_service.app.core.config import settings
 
 class LocationLogic:
     def create_location(location: LocationCreate) -> LocationResponse:
+        print(location)
         # Check for existing location
-        existing_location: Location | None = None
-        if location.address:
-            full_address = ", ".join(
-                filter(None, [location.address.street, location.address.city, location.address.postcode, location.address.country])
+        if settings.REVERSE_GEOCODING_ENABLED:
+            existing_location: Location | None = None
+            if location.address:
+                full_address = ", ".join(
+                    filter(None, [location.address.street, location.address.city, location.address.postcode, location.address.country])
+                )
+                existing_location = LocationDAO.get_location_by_full_address(full_address)
+            elif location.latitude is not None and location.longitude is not None:
+                existing_location = LocationDAO.get_location_by_coordinates(location.latitude, location.longitude)
+            if existing_location:
+                return LocationLogic.validate_location_response(existing_location)
+            
+            # Create new location if not found
+            _location = LocationLogic.enhance_location(location)
+            response_location = LocationDAO.create_location(_location)
+        else:
+            result = Location(
+                street=location.street,
+                city=location.city,
+                postcode=location.postcode,
+                country=location.country,
+                latitude=location.latitude,
+                longitude=location.longitude
             )
-            existing_location = LocationDAO.get_location_by_full_address(full_address)
-        elif location.latitude is not None and location.longitude is not None:
-            existing_location = LocationDAO.get_location_by_coordinates(location.latitude, location.longitude)
-        if existing_location:
-            return LocationLogic.validate_location_response(existing_location)
-        
-        # Create new location if not found
-        _location = LocationLogic.enhance_location(location)
-        response_location = LocationDAO.create_location(_location)
+            response_location = LocationDAO.create_location(result)
         return LocationLogic.validate_location_response(response_location)
 
     def get_location(location_id: int) -> LocationResponse | None:
