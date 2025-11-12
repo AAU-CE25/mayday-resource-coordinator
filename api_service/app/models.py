@@ -36,6 +36,7 @@ class Volunteer(SQLModel, table=True):
     availability: str
     location_id: Optional[int] = Field(default=None, foreign_key="location.id") # added as OPTIONAL
     user_id: int = Field(default=None, foreign_key="user.id")  
+    # event_id: Optional[int] = Field(default=None, foreign_key="event.id")  # For assigned event
 
 class Location(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

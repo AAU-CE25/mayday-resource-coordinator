@@ -51,9 +51,9 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
+          {/* <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex items-center gap-2">

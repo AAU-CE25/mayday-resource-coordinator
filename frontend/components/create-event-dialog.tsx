@@ -32,7 +32,7 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
     description: "",
     priority: "2",
     status: "pending",
-    address: "",
+    street: "",
     latitude: "",
     longitude: "",
   })
@@ -42,39 +42,37 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
     setIsSubmitting(true)
 
     try {
-      const response = await api.post("/events/", {
-      description: formData.description,
-      priority: Number.parseInt(formData.priority),
-      status: formData.status,
-      location: {
-        address: formData.address,
-        latitude: Number.parseFloat(formData.latitude),
-        longitude: Number.parseFloat(formData.longitude),
-      },
-    })
+      await api.post("/events/", {
+        description: formData.description,
+        priority: Number.parseInt(formData.priority),
+        status: formData.status,
+        location: {
+          address: {
+            street: formData.street,
+          },
+          latitude: Number.parseFloat(formData.latitude),
+          longitude: Number.parseFloat(formData.longitude),
+        },
+      })
 
-      if (response.ok) {
-        toast({
-          title: "Event created",
-          description: "The emergency event has been successfully created.",
-        })
+      toast({
+        title: "Event created",
+        description: "The emergency event has been successfully created.",
+      })
 
-        // Refresh events list
-        mutate("events")
+      // Refresh events list
+      mutate("/events")
 
-        // Reset form and close dialog
-        setFormData({
-          description: "",
-          priority: "2",
-          status: "pending",
-          address: "",
-          latitude: "",
-          longitude: "",
-        })
-        onOpenChange(false)
-      } else {
-        throw new Error("Failed to create event")
-      }
+      // Reset form and close dialog
+      setFormData({
+        description: "",
+        priority: "2",
+        status: "pending",
+        street: "",
+        latitude: "",
+        longitude: "",
+      })
+      onOpenChange(false)
     } catch (error) {
       toast({
         title: "Error",
@@ -146,8 +144,8 @@ export function CreateEventDialog({ open, onOpenChange }: CreateEventDialogProps
               <Input
                 id="address"
                 placeholder="Enter location address..."
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                value={formData.street}
+                onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                 required
               />
             </div>
