@@ -35,12 +35,14 @@ def generate_copenhagen_location():
     """Generate a fake location within or near Copenhagen."""
 
     location = {
-        "street": fake.street_address(),
-        "city": "Copenhagen",
-        "country": "Denmark",
-        "postcode": random.choice(["1050", "2200", "2300", "2100", "2450"]),
         "latitude": COPENHAGEN_COORDS["lat"] + random.uniform(-0.05, 0.05),
         "longitude": COPENHAGEN_COORDS["lon"] + random.uniform(-0.05, 0.05),
+        "address": {
+            "street": fake.street_address(),
+            "city": "Copenhagen",
+            "postcode": random.choice(["1050", "2200", "2300", "2100", "2450"]),
+            "country": "Denmark"    
+        }
     }
 
     return location
@@ -125,14 +127,14 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
         volunteer_data = generate_random_volunteer()
         print(volunteer_data)
         # response = post_json("volunteers", volunteer_data)
-        if response:
-            created_volunteers.append(response)
+        # if response:
+        #     created_volunteers.append(response)
 
     # --- Events ---
     for _ in range(num_events):
         event_data = generate_random_event()
         print(event_data)
-        # response = post_json("events/ingest/", event_data)
+        response = post_json("events/ingest/", event_data)
         if response:
             created_events.append(response)
 

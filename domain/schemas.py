@@ -37,14 +37,13 @@ class LocationAddress(BaseModel):
     country: Optional[str] = None
 
 class LocationCreate(BaseModel):
-    street: Optional[str] = None
-    city: Optional[str] = None
-    postcode: Optional[str] = None
-    country: Optional[str] = None
-    address: LocationAddress| None = None
+    # street: Optional[str] = None
+    # city: Optional[str] = None
+    # postcode: Optional[str] = None
+    # country: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    
+    address: LocationAddress| None = None
 
 class LocationUpdate(BaseModel):
     id: int

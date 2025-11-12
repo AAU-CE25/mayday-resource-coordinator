@@ -6,7 +6,7 @@ from api_service.app.core.config import settings
 
 class LocationLogic:
     def create_location(location: LocationCreate) -> LocationResponse:
-        print(location)
+
         # Check for existing location
         if settings.REVERSE_GEOCODING_ENABLED:
             existing_location: Location | None = None
@@ -25,10 +25,10 @@ class LocationLogic:
             response_location = LocationDAO.create_location(_location)
         else:
             result = Location(
-                street=location.street,
-                city=location.city,
-                postcode=location.postcode,
-                country=location.country,
+                street=location.address.street,
+                city=location.address.city,
+                postcode=location.address.postcode,
+                country=location.address.country,
                 latitude=location.latitude,
                 longitude=location.longitude
             )
