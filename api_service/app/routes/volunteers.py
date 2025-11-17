@@ -10,6 +10,15 @@ router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 def create_volunteer_endpoint(volunteerCreate: VolunteerCreate):
     return VolunteerLogic.create_volunteer(volunteerCreate)
 
+@router.get("/active", response_model=list[VolunteerResponse])
+def read_active_volunteers(
+    event_id: Optional[int] = Query(None, description="Filter by event ID"),
+    skip: int = Query(0, ge=0, description="Number of rows to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of rows to return")
+):
+    """Get all volunteers with status='active'. Optionally filter by event_id. Allows duplicate user/event pairs."""
+    return VolunteerLogic.get_active_volunteers(event_id=event_id, skip=skip, limit=limit)
+
 @router.get("/", response_model=list[VolunteerResponse])
 def read_volunteers(
     skip: int = Query(0, ge=0, description="Number of rows to skip"),
