@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { Event, Volunteer } from "@/lib/types"
 import { createVolunteer } from "@/lib/api-client"
+import { useAuth } from "@/lib/auth-context"
 
 interface EventDetailsDialogProps {
   event: Event
@@ -16,9 +17,9 @@ interface EventDetailsDialogProps {
  * Shows event information and allows user to join as volunteer
  */
 export function EventDetailsDialog({ event, volunteers, onClose, onVolunteerJoined }: EventDetailsDialogProps) {
+  const { user } = useAuth()
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [userId, setUserId] = useState<string>("")
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -39,14 +40,8 @@ export function EventDetailsDialog({ event, volunteers, onClose, onVolunteerJoin
   }
 
   const handleJoinEvent = async () => {
-    if (!userId.trim()) {
-      setError("Please enter your user ID")
-      return
-    }
-
-    const userIdNum = parseInt(userId)
-    if (isNaN(userIdNum) || userIdNum <= 0) {
-      setError("Please enter a valid user ID")
+    if (!user) {
+      setError("You must be logged in to join an event")
       return
     }
 
@@ -54,9 +49,9 @@ export function EventDetailsDialog({ event, volunteers, onClose, onVolunteerJoin
     setError(null)
 
     try {
-      await createVolunteer(userIdNum, event.id)
+      await createVolunteer(user.id, event.id)
       onVolunteerJoined()
-      // Don't close dialog automatically - let user see the success state
+      onClose() // Close dialog after joining so the app can navigate to My Event tab
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join event")
     } finally {
@@ -175,51 +170,51 @@ export function EventDetailsDialog({ event, volunteers, onClose, onVolunteerJoin
           {/* Join Event Section */}
           <div className="border-t border-gray-200 pt-4">
             <h4 className="font-semibold text-gray-900 mb-3">Declare Your Readiness</h4>
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Your User ID
-                </label>
-                <input
-                  id="userId"
-                  type="number"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="Enter your user ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={isJoining}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter your user ID to join this event as a volunteer
-                </p>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-                  {error}
+            {user ? (
+              <div className="space-y-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-900 font-medium mb-1">Joining as:</p>
+                  <p className="text-blue-800 font-semibold">{user.name}</p>
+                  <p className="text-blue-700 text-sm">{user.email}</p>
                 </div>
-              )}
 
-              <button
-                onClick={handleJoinEvent}
-                disabled={isJoining}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-              >
-                {isJoining ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Joining...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Join as Volunteer</span>
-                  </>
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+                    {error}
+                  </div>
                 )}
-              </button>
-            </div>
+
+                <button
+                  onClick={handleJoinEvent}
+                  disabled={isJoining}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  {isJoining ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Joining...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Join as Volunteer</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                <p className="text-yellow-800 mb-3">You must be logged in to join this event</p>
+                <button
+                  onClick={onClose}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

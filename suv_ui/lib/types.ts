@@ -22,6 +22,7 @@ export interface User {
   name: string
   email: string
   phonenumber?: string | null
+  role?: string
 }
 
 export interface Volunteer {
@@ -44,4 +45,24 @@ export interface Event {
   activeVolunteers?: number  // Count of active volunteers
 }
 
-export type TabType = "events" | "profile"
+export type TabType = "events" | "my-event" | "profile"
+
+// ============= Auth Types =============
+
+export interface AuthTokenResponse {
+  access_token: string
+  token_type: string
+}
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
+export interface RegisterData {
+  name: string
+  email: string
+  phonenumber: string
+  password: string
+  role?: string
+}

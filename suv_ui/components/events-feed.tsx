@@ -24,9 +24,14 @@ export function EventsFeed() {
       setError(null)
       const data = await fetchEvents()
       
+      // Filter only active events and sort by priority (1 = highest)
+      const activeEvents = data
+        .filter(event => event.status.toLowerCase() === 'active')
+        .sort((a, b) => a.priority - b.priority)
+      
       // Fetch volunteer counts for each event
       const eventsWithVolunteers = await Promise.all(
-        data.map(async (event) => {
+        activeEvents.map(async (event) => {
           try {
             const volunteers = await fetchActiveVolunteers(event.id)
             return { ...event, activeVolunteers: volunteers.length }
