@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Event } from "@/lib/types"
-import { fetchEvents } from "@/lib/api-client"
+import type { Event, Volunteer } from "@/lib/types"
+import { fetchEvents, fetchActiveVolunteers } from "@/lib/api-client"
 import { EventCard } from "./event-card"
+import { EventDetailsDialog } from "./event-details-dialog"
 
 /**
  * Events feed component
@@ -13,28 +14,73 @@ export function EventsFeed() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [selectedEventVolunteers, setSelectedEventVolunteers] = useState<Volunteer[]>([])
+  const [loadingVolunteers, setLoadingVolunteers] = useState(false)
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await fetchEvents()
+      
+      // Fetch volunteer counts for each event
+      const eventsWithVolunteers = await Promise.all(
+        data.map(async (event) => {
+          try {
+            const volunteers = await fetchActiveVolunteers(event.id)
+            return { ...event, activeVolunteers: volunteers.length }
+          } catch (err) {
+            console.error(`Failed to fetch volunteers for event ${event.id}:`, err)
+            return { ...event, activeVolunteers: 0 }
+          }
+        })
+      )
+      
+      setEvents(eventsWithVolunteers)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load events")
+      console.error("Error loading events:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadEvents() {
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await fetchEvents()
-        setEvents(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load events")
-        console.error("Error loading events:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadEvents()
     
     // Refresh events every 30 seconds
     const interval = setInterval(loadEvents, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  const handleEventClick = async (event: Event) => {
+    setSelectedEvent(event)
+    setLoadingVolunteers(true)
+    
+    try {
+      const volunteers = await fetchActiveVolunteers(event.id)
+      setSelectedEventVolunteers(volunteers)
+    } catch (err) {
+      console.error("Failed to fetch volunteers:", err)
+      setSelectedEventVolunteers([])
+    } finally {
+      setLoadingVolunteers(false)
+    }
+  }
+
+  const handleCloseDialog = () => {
+    setSelectedEvent(null)
+    setSelectedEventVolunteers([])
+  }
+
+  const handleVolunteerJoined = () => {
+    // Reload volunteers and events to reflect the change
+    if (selectedEvent) {
+      handleEventClick(selectedEvent)
+    }
+    loadEvents()
+  }
 
   if (loading) {
     return (
@@ -102,17 +148,29 @@ export function EventsFeed() {
   }
 
   return (
-    <div className="pb-4">
-      <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-        <p className="text-sm text-gray-600">
-          <span className="font-semibold">{events.length}</span> active event{events.length !== 1 ? 's' : ''}
-        </p>
+    <>
+      <div className="pb-4">
+        <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+          <p className="text-sm text-gray-600">
+            <span className="font-semibold">{events.length}</span> active event{events.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="p-4 space-y-3">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} onClick={() => handleEventClick(event)} />
+          ))}
+        </div>
       </div>
-      <div className="p-4 space-y-3">
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
-    </div>
+
+      {/* Event Details Dialog */}
+      {selectedEvent && !loadingVolunteers && (
+        <EventDetailsDialog
+          event={selectedEvent}
+          volunteers={selectedEventVolunteers}
+          onClose={handleCloseDialog}
+          onVolunteerJoined={handleVolunteerJoined}
+        />
+      )}
+    </>
   )
 }

@@ -3,12 +3,14 @@
  * Base URL: http://localhost:8000
  */
 
+import type { Volunteer } from "./types"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 /**
  * Generic fetch wrapper with error handling
  */
-async function apiFetch<T>(endpoint: string): Promise<T> {
+async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
   
   try {
@@ -17,6 +19,7 @@ async function apiFetch<T>(endpoint: string): Promise<T> {
         "Content-Type": "application/json",
       },
       cache: "no-store", // Always fetch fresh data
+      ...options,
     })
 
     if (!response.ok) {
@@ -53,4 +56,38 @@ export async function fetchEvents() {
       longitude?: number | null
     }
   }>>("/events")
+}
+
+/**
+ * Fetch active volunteers for a specific event
+ */
+export async function fetchActiveVolunteers(eventId: number): Promise<Volunteer[]> {
+  return apiFetch<Volunteer[]>(`/volunteers/active?event_id=${eventId}`)
+}
+
+/**
+ * Create a new volunteer assignment (user joining an event)
+ */
+export async function createVolunteer(userId: number, eventId: number): Promise<Volunteer> {
+  return apiFetch<Volunteer>("/volunteers/", {
+    method: "POST",
+    body: JSON.stringify({
+      user_id: userId,
+      event_id: eventId,
+      status: "active",
+    }),
+  })
+}
+
+/**
+ * Mark volunteer as completed (user leaving an event)
+ */
+export async function completeVolunteer(volunteerId: number): Promise<Volunteer> {
+  return apiFetch<Volunteer>(`/volunteers/${volunteerId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      id: volunteerId,
+      status: "completed",
+    }),
+  })
 }

@@ -17,6 +17,22 @@ export interface Location {
   longitude?: number | null
 }
 
+export interface User {
+  id: number
+  name: string
+  email: string
+  phonenumber?: string | null
+}
+
+export interface Volunteer {
+  id: number
+  user: User
+  event_id: number
+  status: string
+  create_time: string
+  completion_time?: string | null
+}
+
 export interface Event {
   id: number
   description: string
@@ -25,13 +41,7 @@ export interface Event {
   create_time: string
   modified_time: string
   location: Location
-}
-
-export interface User {
-  name: string
-  role: string
-  email: string
-  phone: string
+  activeVolunteers?: number  // Count of active volunteers
 }
 
 export type TabType = "events" | "profile"

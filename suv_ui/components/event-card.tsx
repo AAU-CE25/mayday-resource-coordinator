@@ -2,13 +2,14 @@ import type { Event } from "@/lib/types"
 
 interface EventCardProps {
   event: Event
+  onClick: () => void
 }
 
 /**
  * Individual event card component
  * Displays event details in a mobile-friendly card format
  */
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, onClick }: EventCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("en-DK", {
@@ -41,7 +42,10 @@ export function EventCard({ event }: EventCardProps) {
   const locationText = event.location.address?.city || event.location.address?.street || "Location not specified"
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 active:scale-[0.98] transition-transform">
+    <button
+      onClick={onClick}
+      className="w-full bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 active:scale-[0.98] transition-transform hover:border-blue-300 hover:shadow-md text-left"
+    >
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900 text-base leading-tight mb-1">
@@ -83,7 +87,22 @@ export function EventCard({ event }: EventCardProps) {
             {formatDate(event.create_time)}
           </div>
         </div>
+        
+        {/* Volunteer count badge */}
+        {event.activeVolunteers !== undefined && (
+          <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            <span>{event.activeVolunteers} helping</span>
+          </div>
+        )}
       </div>
-    </div>
+    </button>
   )
 }

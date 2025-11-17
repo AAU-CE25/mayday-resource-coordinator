@@ -168,4 +168,4 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
-    seed_test_data(num_volunteers=2, num_events=2, num_resources=2)
+    seed_test_data(num_volunteers=20, num_events=20, num_resources=2)
