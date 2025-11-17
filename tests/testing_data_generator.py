@@ -75,19 +75,12 @@ def generate_random_event():
     }
     return data
 
-def generate_random_volunteer():
-    user = {
-        "name": fake.name(),
-        "email": fake.unique.email(),
-        "password": "password123",
-        "role": random.choice(["SUV", "VC"]),
-    }
-
+def generate_random_volunteer(user_id: int, event_id: int = None):
+    """Generate a random volunteer for an existing user and optionally an event."""
     volunteer = {
-        "user": user,
-        "phonenumber": fake.phone_number(),
-        "availability": random.choice(["available", "busy", "off-duty"]),
-        "location_id": None,
+        "user_id": user_id,
+        "event_id": event_id,
+        "status": random.choice(["active", "completed"]),
     }
     return volunteer
 
@@ -121,22 +114,42 @@ def post_json(endpoint: str, payload: dict):
 def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
     created_volunteers = []
     created_events = []
+    created_users = []
 
-    # --- Volunteers ---
-    for _ in range(num_volunteers):
-        volunteer_data = generate_random_volunteer()
-        print(volunteer_data)
-        # response = post_json("volunteers", volunteer_data)
-        # if response:
-        #     created_volunteers.append(response)
-
-    # --- Events ---
+    # --- Events (create first so we can assign volunteers to them) ---
     for _ in range(num_events):
         event_data = generate_random_event()
         print(event_data)
         response = post_json("events/ingest/", event_data)
         if response:
             created_events.append(response)
+
+    # --- Users (needed for volunteers) ---
+    for _ in range(num_volunteers):
+        user_data = {
+            "name": fake.name(),
+            "email": fake.unique.email(),
+            "phonenumber": fake.phone_number(),
+            "password": "password123",
+            "role": random.choice(["SUV", "VC"]),
+        }
+        print(user_data)
+        response = post_json("users", user_data)
+        if response:
+            created_users.append(response)
+
+    # --- Volunteers ---
+    for user in created_users:
+        user_id = user.get("id")
+        if user_id and created_events:
+            # Assign volunteer to a random event
+            event = random.choice(created_events)
+            event_id = event.get("id")
+            volunteer_data = generate_random_volunteer(user_id, event_id)
+            print(volunteer_data)
+            response = post_json("volunteers", volunteer_data)
+            if response:
+                created_volunteers.append(response)
 
     # --- Resources available ---
     for _ in range(num_resources):
@@ -149,9 +162,9 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
         if volunteer_id:
             resource_data = generate_random_resource_available(volunteer_id)
             print(resource_data)
-            # post_json("resources/available/", resource_data)
+            post_json("resources/available/", resource_data)
 
-    print(f"\n✅ Seed complete: {len(created_volunteers)} volunteers, {len(created_events)} events, {num_resources} resources available.")
+    print(f"\n✅ Seed complete: {len(created_events)} events, {len(created_users)} users, {len(created_volunteers)} volunteers, {num_resources} resources available.")
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
