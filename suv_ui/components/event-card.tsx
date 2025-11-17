@@ -11,7 +11,7 @@ interface EventCardProps {
 export function EventCard({ event }: EventCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-DK", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
