@@ -9,10 +9,6 @@ from api_service.app.logic import UserLogic
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.post("/", response_model=UserResponse)
-def create_user_endpoint(userCreate: UserCreate):
-    return UserLogic.create_user(userCreate)
-
 @router.get("/", response_model=list[UserResponse])
 def read_users(
     skip: int = Query(0, ge=0, description="Number of rows to skip"),

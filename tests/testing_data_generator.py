@@ -131,10 +131,10 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
             "email": fake.unique.email(),
             "phonenumber": fake.phone_number(),
             "password": "password123",
-            "role": random.choice(["SUV", "VC"]),
+            "role": "SUV",
         }
         print(user_data)
-        response = post_json("users", user_data)
+        response = post_json("auth/register", user_data)
         if response:
             created_users.append(response)
 
