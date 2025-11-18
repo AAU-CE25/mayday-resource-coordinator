@@ -2,8 +2,17 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# HOT FIX FOR DEPRECATED bcrypt ROUNDS ISSUE
+# FIX LATER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# pwd_context = CryptContext(
+#     schemes=["bcrypt"],
+#     deprecated="auto",
+#     bcrypt__rounds=12  # Optional: explicitly set rounds for security
+# )
+
+
 def hash_password(password: str) -> str:
-    print(password)
     # Truncate password to 72 bytes for bcrypt, then decode back to string
     password_bytes = password.encode("utf-8")[:72]
     safe_password = password_bytes.decode("utf-8", errors="ignore")

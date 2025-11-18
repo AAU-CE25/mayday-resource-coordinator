@@ -126,9 +126,9 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
     for _ in range(num_volunteers):
         volunteer_data = generate_random_volunteer()
         print(volunteer_data)
-        # response = post_json("volunteers", volunteer_data)
-        # if response:
-        #     created_volunteers.append(response)
+        response = post_json("volunteers", volunteer_data)
+        if response:
+            created_volunteers.append(response)
 
     # --- Events ---
     for _ in range(num_events):
@@ -155,4 +155,4 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
-    seed_test_data(num_volunteers=2, num_events=2, num_resources=2)
+    seed_test_data(num_volunteers=1, num_events=0, num_resources=0)
