@@ -6,17 +6,15 @@ from typing import Optional
 load_dotenv()
 
 class Settings(BaseSettings):
-    # Appl settings
-    ENVIRONMENT: str = "local"
-
     # Database credentials
     DATABASE_URL: Optional[str] = None
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    POSTGRES_HOST: str
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
+    POSTGRES_HOST: Optional[str] = None
     POSTGRES_PORT: int = 5432
 
+    # Application settings
     SECRET_KEY: str
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
