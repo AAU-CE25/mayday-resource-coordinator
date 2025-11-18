@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useResources } from "@/hooks/use-resources"
+import { useResourcesAvailable } from "@/hooks/use-resources-available"
+import { useResourcesNeeded } from "@/hooks/use-resources-needed"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,14 +13,15 @@ import { AddResourceDialog } from "./add-resource-dialog"
 import { AllocateResourceDialog } from "./allocate-resource-dialog"
 
 export function ResourcesList() {
-  const { data: resources, isLoading } = useResources()
+  const { data: resourcesAvailable, isLoading: isLoadingAvailable } = useResourcesAvailable()
+  const { data: resourcesNeeded, isLoading: isLoadingNeeded } = useResourcesNeeded()
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isAllocateDialogOpen, setIsAllocateDialogOpen] = useState(false)
   const [selectedResource, setSelectedResource] = useState<any>(null)
 
-  const available = resources?.available || []
-  const needed = resources?.needed || []
+  const available = resourcesAvailable || []
+  const needed = resourcesNeeded || []
 
   const filteredAvailable = available.filter((resource: any) =>
     resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -29,8 +31,16 @@ export function ResourcesList() {
     resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  if (isLoading) {
+  if (isLoadingAvailable || isLoadingNeeded) {
     return <div className="text-center text-muted-foreground">Loading resources...</div>
+  }
+
+  if (!resourcesAvailable || !resourcesNeeded) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center text-muted-foreground">Failed to load resources</div>
+      </div>
+    )
   }
 
   const handleAllocate = (resource: any) => {
@@ -50,9 +60,9 @@ export function ResourcesList() {
             className="pl-9"
           />
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
+        {/* <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
           <Plus className="h-4 w-4" />
-        </Button>
+        </Button> */}
       </div>
 
       <Tabs defaultValue="available" className="w-full">

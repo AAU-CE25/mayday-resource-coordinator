@@ -3,10 +3,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
 
-export function useStats() {
+export function useResourcesNeeded() {
   return useQuery({
-    queryKey: ['stats'],
-    queryFn: () => api.get('/stats/'),
+    queryKey: ['resources/needed'],
+    queryFn: () => api.get('/resources/needed/'),
     refetchInterval: 3000
   })
 }

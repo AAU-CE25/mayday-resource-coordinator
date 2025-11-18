@@ -34,12 +34,13 @@ class Volunteer(SQLModel, table=True):
     id: int = Field(primary_key=True) 
     phonenumber: str
     availability: str
-    location_id: int = Field(default=None, foreign_key="location.id")
-    user_id: int = Field(foreign_key="user.id")  
+    location_id: Optional[int] = Field(default=None, foreign_key="location.id") # added as OPTIONAL
+    user_id: int = Field(default=None, foreign_key="user.id")  
+    # event_id: Optional[int] = Field(default=None, foreign_key="event.id")  # For assigned event
 
 class Location(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    full_address: Optional[str] = None
+    # full_address: Optional[str] = None
     street: Optional[str] = None
     city: Optional[str] = None
     postcode: Optional[str] = None

@@ -3,3 +3,4 @@ from .event_dao import EventDAO as EventDAO
 from .location_dao import LocationDAO as LocationDAO
 from .resource_dao import ResourceDAO as ResourceDAO
 from .volunteer_dao import VolunteerDAO as VolunteerDAO
+from .stats_dao import StatsDAO as StatsDAO

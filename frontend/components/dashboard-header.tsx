@@ -7,8 +7,8 @@ import { NotificationsPopover } from "./notifications-popover"
 import { useNotifications } from "@/hooks/use-notifications"
 
 export function Header() {
-  const { data: notifications } = useNotifications()
-  const unreadCount = notifications?.filter((n: any) => !n.read).length || 0
+  // const { data: notifications } = useNotifications()
+  // const unreadCount = notifications?.filter((n: any) => !n.read).length || 0
 
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
@@ -28,7 +28,7 @@ export function Header() {
           <span className="text-sm font-medium text-foreground">System Active</span>
         </div>
 
-        <NotificationsPopover>
+        {/* <NotificationsPopover>
           <Button variant="outline" size="icon" className="relative bg-transparent">
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
@@ -40,7 +40,7 @@ export function Header() {
               </Badge>
             )}
           </Button>
-        </NotificationsPopover>
+        </NotificationsPopover> */}
       </div>
     </header>
   )

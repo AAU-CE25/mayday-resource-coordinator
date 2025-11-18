@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast"
 import { mutate } from "swr"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
+import { api } from "@/lib/api-client"
 
 interface AddVolunteerDialogProps {
   open: boolean
@@ -31,7 +32,7 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    address: "",
+    street: "",
     latitude: "",
     longitude: "",
     status: "available",
@@ -55,46 +56,54 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/volunteers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
+      await api.post("/volunteers", {
+        name: formData.name,
+        phone: formData.phone,
           status: formData.status,
           skills,
-          location: formData.address
-            ? {
-                address: formData.address,
-                latitude: Number.parseFloat(formData.latitude) || -12.8432905,
-                longitude: Number.parseFloat(formData.longitude) || 175.065665,
-              }
-            : null,
-        }),
+          location: {
+            address: {
+              street: formData.street,
+            },
+            latitude: Number.parseFloat(formData.latitude),
+            longitude: Number.parseFloat(formData.longitude),
+          },
       })
 
-      if (response.ok) {
+      /*
+            await api.post("/events/", {
+              description: formData.description,
+              priority: Number.parseInt(formData.priority),
+              status: formData.status,
+              location: {
+                address: {
+                  street: formData.street,
+                },
+                latitude: Number.parseFloat(formData.latitude),
+                longitude: Number.parseFloat(formData.longitude),
+              },
+            }) */
+
+
         toast({
           title: "Volunteer registered",
           description: "The volunteer has been successfully registered.",
         })
 
-        mutate("/api/volunteers")
-        mutate("/api/stats")
+        mutate("/volunteers")
+        mutate("/stats")
 
         setFormData({
           name: "",
           phone: "",
-          address: "",
+          street: "",
           latitude: "",
           longitude: "",
           status: "available",
         })
         setSkills([])
         onOpenChange(false)
-      } else {
-        throw new Error("Failed to register volunteer")
-      }
+
     } catch (error) {
       toast({
         title: "Error",
@@ -187,8 +196,8 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
               <Input
                 id="address"
                 placeholder="Enter location address..."
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                value={formData.street}
+                onChange={(e) => setFormData({ ...formData, street: e.target.value })}
               />
             </div>
 

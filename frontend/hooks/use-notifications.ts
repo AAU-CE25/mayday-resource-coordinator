@@ -1,11 +1,14 @@
-"use client"
+// NEW HOOK IMPLEMENTATION
 
-import useSWR from "swr"
+'use client'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api-client'
 
 export function useNotifications() {
-  return useSWR("/api/notifications", fetcher, {
-    refreshInterval: 3000, // Check for new notifications every 3 seconds
+  return useQuery({
+    queryKey: ['events'],
+    queryFn: () => api.get('/notifications/'),
+    refetchInterval: 5000
   })
 }

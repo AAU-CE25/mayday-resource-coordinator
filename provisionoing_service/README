@@ -1,0 +1,49 @@
+[User (Authorized) Session Request]
+      │
+      ▼
+  [API Gateway]
+      │
+      ▼
+  [Lambda Controller]
+      │
+      ├─ ✅ Checks user authorization in [DynamoDB Users Table]
+      │      - Only authorized users can start sessions
+      │
+      ├─ ✅ Retrieves user s persistent data volume info from [DynamoDB Volumes Table]
+      │
+      └─ ✅ Triggers ECS Fargate:
+            ├─ API Container (per Session)
+            └─ DB Container (per Session)
+                 - Mounts persistent storage (e.g., EFS) associated with user
+      │
+      ▼
+  Return API endpoint & DB credentials to user
+      │
+      └─ Optional auto-cleanup after session
+           - Lambda + EventBridge terminate ECS tasks if needed
+           - Optionally update DynamoDB with session logs
+
+provisioning_service/
+│
+├── lambda/
+│   ├── controller.py           # Lambda handler for session provisioning
+│   ├── requirements.txt        # Python dependencies (boto3, etc.)
+│
+├── ecs/
+│   ├── task_definition.json    # ECS Fargate task definition (API + DB container)
+│   ├── Dockerfile.api          # Dockerfile for API container
+│   └── Dockerfile.db           # Dockerfile for PostgreSQL container
+│
+├── terraform/
+│   ├── main.tf                 # Root Terraform module (VPC, subnets, ECS cluster, Lambda, DynamoDB)
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── lambda.tf               # Lambda + IAM + API Gateway
+│   ├── ecs.tf                  # ECS Cluster, Fargate service/task definition
+│   └── dynamodb.tf             # Users table + Volumes table
+│
+├── scripts/
+│   └── deploy.sh               # Helper script to deploy Lambda + ECS + Terraform
+│
+└── README.md
+
