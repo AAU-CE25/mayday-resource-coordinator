@@ -35,6 +35,11 @@ export default function Home() {
     await refresh()
   }
 
+  const handleVolunteerJoined = async () => {
+    // Refresh assignment status to detect new volunteer record
+    await refresh()
+  }
+
   if (loading && user) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50 items-center justify-center">

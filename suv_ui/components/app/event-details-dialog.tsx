@@ -10,13 +10,22 @@ interface EventDetailsDialogProps {
   volunteers: Volunteer[]
   onClose: () => void
   onVolunteerJoined: () => void
+  userHasActiveEvent?: boolean
+  activeEventDescription?: string
 }
 
 /**
  * Event details dialog component
  * Shows event information and allows user to join as volunteer
  */
-export function EventDetailsDialog({ event, volunteers, onClose, onVolunteerJoined }: EventDetailsDialogProps) {
+export function EventDetailsDialog({ 
+  event, 
+  volunteers, 
+  onClose, 
+  onVolunteerJoined,
+  userHasActiveEvent = false,
+  activeEventDescription = ""
+}: EventDetailsDialogProps) {
   const { user } = useAuth()
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -172,37 +181,66 @@ export function EventDetailsDialog({ event, volunteers, onClose, onVolunteerJoin
             <h4 className="font-semibold text-gray-900 mb-3">Declare Your Readiness</h4>
             {user ? (
               <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-900 font-medium mb-1">Joining as:</p>
-                  <p className="text-blue-800 font-semibold">{user.name}</p>
-                  <p className="text-blue-700 text-sm">{user.email}</p>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  onClick={handleJoinEvent}
-                  disabled={isJoining}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {isJoining ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Joining...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                {userHasActiveEvent ? (
+                  /* User already has an active event - show warning */
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      <span>Join as Volunteer</span>
-                    </>
-                  )}
-                </button>
+                      <div className="flex-1">
+                        <p className="font-semibold text-amber-900 text-sm mb-1">Already Volunteering</p>
+                        <p className="text-amber-800 text-sm">
+                          You are currently assigned to another event: <span className="font-medium">{activeEventDescription}</span>
+                        </p>
+                        <p className="text-amber-700 text-xs mt-2">
+                          You must leave your current event before joining a new one.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className="w-full bg-amber-100 hover:bg-amber-200 text-amber-900 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                ) : (
+                  /* User can join - show normal flow */
+                  <>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm text-blue-900 font-medium mb-1">Joining as:</p>
+                      <p className="text-blue-800 font-semibold">{user.name}</p>
+                      <p className="text-blue-700 text-sm">{user.email}</p>
+                    </div>
+
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+                        {error}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleJoinEvent}
+                      disabled={isJoining}
+                      className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isJoining ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Joining...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span>Join as Volunteer</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">

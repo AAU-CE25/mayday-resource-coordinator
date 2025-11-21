@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import type { Event, Volunteer } from "@/lib/types"
 import { fetchEvents, fetchActiveVolunteers } from "@/lib/api-client"
+import { useAuth } from "@/lib/auth-context"
+import { useActiveAssignment } from "@/hooks/use-active-assignment"
 import { EventCard } from "./event-card"
 import { EventDetailsDialog } from "./event-details-dialog"
 
@@ -10,7 +12,13 @@ import { EventDetailsDialog } from "./event-details-dialog"
  * Events feed component
  * Fetches and displays list of events from the API
  */
-export function EventsFeed() {
+interface EventsFeedProps {
+  onVolunteerJoined?: () => void
+}
+
+export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
+  const { user } = useAuth()
+  const { activeEvent, volunteerId } = useActiveAssignment(user)
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +93,11 @@ export function EventsFeed() {
       handleEventClick(selectedEvent)
     }
     loadEvents()
+    
+    // Notify parent component that user joined an event
+    if (onVolunteerJoined) {
+      onVolunteerJoined()
+    }
   }
 
   if (loading) {
@@ -174,6 +187,8 @@ export function EventsFeed() {
           volunteers={selectedEventVolunteers}
           onClose={handleCloseDialog}
           onVolunteerJoined={handleVolunteerJoined}
+          userHasActiveEvent={!!activeEvent && !!volunteerId}
+          activeEventDescription={activeEvent?.description || ""}
         />
       )}
     </>
