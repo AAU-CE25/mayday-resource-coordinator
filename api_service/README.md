@@ -19,23 +19,23 @@ The API service follows a layered architecture pattern:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   API Routes Layer                   │
-│         (FastAPI endpoints - HTTP handlers)          │
+│                   API Routes Layer                  │
+│         (FastAPI endpoints - HTTP handlers)         │
 └────────────────────┬────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────┐
-│                   Logic Layer                        │
-│        (Business logic & data transformation)        │
+│                   Logic Layer                       │
+│        (Business logic & data transformation)       │
 └────────────────────┬────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────┐
-│              Data Access Layer (DAO)                 │
-│          (Database operations & queries)             │
+│              Data Access Layer (DAO)                │
+│          (Database operations & queries)            │
 └────────────────────┬────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────┐
-│                   Database                           │
-│              (SQLite with SQLModel)                  │
+│                   Database                          │
+│              (SQLite with SQLModel)                 │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -94,7 +94,7 @@ api_service/
 ┌─────────────┐
 │    User     │
 │─────────────│
-│ id (PK)     │◄──────────┐
+│ id (PK)     │◄───────-───┐
 │ name        │            │
 │ email       │            │
 │ phonenumber │            │
