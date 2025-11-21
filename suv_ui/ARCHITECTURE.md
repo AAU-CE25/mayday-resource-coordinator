@@ -171,12 +171,44 @@ fetchEvents()                // Get all events
 fetchActiveVolunteers(id)    // Get volunteers for event
 
 // ====== Volunteers ======
-fetchUserVolunteers(userId)      // Get user's active volunteers
-fetchAllUserVolunteers(userId)   // Get all volunteers (active + completed)
-fetchUserEventVolunteers(u, e)   // Get volunteers by user & event
-createVolunteer(userId, eventId) // Join an event
-completeVolunteer(id)            // Leave an event
+fetchUserVolunteers(userId)           // Get user's active volunteers
+fetchAllUserVolunteers(userId, status?) // Get all volunteers with optional status filter
+                                       // Uses: GET /volunteers/?user_id={userId}&status={status}
+fetchUserEventVolunteers(u, e)        // Get volunteers by user & event
+createVolunteer(userId, eventId)      // Join an event
+completeVolunteer(id)                 // Leave an event
 ```
+
+### Backend Query Parameters (Volunteers Endpoint)
+The backend now supports flexible filtering on the `/volunteers/` endpoint:
+
+```typescript
+// Available query parameters:
+GET /volunteers/                          // All volunteers
+GET /volunteers/?user_id={userId}         // All assignments for specific user
+GET /volunteers/?event_id={eventId}       // All volunteers for specific event
+GET /volunteers/?status={status}          // Filter by status (active/completed/cancelled)
+GET /volunteers/?user_id=5&status=active  // Combine filters
+GET /volunteers/?event_id=1&user_id=5&status=active  // Multiple filters
+
+// Example usage in frontend:
+import { fetchAllUserVolunteers } from "@/lib/api-client"
+
+// Get all user's volunteers (any status)
+const allVolunteers = await fetchAllUserVolunteers(userId)
+
+// Get only completed volunteers
+const completed = await fetchAllUserVolunteers(userId, 'completed')
+
+// Get only active volunteers
+const active = await fetchAllUserVolunteers(userId, 'active')
+```
+
+**Benefits**:
+- ✅ Server-side filtering (more efficient than client-side)
+- ✅ Reduces network payload
+- ✅ Enables precise data queries
+- ✅ Supports pagination with `skip` and `limit`
 
 ### Error Handling
 ```typescript
@@ -203,7 +235,10 @@ These are the main UI components:
 - **event-details-dialog.tsx** - Modal with event details & join button
 - **events-feed.tsx** - List of all available events
 - **my-event-view.tsx** - Active event details for volunteer
-- **profile-view.tsx** - User profile with stats
+- **profile-view.tsx** - User profile with comprehensive volunteer statistics
+  - 4 stat cards: Completed Events, Hours Logged, Total Events, Active Events
+  - Volunteer history section with status badges and dates
+  - Uses `useVolunteerStats` hook for efficient data fetching
 - **tab-navigation.tsx** - Bottom nav bar
 
 ### Usage Example
@@ -294,6 +329,58 @@ const { isSubmitting, error, handleSubmit, reset } = useFormSubmit({
 - `error`: Error | null - Last error that occurred
 - `handleSubmit`: (e: FormEvent, data: T) => Promise<void> - Form handler
 - `reset`: () => void - Reset states
+
+### `useVolunteerStats(userId)`
+Fetches and calculates volunteer statistics for a user with efficient backend filtering.
+
+**Purpose**: Provide comprehensive volunteer activity metrics for profile page
+- Uses backend query parameters for efficient filtering
+- Calculates total, active, completed, and cancelled events
+- Estimates volunteer hours based on completed events
+- Handles loading and error states
+
+**Usage**:
+```typescript
+import { useVolunteerStats } from "@/hooks/use-volunteer-stats"
+
+const { stats, isLoading, error, refresh } = useVolunteerStats(user?.id)
+
+if (isLoading) return <div>Loading stats...</div>
+if (error) return <div>Error: {error.message}</div>
+
+return (
+  <div>
+    <p>Total Events: {stats.totalEvents}</p>
+    <p>Completed: {stats.completedEvents}</p>
+    <p>Active: {stats.activeEvents}</p>
+    <p>Cancelled: {stats.cancelledEvents}</p>
+    <p>Hours Logged: {stats.estimatedHours}h</p>
+  </div>
+)
+```
+
+**Parameters**:
+- `userId`: number | null | undefined - The user ID to fetch stats for
+- `autoFetch`: boolean - Whether to fetch on mount (default: true)
+
+**Returns**:
+- `stats`: VolunteerStats - Calculated statistics
+  - `totalEvents`: number - All volunteer assignments
+  - `activeEvents`: number - Currently active assignments
+  - `completedEvents`: number - Finished assignments
+  - `cancelledEvents`: number - Cancelled assignments
+  - `estimatedHours`: number - Completed events × 4 hours
+  - `volunteers`: Volunteer[] - Raw volunteer data
+- `isLoading`: boolean - Loading state
+- `error`: Error | null - Any error that occurred
+- `refresh`: () => Promise<void> - Manually refresh stats
+
+**Backend Integration**:
+Uses the new volunteer query parameters for efficient filtering:
+```typescript
+// Internally calls:
+GET /volunteers/?user_id={userId}&skip=0&limit=1000
+```
 
 ## 🐛 Troubleshooting
 
@@ -468,7 +555,15 @@ MyEventView component renders
 ---
 
 **Last Updated:** November 21, 2025
-**Version:** 3.0.0 (Hook-Based Architecture)
+**Version:** 3.1.0 (Profile Stats Enhancement)
+
+### Changelog v3.1.0
+- ✅ Added `useVolunteerStats` hook for profile statistics
+- ✅ Enhanced profile page with real volunteer stats (4 stat cards)
+- ✅ Added volunteer history section with status badges
+- ✅ Optimized `fetchAllUserVolunteers` to use backend query parameters
+- ✅ Documented volunteer endpoint query parameters (user_id, event_id, status)
+- ✅ Improved data fetching efficiency (server-side filtering)
 
 ### Changelog v3.0.0
 - ✅ Added custom hooks: `useActiveAssignment`, `useFormSubmit`

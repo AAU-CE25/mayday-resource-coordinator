@@ -200,18 +200,20 @@ export async function fetchUserVolunteers(userId: number): Promise<Volunteer[]> 
 
 /**
  * Fetch all volunteers (active and completed) for a specific user
- * This allows calculating total events attended
+ * Uses backend filtering for better performance
  */
-export async function fetchAllUserVolunteers(userId: number): Promise<Volunteer[]> {
-  // Try to fetch from general volunteers endpoint
-  // If backend doesn't support this, we'll fallback to active only
-  try {
-    const volunteers = await get<Volunteer[]>(`/volunteers/?skip=0&limit=1000`)
-    return volunteers.filter(v => v.user.id === userId)
-  } catch (error) {
-    console.warn("Falling back to active volunteers only:", error)
-    return fetchUserVolunteers(userId)
+export async function fetchAllUserVolunteers(userId: number, status?: string): Promise<Volunteer[]> {
+  const params = new URLSearchParams({
+    user_id: userId.toString(),
+    skip: '0',
+    limit: '1000'
+  })
+  
+  if (status) {
+    params.append('status', status)
   }
+  
+  return get<Volunteer[]>(`/volunteers/?${params.toString()}`)
 }
 
 /**

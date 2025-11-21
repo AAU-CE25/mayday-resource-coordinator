@@ -2,48 +2,44 @@
 
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
+import { useVolunteerStats } from "@/hooks/use-volunteer-stats"
 import { useEffect, useState } from "react"
-import { fetchAllUserVolunteers } from "@/lib/api-client"
-import type { Volunteer } from "@/lib/types"
+import { fetchEvents } from "@/lib/api-client"
+import type { Event } from "@/lib/types"
 
 /**
  * Profile view component
- * Displays authenticated user information
+ * Displays authenticated user information and volunteer statistics
  */
 export function ProfileView() {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([])
-  const [statsLoading, setStatsLoading] = useState(true)
+  const { stats, isLoading: statsLoading, error: statsError } = useVolunteerStats(user?.id)
+  const [events, setEvents] = useState<Event[]>([])
+  const [eventsLoading, setEventsLoading] = useState(true)
 
+  // Fetch events for mapping descriptions
   useEffect(() => {
-    const loadVolunteerStats = async () => {
-      if (!user) {
-        setStatsLoading(false)
-        return
-      }
-
+    const loadEvents = async () => {
       try {
-        setStatsLoading(true)
-        const userVolunteers = await fetchAllUserVolunteers(user.id)
-        setVolunteers(userVolunteers)
+        setEventsLoading(true)
+        const eventData = await fetchEvents()
+        setEvents(eventData)
       } catch (error) {
-        console.error("Failed to load volunteer stats:", error)
-        setVolunteers([])
+        console.error("Failed to load events:", error)
       } finally {
-        setStatsLoading(false)
+        setEventsLoading(false)
       }
     }
+    
+    loadEvents()
+  }, [])
 
-    loadVolunteerStats()
-  }, [user])
-
-  // Calculate stats
-  const completedEvents = volunteers.filter(v => v.status === 'completed').length
-  const totalEvents = volunteers.length
-  
-  // Calculate total hours (estimate: each completed event = 4 hours)
-  const estimatedHours = completedEvents * 4
+  // Helper to get event description
+  const getEventDescription = (eventId: number): string => {
+    const event = events.find(e => e.id === eventId)
+    return event?.description || `Event #${eventId}`
+  }
 
   const handleLogout = () => {
     logout()
@@ -136,18 +132,107 @@ export function ProfileView() {
       {/* Quick Stats */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-900 mb-4">Activity Summary</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-2xl font-bold text-blue-600">-</p>
-            <p className="text-sm text-gray-600 mt-1">Events Attended</p>
+        
+        {statsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="inline-block w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-2xl font-bold text-green-600">-</p>
-            <p className="text-sm text-gray-600 mt-1">Hours Logged</p>
+        ) : statsError ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-red-600">Failed to load stats</p>
           </div>
-        </div>
-        <p className="text-xs text-gray-500 mt-3 text-center">Stats coming soon</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-blue-50 rounded-lg p-4">
+              <p className="text-2xl font-bold text-blue-600">{stats.totalEvents}</p>
+              <p className="text-sm text-gray-600 mt-1">Total Events</p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4">
+              <p className="text-2xl font-bold text-green-600">{stats.totalHours.toFixed(1)}h</p>
+              <p className="text-sm text-gray-600 mt-1">Total Time</p>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Volunteer History */}
+      {!statsLoading && stats.volunteers.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Volunteer History</h3>
+          
+          {eventsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="inline-block w-5 h-5 border-3 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {stats.volunteers
+                .sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime())
+                .slice(0, 10)
+                .map((volunteer) => {
+                  const eventDesc = getEventDescription(volunteer.event_id)
+                  return (
+                    <div
+                      key={volunteer.id}
+                      className="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {eventDesc}
+                          </p>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              volunteer.status === 'completed'
+                                ? 'bg-green-100 text-green-800'
+                                : volunteer.status === 'active'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {volunteer.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Joined: {new Date(volunteer.create_time).toLocaleDateString()}
+                          </span>
+                          {volunteer.completion_time && (
+                            <span className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                              Completed: {new Date(volunteer.completion_time).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+          
+          {stats.volunteers.length > 10 && (
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Showing 10 most recent of {stats.volunteers.length} total assignments
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Account Actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
