@@ -10,24 +10,47 @@ API_BASE = "http://localhost:8000"  # <-- change if needed
 COPENHAGEN_COORDS = {"lat": 55.6761, "lon": 12.5683}
 
 # ------------------ STATIC DATA ------------------
+# Civilian resources for community disaster response
 RESOURCE_TYPES = [
-    {"name": "Ambulance", "resource_type": "vehicle", "description": "Emergency medical vehicle"},
-    {"name": "Fire Truck", "resource_type": "vehicle", "description": "Fire suppression and rescue"},
-    {"name": "Paramedic", "resource_type": "personnel", "description": "Medical emergency responder"},
-    {"name": "Police Officer", "resource_type": "personnel", "description": "Crowd and traffic control"},
-    {"name": "Boat", "resource_type": "vehicle", "description": "Water rescue operations"},
-    {"name": "Drone", "resource_type": "equipment", "description": "Aerial reconnaissance"},
+    {"name": "Personal Vehicle", "resource_type": "vehicle", "description": "Transport people and supplies"},
+    {"name": "Pickup Truck", "resource_type": "vehicle", "description": "Haul debris and heavy items"},
+    {"name": "SUV/Van", "resource_type": "vehicle", "description": "Transport groups and equipment"},
+    {"name": "Boat/Kayak", "resource_type": "vehicle", "description": "Water rescue and transport"},
+    {"name": "First Aid Kit", "resource_type": "equipment", "description": "Basic medical supplies"},
+    {"name": "Power Tools", "resource_type": "equipment", "description": "Chainsaw, drills for cleanup"},
+    {"name": "Shovels & Tools", "resource_type": "equipment", "description": "Manual cleanup tools"},
+    {"name": "Water Pump", "resource_type": "equipment", "description": "Remove flood water"},
+    {"name": "Generator", "resource_type": "equipment", "description": "Emergency power supply"},
+    {"name": "Food Supplies", "resource_type": "supplies", "description": "Non-perishable food items"},
+    {"name": "Bottled Water", "resource_type": "supplies", "description": "Drinking water supply"},
+    {"name": "Blankets/Bedding", "resource_type": "supplies", "description": "Emergency shelter supplies"},
+    {"name": "Flashlights/Lanterns", "resource_type": "equipment", "description": "Portable lighting"},
+    {"name": "Radio Equipment", "resource_type": "equipment", "description": "Communication devices"},
+    {"name": "Tarpaulins", "resource_type": "supplies", "description": "Cover damaged roofs"},
 ]
 
+# Community disaster response events - tasks civilians can help with
 EVENT_DESCRIPTIONS = [
-    "Flood near residential area",
-    "Large wildfire reported",
-    "Road traffic accident",
-    "Building collapse",
-    "Chemical spill in factory",
-    "Earthquake damage assessment",
-    "Missing person in forest",
-    "Bridge structural damage",
+    "Flood preparation - sandbag filling station",
+    "Post-flood cleanup - residential area",
+    "Debris removal from streets",
+    "Emergency supply distribution point",
+    "Food and water collection drive",
+    "Temporary shelter setup assistance",
+    "Welfare check on elderly residents",
+    "Search for missing pets in affected area",
+    "Road clearing - fallen trees and branches",
+    "Damage assessment survey team",
+    "Community kitchen for displaced families",
+    "Clothing and blanket collection center",
+    "Pump water from flooded basements",
+    "Tarpaulin installation on damaged roofs",
+    "Medical supply sorting and packing",
+    "Transport coordination for evacuees",
+    "Child care center for emergency workers",
+    "Information desk for affected residents",
+    "Power restoration support team",
+    "Communication relay station setup",
 ]
 
 # ------------------ HELPERS ------------------
@@ -271,7 +294,7 @@ if __name__ == "__main__":
     # - Create 3 available resources from volunteers
     
     seed_test_data(
-        num_events=3,
+        num_events=10,
         num_users=5,
         num_volunteers=8,
         num_resources=3
