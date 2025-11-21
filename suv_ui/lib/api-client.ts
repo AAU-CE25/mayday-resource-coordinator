@@ -188,14 +188,14 @@ export async function fetchEvents() {
  * Fetch active volunteers for a specific event
  */
 export async function fetchActiveVolunteers(eventId: number): Promise<Volunteer[]> {
-  return get<Volunteer[]>(`/volunteers/active?event_id=${eventId}`)
+  return get<Volunteer[]>(`/volunteers/?event_id=${eventId}&status=active`)
 }
 
 /**
- * Fetch all volunteers for a specific user
+ * Fetch active volunteers for a specific user
  */
 export async function fetchUserVolunteers(userId: number): Promise<Volunteer[]> {
-  return get<Volunteer[]>(`/volunteers/active?user_id=${userId}`)
+  return get<Volunteer[]>(`/volunteers/?user_id=${userId}&status=active`)
 }
 
 /**
@@ -217,10 +217,10 @@ export async function fetchAllUserVolunteers(userId: number, status?: string): P
 }
 
 /**
- * Fetch volunteers by user and event
+ * Fetch active volunteers by user and event
  */
 export async function fetchUserEventVolunteers(userId: number, eventId: number): Promise<Volunteer[]> {
-  return get<Volunteer[]>(`/volunteers/active?user_id=${userId}&event_id=${eventId}`)
+  return get<Volunteer[]>(`/volunteers/?user_id=${userId}&event_id=${eventId}&status=active`)
 }
 
 /**
