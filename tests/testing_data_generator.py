@@ -49,38 +49,49 @@ def generate_copenhagen_location():
 
 # ------------------ DATA GENERATORS ------------------
 def generate_random_event():
+    """
+    Generate a random event for the POST /events/ endpoint.
+    Returns EventCreate schema structure.
+    """
     event_description = random.choice(EVENT_DESCRIPTIONS)
     priority = random.randint(1, 5)
     status = random.choice(["active", "resolved", "pending"])
     location = generate_copenhagen_location()
 
-    resources_needed = []
-    for res in random.sample(RESOURCE_TYPES, k=random.randint(1, 3)):
-        resources_needed.append({
-            "name": res["name"],
-            "resource_type": res["resource_type"],
-            "description": res["description"],
-            "quantity": random.randint(1, 5),
-            "is_fulfilled": False,
-        })
-
+    # EventCreate expects: description, priority, status, location (LocationCreate)
     data = {
-        "event": {
-            "description": event_description,
-            "priority": priority,
-            "status": status,
-            "location": location,
-            "resources_needed": resources_needed
-        }
+        "description": event_description,
+        "priority": priority,
+        "status": status,
+        "location": location
     }
     return data
 
-def generate_random_volunteer(user_id: int, event_id: int = None):
-    """Generate a random volunteer for an existing user and optionally an event."""
+def generate_random_volunteer(created_users: list[dict], created_events: list[dict]):
+    """
+    Generate a random volunteer for an existing user and event.
+    
+    """
+    if not created_users:
+        raise ValueError("No users available to assign volunteer to. Create users first.")
+    if not created_events:
+        raise ValueError("No events available to assign volunteer to. Create events first.")
+    
+    user = random.choice(created_users)
+    event = random.choice(created_events)
+    
+    user_id = user.get("id")
+    event_id = event.get("id")
+    
+    if not user_id:
+        raise ValueError(f"Selected user has no ID: {user}")
+    if not event_id:
+        raise ValueError(f"Selected event has no ID: {event}")
+    
     volunteer = {
         "user_id": user_id,
         "event_id": event_id,
-        "status": random.choice(["active", "completed"]),
+        "status": "active"  # All new volunteers start as active
     }
     return volunteer
 
@@ -111,21 +122,62 @@ def post_json(endpoint: str, payload: dict):
         return None
 
 # ------------------ MAIN SEEDING LOGIC ------------------
-def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
+def seed_test_data(num_volunteers=0, num_events=3, num_resources=3, num_users=3):
+    """
+    Seed test data in the correct order: Events → Users → Volunteers → Resources
+    """
+    # Auto-adjust if volunteers requested without sufficient events/users
+    if num_volunteers > 0:
+        if num_events == 0:
+            print("⚠️  To create volunteers, you need events. Setting num_events=num_volunteers.")
+            num_events = max(1, num_volunteers)
+        if num_users == 0:
+            print("⚠️  To create volunteers, you need users. Setting num_users=num_volunteers.")
+            num_users = max(1, num_volunteers)
+    
     created_volunteers = []
     created_events = []
     created_users = []
+    created_resources = 0
 
-    # --- Events (create first so we can assign volunteers to them) ---
-    for _ in range(num_events):
+    print("\n" + "="*50)
+    print("🌱 Starting Test Data Seeding")
+    print("="*50)
+
+    # --- Step 1: Create Events (needed for volunteers) ---
+    print(f"\n📅 Creating {num_events} event(s)...")
+    for i in range(num_events):
         event_data = generate_random_event()
-        print(event_data)
-        response = post_json("events/ingest/", event_data)
+        print(f"\n  Event {i+1}/{num_events}:")
+        print(f"    Description: {event_data['description']}")
+        print(f"    Priority: {event_data['priority']}")
+        print(f"    Status: {event_data['status']}")
+        
+        # Use POST /events/ endpoint (returns EventResponse with id)
+        response = post_json("events/", event_data)
         if response:
-            created_events.append(response)
+            # POST /events/ returns EventResponse: {id, description, priority, status, ...}
+            event_id = response.get("id")
+            
+            if event_id:
+                # Store event with full response data
+                created_events.append(response)
+                print(f"    ✅ Event ID: {event_id}")
+            else:
+                print(f"    ⚠️  Event created but no ID found")
+                print(f"    Response keys: {list(response.keys())}")
+        else:
+            print(f"    ❌ Failed to create event")
 
-    # --- Users (needed for volunteers) ---
-    for _ in range(num_volunteers):
+    if num_volunteers > 0 and len(created_events) == 0:
+        print("\n❌ ERROR: No events created. Cannot create volunteers without events.")
+        print("   Aborting volunteer and resource creation.")
+        num_volunteers = 0
+        num_resources = 0
+
+    # --- Step 2: Create Users (needed for volunteers) ---
+    print(f"\n👥 Creating {num_users} user(s)...")
+    for i in range(num_users):
         user_data = {
             "name": fake.name(),
             "email": fake.unique.email(),
@@ -133,39 +185,94 @@ def seed_test_data(num_volunteers=3, num_events=3, num_resources=3):
             "password": "password123",
             "role": "SUV",
         }
-        print(user_data)
+        print(f"\n  User {i+1}/{num_users}:")
+        print(f"    Name: {user_data['name']}")
+        print(f"    Email: {user_data['email']}")
         response = post_json("auth/register", user_data)
         if response:
-            created_users.append(response)
+            user_id = response.get("id")
+            if user_id:
+                created_users.append(response)
+                print(f"    ✅ User ID: {user_id}")
+            else:
+                print(f"    ⚠️  User created but no ID returned")
+        else:
+            print(f"    ❌ Failed to create user")
 
-    # --- Volunteers ---
-    for user in created_users:
-        user_id = user.get("id")
-        if user_id and created_events:
-            # Assign volunteer to a random event
-            event = random.choice(created_events)
-            event_id = event.get("id")
-            volunteer_data = generate_random_volunteer(user_id, event_id)
-            print(volunteer_data)
-            response = post_json("volunteers", volunteer_data)
+    if num_volunteers > 0 and len(created_users) == 0:
+        print("\n❌ ERROR: No users created. Cannot create volunteers without users.")
+        print("   Aborting volunteer and resource creation.")
+        num_volunteers = 0
+        num_resources = 0
+
+    # --- Step 3: Create Volunteers (requires events and users) ---
+    print(f"\n🙋 Creating {num_volunteers} volunteer(s)...")
+    for i in range(num_volunteers):
+        try:
+            volunteer_data = generate_random_volunteer(created_users, created_events)
+            print(f"\n  Volunteer {i+1}/{num_volunteers}:")
+            print(f"    User ID: {volunteer_data['user_id']}")
+            print(f"    Event ID: {volunteer_data['event_id']}")
+            print(f"    Status: {volunteer_data['status']}")
+            response = post_json("volunteers/", volunteer_data)
             if response:
-                created_volunteers.append(response)
-
-    # --- Resources available ---
-    for _ in range(num_resources):
-        if not created_volunteers:
-            print("❌ No volunteers created; skipping resource available.")
-            num_resources = 0
+                volunteer_id = response.get("id")
+                if volunteer_id:
+                    created_volunteers.append(response)
+                    print(f"    ✅ Volunteer ID: {volunteer_id}")
+                else:
+                    print(f"    ⚠️  Volunteer created but no ID returned")
+            else:
+                print(f"    ❌ Failed to create volunteer")
+        except ValueError as e:
+            print(f"    ❌ Error: {e}")
             break
+
+    # --- Step 4: Create Resources Available (requires volunteers) ---
+    print(f"\n📦 Creating {num_resources} available resource(s)...")
+    if num_resources > 0 and len(created_volunteers) == 0:
+        print("  ⚠️  No volunteers created; skipping resource available.")
+        num_resources = 0
+    
+    for i in range(num_resources):
         volunteer = random.choice(created_volunteers)
-        volunteer_id = volunteer.get("id") or volunteer.get("volunteer", {}).get("id")
+        volunteer_id = volunteer.get("id")
         if volunteer_id:
             resource_data = generate_random_resource_available(volunteer_id)
-            print(resource_data)
-            post_json("resources/available/", resource_data)
+            print(f"\n  Resource {i+1}/{num_resources}:")
+            print(f"    Name: {resource_data['name']}")
+            print(f"    Type: {resource_data['resource_type']}")
+            print(f"    Volunteer ID: {volunteer_id}")
+            response = post_json("resources/available/", resource_data)
+            if response:
+                created_resources += 1
+                print(f"    ✅ Resource created")
+            else:
+                print(f"    ❌ Failed to create resource")
+        else:
+            print(f"  ❌ No volunteer ID found for resource {i+1}")
 
-    print(f"\n✅ Seed complete: {len(created_events)} events, {len(created_users)} users, {len(created_volunteers)} volunteers, {num_resources} resources available.")
+    # --- Summary ---
+    print("\n" + "="*50)
+    print("✅ Seeding Complete!")
+    print("="*50)
+    print(f"📅 Events created:     {len(created_events)}")
+    print(f"👥 Users created:      {len(created_users)}")
+    print(f"🙋 Volunteers created: {len(created_volunteers)}")
+    print(f"📦 Resources created:  {created_resources}")
+    print("="*50 + "\n")
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
-    seed_test_data(num_volunteers=20, num_events=20, num_resources=2)
+    # Example usage:
+    # - Create 3 events with resources needed
+    # - Create 5 users (SUVs)
+    # - Create 8 volunteers (some users can volunteer for multiple events)
+    # - Create 3 available resources from volunteers
+    
+    seed_test_data(
+        num_events=3,
+        num_users=5,
+        num_volunteers=8,
+        num_resources=3
+    )
