@@ -24,7 +24,8 @@ suv_ui/
 │
 ├── hooks/                         # Custom React hooks
 │   ├── use-active-assignment.ts   # Manages volunteer assignment state
-│   └── use-form-submit.ts         # Reusable form submission logic
+│   ├── use-form-submit.ts         # Reusable form submission logic
+│   └── use-volunteer-stats.ts     # Profile statistics with real-time data
 │
 ├── lib/
 │   ├── api-client.ts              # API calls with 5 HTTP methods + auto-logout
@@ -88,9 +89,9 @@ npm run dev
 ```
 
 ### 4. Access the App
-- Login: http://localhost:3000/login
-- Register: http://localhost:3000/register
-- App: http://localhost:3000/ (redirects to login if not authenticated)
+- Login: http://localhost:3030/login
+- Register: http://localhost:3030/register
+- App: http://localhost:3030/ (redirects to login if not authenticated)
 
 ## 📝 Key Features
 
@@ -103,9 +104,9 @@ npm run dev
 - `/login` - Login form
 - `/register` - Registration form
 - `/` - Main dashboard with tabs
-  - Events tab - Browse available events
-  - My Event tab - View active assignment
-  - Profile tab - User profile & stats
+  - Events tab - Browse available events (with join prevention)
+  - My Event tab - View active assignment (auto-navigates after join)
+  - Profile tab - User profile with real-time stats & volunteer history
 
 ### ✅ Secure Session Management
 ```typescript
@@ -114,6 +115,24 @@ npm run dev
 - Auto-logout on 401 (session expired)
 - Error handling with user-friendly messages
 ```
+
+### ✅ Smart UX Features
+**Multiple Event Prevention:**
+- Users cannot join multiple events simultaneously
+- Amber warning shown if trying to join when already assigned
+- Displays current active event details
+- Join button disabled with clear messaging
+
+**Automatic Navigation:**
+- After joining an event, automatically switches to "My Event" tab
+- Implemented via callback chain: Dialog → Feed → Page → Tab Switch
+- Smooth UX without page reload
+
+**Real-Time Profile Stats:**
+- Total Events: Count of all volunteer assignments
+- Total Time: **Actual hours** calculated from timestamps (not estimated)
+- Volunteer History: Shows 10 most recent with event descriptions
+- Status badges: Green (completed), Blue (active), Gray (cancelled)
 
 ### ✅ Simple Auth Context
 ```typescript
@@ -172,11 +191,13 @@ fetchActiveVolunteers(id)    // Get volunteers for event
 
 // ====== Volunteers ======
 fetchUserVolunteers(userId)           // Get user's active volunteers
+                                       // Uses: GET /volunteers/?user_id={userId}&status=active
 fetchAllUserVolunteers(userId, status?) // Get all volunteers with optional status filter
                                        // Uses: GET /volunteers/?user_id={userId}&status={status}
-fetchUserEventVolunteers(u, e)        // Get volunteers by user & event
+fetchUserEventVolunteers(u, e)        // Get active volunteers by user & event
+                                       // Uses: GET /volunteers/?user_id={u}&event_id={e}&status=active
 createVolunteer(userId, eventId)      // Join an event
-completeVolunteer(id)                 // Leave an event
+completeVolunteer(id)                 // Leave an event (set status=completed)
 ```
 
 ### Backend Query Parameters (Volunteers Endpoint)
@@ -369,11 +390,19 @@ return (
   - `activeEvents`: number - Currently active assignments
   - `completedEvents`: number - Finished assignments
   - `cancelledEvents`: number - Cancelled assignments
-  - `estimatedHours`: number - Completed events × 4 hours
+  - `totalHours`: number - **Real hours** calculated from create_time → completion_time
   - `volunteers`: Volunteer[] - Raw volunteer data
 - `isLoading`: boolean - Loading state
 - `error`: Error | null - Any error that occurred
 - `refresh`: () => Promise<void> - Manually refresh stats
+
+**Real-Time Calculation**:
+Instead of estimating, calculates actual time volunteered:
+```typescript
+totalHours = volunteers
+  .filter(v => v.status === 'completed' && v.completion_time)
+  .reduce((total, v) => total + calculateHours(v.create_time, v.completion_time), 0)
+```
 
 **Backend Integration**:
 Uses the new volunteer query parameters for efficient filtering:
@@ -555,11 +584,24 @@ MyEventView component renders
 ---
 
 **Last Updated:** November 21, 2025
-**Version:** 3.1.0 (Profile Stats Enhancement)
+**Version:** 3.2.1 (Port Configuration Update)
+
+### Changelog v3.2.1
+- ✅ **Port Configuration**: Changed development server port from 3000 to 3030
+- ✅ **Updated Documentation**: README and ARCHITECTURE now reflect correct port
+
+### Changelog v3.2.0
+- ✅ **Real-Time Hours Calculation**: Profile shows actual time (create_time → completion_time)
+- ✅ **Event Descriptions in History**: Fetches and displays event details instead of IDs
+- ✅ **Simplified Stats Display**: Reduced to 2 key metrics (Total Events, Total Time)
+- ✅ **Migrated to Standard Endpoints**: All calls now use `/volunteers/?status=active`
+- ✅ **Multiple Event Prevention**: Users can't join multiple events simultaneously
+- ✅ **Auto-Navigation**: Automatically shows "My Event" page after joining
+- ✅ **Backend Query Optimization**: All filtering done server-side with query params
 
 ### Changelog v3.1.0
 - ✅ Added `useVolunteerStats` hook for profile statistics
-- ✅ Enhanced profile page with real volunteer stats (4 stat cards)
+- ✅ Enhanced profile page with volunteer stats (4 stat cards initially)
 - ✅ Added volunteer history section with status badges
 - ✅ Optimized `fetchAllUserVolunteers` to use backend query parameters
 - ✅ Documented volunteer endpoint query parameters (user_id, event_id, status)

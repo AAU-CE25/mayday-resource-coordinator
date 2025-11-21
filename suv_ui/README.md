@@ -11,7 +11,10 @@ Mobile-first volunteer response application for field operations.
 - 🎨 **Light Mode UI**: Blue accent theme for daylight readability
 - 📡 **API Integration**: Connects to backend at `localhost:8000`
 - 🪝 **Custom Hooks**: Clean architecture with business logic separation
-- 🔧 **Type Safety**: Full TypeScript support throughout
+- � **Real-time Stats**: Profile shows actual volunteer hours and history
+- 🚫 **Smart Validation**: Prevents joining multiple events simultaneously
+- �🔧 **Type Safety**: Full TypeScript support throughout
+- ⚡ **Backend Filtering**: Efficient server-side queries with status/user/event filters
 
 ## Getting Started
 
@@ -33,14 +36,14 @@ npm install
 npm run dev
 ```
 
-The app will start on **port 3000**: http://localhost:3000
+The app will start on **port 3030**: http://localhost:3030
 
 ### Environment Variables
 
 Create `.env.local` file (already configured):
 
 ```env
-PORT=3000
+PORT=3030
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
@@ -58,13 +61,14 @@ suv_ui/
 │   └── app/               # App-specific components
 │       ├── tab-navigation.tsx        # Bottom tab bar
 │       ├── event-card.tsx            # Individual event display
-│       ├── event-details-dialog.tsx  # Event details modal
+│       ├── event-details-dialog.tsx  # Event details modal with join prevention
 │       ├── events-feed.tsx           # Events list with API integration
 │       ├── my-event-view.tsx         # Active assignment view
-│       └── profile-view.tsx          # User profile
+│       └── profile-view.tsx          # User profile with stats & history
 ├── hooks/                 # Custom React hooks (business logic)
 │   ├── use-active-assignment.ts      # Volunteer assignment state
-│   └── use-form-submit.ts            # Reusable form handling
+│   ├── use-form-submit.ts            # Reusable form handling
+│   └── use-volunteer-stats.ts        # Profile statistics calculation
 └── lib/
     ├── types.ts           # TypeScript definitions
     ├── api-client.ts      # API client with 5 HTTP methods + auth
@@ -73,32 +77,65 @@ suv_ui/
 
 ## API Integration
 
-The app fetches events from:
+### Key Endpoints
+
+**Events:**
 ```
 GET http://localhost:8000/events
 ```
 
-Expected response format:
+**Volunteers (with flexible filtering):**
+```
+GET http://localhost:8000/volunteers/?user_id={id}&status=active
+GET http://localhost:8000/volunteers/?event_id={id}&status=completed
+GET http://localhost:8000/volunteers/?user_id={id}&event_id={id}&status=active
+```
+
+**Authentication:**
+```
+POST http://localhost:8000/auth/login
+POST http://localhost:8000/auth/register
+GET  http://localhost:8000/auth/me
+```
+
+### Response Format Examples
+
+**Event Response:**
 ```json
-[
-  {
+{
+  "id": 1,
+  "description": "Emergency event description",
+  "priority": 1,
+  "status": "active",
+  "create_time": "2025-11-15T10:00:00Z",
+  "modified_time": "2025-11-15T10:30:00Z",
+  "location": {
     "id": 1,
-    "description": "Emergency event description",
-    "priority": 1,
-    "status": "active",
-    "create_time": "2025-11-15T10:00:00Z",
-    "modified_time": "2025-11-15T10:30:00Z",
-    "location": {
-      "id": 1,
-      "address": {
-        "city": "Aalborg",
-        "street": "Main St"
-      },
-      "latitude": 57.048,
-      "longitude": 9.935
-    }
+    "address": {
+      "city": "Aalborg",
+      "street": "Main St"
+    },
+    "latitude": 57.048,
+    "longitude": 9.935
   }
-]
+}
+```
+
+**Volunteer Response:**
+```json
+{
+  "id": 13,
+  "user": {
+    "id": 21,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phonenumber": "+4512345678"
+  },
+  "event_id": 7,
+  "status": "completed",
+  "create_time": "2025-11-21T15:54:17.684431",
+  "completion_time": "2025-11-21T18:30:25.638677"
+}
 ```
 
 ## Mobile Testing
@@ -114,9 +151,12 @@ Test in browser DevTools with these viewports:
 - **Custom Hooks**: Business logic extracted from components
   - `useActiveAssignment`: Manages volunteer assignment state
   - `useFormSubmit`: Reusable form submission logic
+  - `useVolunteerStats`: Calculates profile statistics with real-time data
 - **API Client**: 5 HTTP methods (GET, POST, PUT, PATCH, DELETE) with auto-auth
+- **Backend Filtering**: Efficient queries using `?user_id`, `?event_id`, `?status` params
 - **Type Safety**: Full TypeScript throughout with no `any` types
 - **Error Handling**: Automatic 401 logout + redirect
+- **Smart Validation**: Prevents multiple simultaneous event assignments
 
 ### Authentication Flow
 ```
