@@ -1,101 +1,38 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import type { TabType, Event, Volunteer } from "@/lib/types"
+import type { TabType } from "@/lib/types"
 import { TabNavigation } from "@/components/app/tab-navigation"
 import { EventsFeed } from "@/components/app/events-feed"
 import { ProfileView } from "@/components/app/profile-view"
 import { MyEventView } from "@/components/app/my-event-view"
 import { useAuth } from "@/lib/auth-context"
-import { fetchActiveVolunteers, fetchEvents, completeVolunteer } from "@/lib/api-client"
+import { useActiveAssignment } from "@/hooks/use-active-assignment"
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabType>("events")
   const { user } = useAuth()
-  const [myActiveEvent, setMyActiveEvent] = useState<Event | null>(null)
-  const [myVolunteerId, setMyVolunteerId] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { activeEvent, volunteerId, loading, refresh, leaveEvent } = useActiveAssignment(user)
+  
+  // Determine active tab based on assignment state
+  const activeTab: TabType = activeEvent && volunteerId ? "my-event" : "events"
+  const [currentTab, setCurrentTab] = useState<TabType>(activeTab)
 
-  // Check if user has an active volunteer assignment
+  // Update current tab when active tab changes
   useEffect(() => {
-    async function checkActiveAssignment() {
-      if (!user) {
-        setMyActiveEvent(null)
-        setMyVolunteerId(null)
-        setLoading(false)
-        return
-      }
-
-      try {
-        // Fetch all events to check which one the user is volunteering for
-        const events = await fetchEvents()
-        
-        // Check each event for the user's active volunteer status
-        for (const event of events) {
-          const volunteers = await fetchActiveVolunteers(event.id)
-          const myVolunteer = volunteers.find(
-            (v: Volunteer) => v.user.id === user.id && v.status === 'active'
-          )
-          
-          if (myVolunteer) {
-            setMyActiveEvent(event)
-            setMyVolunteerId(myVolunteer.id)
-            setActiveTab("my-event")
-            break
-          }
-        }
-      } catch (error) {
-        console.error("Failed to check active assignment:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkActiveAssignment()
-  }, [user])
+    setCurrentTab(activeTab)
+  }, [activeTab])
 
   const handleLeaveEvent = async () => {
-    if (!myVolunteerId) return
-
     try {
-      await completeVolunteer(myVolunteerId)
-      setMyActiveEvent(null)
-      setMyVolunteerId(null)
-      setActiveTab("events")
+      await leaveEvent()
+      setCurrentTab("events")
     } catch (error) {
       console.error("Failed to leave event:", error)
     }
   }
 
   const handleRefresh = async () => {
-    if (!user) return
-    
-    setLoading(true)
-    try {
-      const events = await fetchEvents()
-      
-      for (const event of events) {
-        const volunteers = await fetchActiveVolunteers(event.id)
-        const myVolunteer = volunteers.find(
-          (v: Volunteer) => v.user.id === user.id && v.status === 'active'
-        )
-        
-        if (myVolunteer) {
-          setMyActiveEvent(event)
-          setMyVolunteerId(myVolunteer.id)
-          setActiveTab("my-event")
-          return
-        }
-      }
-      
-      // No active event found
-      setMyActiveEvent(null)
-      setMyVolunteerId(null)
-    } catch (error) {
-      console.error("Failed to refresh:", error)
-    } finally {
-      setLoading(false)
-    }
+    await refresh()
   }
 
   if (loading && user) {
@@ -117,7 +54,7 @@ export default function Home() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">SUV Response</h1>
             <p className="text-sm text-gray-600">
-              {myActiveEvent ? "Active Assignment" : "Volunteer Portal"}
+              {activeEvent ? "Active Assignment" : "Volunteer Portal"}
             </p>
           </div>
           <button
@@ -135,18 +72,18 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        {activeTab === "events" && <EventsFeed />}
-        {activeTab === "my-event" && myActiveEvent && (
-          <MyEventView event={myActiveEvent} onLeaveEvent={handleLeaveEvent} />
+        {currentTab === "events" && <EventsFeed />}
+        {currentTab === "my-event" && activeEvent && (
+          <MyEventView event={activeEvent} onLeaveEvent={handleLeaveEvent} />
         )}
-        {activeTab === "profile" && <ProfileView />}
+        {currentTab === "profile" && <ProfileView />}
       </main>
 
       {/* Bottom Navigation */}
       <TabNavigation 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        showMyEvent={!!myActiveEvent}
+        activeTab={currentTab} 
+        onTabChange={setCurrentTab}
+        showMyEvent={!!activeEvent}
       />
     </div>
   )

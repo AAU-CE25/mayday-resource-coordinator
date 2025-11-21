@@ -66,11 +66,62 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
       throw new Error(`API error ${response.status}: ${errorText}`)
     }
 
+    // Handle empty responses (204 No Content)
+    if (response.status === 204 || response.headers.get("content-length") === "0") {
+      return {} as T
+    }
+
     return response.json()
   } catch (error) {
     console.error(`Failed to fetch ${endpoint}:`, error)
     throw error
   }
+}
+
+// ============= Generic HTTP Methods =============
+
+/**
+ * Generic GET request
+ */
+export async function get<T>(endpoint: string): Promise<T> {
+  return apiFetch<T>(endpoint, { method: 'GET' })
+}
+
+/**
+ * Generic POST request
+ */
+export async function post<T>(endpoint: string, data?: unknown): Promise<T> {
+  return apiFetch<T>(endpoint, {
+    method: 'POST',
+    body: data ? JSON.stringify(data) : undefined,
+  })
+}
+
+/**
+ * Generic PUT request
+ */
+export async function put<T>(endpoint: string, data?: unknown): Promise<T> {
+  return apiFetch<T>(endpoint, {
+    method: 'PUT',
+    body: data ? JSON.stringify(data) : undefined,
+  })
+}
+
+/**
+ * Generic PATCH request
+ */
+export async function patch<T>(endpoint: string, data?: unknown): Promise<T> {
+  return apiFetch<T>(endpoint, {
+    method: 'PATCH',
+    body: data ? JSON.stringify(data) : undefined,
+  })
+}
+
+/**
+ * Generic DELETE request
+ */
+export async function del<T>(endpoint: string): Promise<T> {
+  return apiFetch<T>(endpoint, { method: 'DELETE' })
 }
 
 // ============= Auth API Functions =============
@@ -79,10 +130,7 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
  * Login with email and password
  */
 export async function login(credentials: LoginCredentials): Promise<AuthTokenResponse> {
-  const response = await apiFetch<AuthTokenResponse>('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(credentials)
-  })
+  const response = await post<AuthTokenResponse>('/auth/login', credentials)
   
   // Store the token
   setAuthToken(response.access_token)
@@ -94,17 +142,14 @@ export async function login(credentials: LoginCredentials): Promise<AuthTokenRes
  * Register a new user
  */
 export async function register(data: RegisterData): Promise<User> {
-  return apiFetch<User>('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  })
+  return post<User>('/auth/register', data)
 }
 
 /**
  * Get current authenticated user
  */
 export async function getCurrentUser(): Promise<User> {
-  return apiFetch<User>('/auth/me')
+  return get<User>('/auth/me')
 }
 
 /**
@@ -118,7 +163,7 @@ export function logout() {
  * Fetch all events from backend
  */
 export async function fetchEvents() {
-  return apiFetch<Array<{
+  return get<Array<{
     id: number
     description: string
     priority: number
@@ -143,14 +188,14 @@ export async function fetchEvents() {
  * Fetch active volunteers for a specific event
  */
 export async function fetchActiveVolunteers(eventId: number): Promise<Volunteer[]> {
-  return apiFetch<Volunteer[]>(`/volunteers/active?event_id=${eventId}`)
+  return get<Volunteer[]>(`/volunteers/active?event_id=${eventId}`)
 }
 
 /**
  * Fetch all volunteers for a specific user
  */
 export async function fetchUserVolunteers(userId: number): Promise<Volunteer[]> {
-  return apiFetch<Volunteer[]>(`/volunteers/active?user_id=${userId}`)
+  return get<Volunteer[]>(`/volunteers/active?user_id=${userId}`)
 }
 
 /**
@@ -161,8 +206,8 @@ export async function fetchAllUserVolunteers(userId: number): Promise<Volunteer[
   // Try to fetch from general volunteers endpoint
   // If backend doesn't support this, we'll fallback to active only
   try {
-    return apiFetch<Volunteer[]>(`/volunteers/?skip=0&limit=1000`)
-      .then(volunteers => volunteers.filter(v => v.user.id === userId))
+    const volunteers = await get<Volunteer[]>(`/volunteers/?skip=0&limit=1000`)
+    return volunteers.filter(v => v.user.id === userId)
   } catch (error) {
     console.warn("Falling back to active volunteers only:", error)
     return fetchUserVolunteers(userId)
@@ -173,20 +218,17 @@ export async function fetchAllUserVolunteers(userId: number): Promise<Volunteer[
  * Fetch volunteers by user and event
  */
 export async function fetchUserEventVolunteers(userId: number, eventId: number): Promise<Volunteer[]> {
-  return apiFetch<Volunteer[]>(`/volunteers/active?user_id=${userId}&event_id=${eventId}`)
+  return get<Volunteer[]>(`/volunteers/active?user_id=${userId}&event_id=${eventId}`)
 }
 
 /**
  * Create a new volunteer assignment (user joining an event)
  */
 export async function createVolunteer(userId: number, eventId: number): Promise<Volunteer> {
-  return apiFetch<Volunteer>("/volunteers/", {
-    method: "POST",
-    body: JSON.stringify({
-      user_id: userId,
-      event_id: eventId,
-      status: "active",
-    }),
+  return post<Volunteer>("/volunteers/", {
+    user_id: userId,
+    event_id: eventId,
+    status: "active",
   })
 }
 
@@ -194,11 +236,8 @@ export async function createVolunteer(userId: number, eventId: number): Promise<
  * Mark volunteer as completed (user leaving an event)
  */
 export async function completeVolunteer(volunteerId: number): Promise<Volunteer> {
-  return apiFetch<Volunteer>(`/volunteers/${volunteerId}`, {
-    method: "PUT",
-    body: JSON.stringify({
-      id: volunteerId,
-      status: "completed",
-    }),
+  return put<Volunteer>(`/volunteers/${volunteerId}`, {
+    id: volunteerId,
+    status: "completed",
   })
 }
