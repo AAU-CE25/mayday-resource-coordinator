@@ -10,7 +10,7 @@ suv_ui/
 │   ├── register/
 │   │   └── page.tsx              # Register page
 │   ├── layout.tsx                 # Root layout with AuthProvider
-│   ├── page.tsx                   # Main dashboard
+│   ├── page.tsx                   # Main dashboard (clean, uses hooks)
 │   └── globals.css                # Global styles
 │
 ├── components/
@@ -22,8 +22,12 @@ suv_ui/
 │       ├── profile-view.tsx       # User profile view
 │       └── tab-navigation.tsx     # Bottom navigation tabs
 │
+├── hooks/                         # Custom React hooks
+│   ├── use-active-assignment.ts   # Manages volunteer assignment state
+│   └── use-form-submit.ts         # Reusable form submission logic
+│
 ├── lib/
-│   ├── api-client.ts              # API calls with auto-logout
+│   ├── api-client.ts              # API calls with 5 HTTP methods + auto-logout
 │   ├── auth-context.tsx           # Authentication state & redirect
 │   └── types.ts                   # TypeScript types
 │
@@ -124,33 +128,70 @@ const { user, isLoading, login, logout, refreshUser } = useAuth()
 
 ## 🔧 API Client
 
-### Usage
+### Enhanced HTTP Methods
+The API client now provides 5 generic HTTP methods with full type safety:
+
 ```typescript
-import { fetchEvents, createVolunteer } from "@/lib/api-client"
+import { get, post, put, patch, del } from "@/lib/api-client"
 
-// All functions auto-include token from sessionStorage
-const events = await fetchEvents()
-const volunteer = await createVolunteer(userId, eventId)
+// Generic HTTP methods with TypeScript generics
+const events = await get<Event[]>('/events')
+const user = await post<User>('/auth/register', userData)
+const updated = await put<Volunteer>('/volunteers/1', updateData)
+const patched = await patch<Event>('/events/1', partialUpdate)
+const result = await del<void>('/resources/1')
 
-// On 401 error: auto-logout + redirect to /login
+// All methods auto-include:
+// ✓ Authorization header (Bearer token)
+// ✓ Content-Type: application/json
+// ✓ Error handling with auto-logout on 401
+// ✓ Empty response handling (204 No Content)
 ```
 
 ### Available Functions
 ```typescript
-// Auth
+// ====== Generic HTTP Methods ======
+get<T>(endpoint)             // GET request with type safety
+post<T>(endpoint, data?)     // POST with optional body
+put<T>(endpoint, data?)      // PUT with optional body
+patch<T>(endpoint, data?)    // PATCH with optional body
+del<T>(endpoint)             // DELETE request
+
+// ====== Auth ======
 login(credentials)           // Login and store token
 register(data)               // Create new account
 getCurrentUser()             // Get current user data
 logout()                     // Clear token
+getAuthToken()               // Get token from sessionStorage
+setAuthToken(token)          // Store token in sessionStorage
+clearAuthToken()             // Remove token from sessionStorage
 
-// Events
+// ====== Events ======
 fetchEvents()                // Get all events
 fetchActiveVolunteers(id)    // Get volunteers for event
 
-// Volunteers
-fetchUserVolunteers(userId)  // Get user's active volunteers
-createVolunteer(u, e)        // Join an event
-completeVolunteer(id)        // Leave an event
+// ====== Volunteers ======
+fetchUserVolunteers(userId)      // Get user's active volunteers
+fetchAllUserVolunteers(userId)   // Get all volunteers (active + completed)
+fetchUserEventVolunteers(u, e)   // Get volunteers by user & event
+createVolunteer(userId, eventId) // Join an event
+completeVolunteer(id)            // Leave an event
+```
+
+### Error Handling
+```typescript
+// Automatic 401 handling
+try {
+  const data = await get<Event[]>('/events')
+} catch (error) {
+  // 401 errors automatically:
+  // 1. Clear token from sessionStorage
+  // 2. Redirect to /login
+  // 3. Show "Session expired" message
+  
+  // Other errors throw with message
+  console.error(error.message)
+}
 ```
 
 ## 🎨 Component Organization
@@ -174,6 +215,86 @@ export default function Page() {
 }
 ```
 
+## 🪝 Custom Hooks
+
+### `useActiveAssignment(user)`
+Manages the user's active volunteer assignment state.
+
+**Purpose**: Extract complex business logic from page component
+- Checks all events for user's active volunteer status
+- Provides refresh and leave event functions
+- Handles loading and error states
+
+**Usage**:
+```typescript
+import { useActiveAssignment } from "@/hooks/use-active-assignment"
+
+const { activeEvent, volunteerId, loading, error, refresh, leaveEvent } = useActiveAssignment(user)
+
+// Check if user has active assignment
+if (activeEvent) {
+  console.log("User is volunteering at:", activeEvent.description)
+}
+
+// Manually refresh assignment status
+await refresh()
+
+// Leave current event
+await leaveEvent()
+```
+
+**Returns**:
+- `activeEvent`: Event | null - The event user is volunteering at
+- `volunteerId`: number | null - ID of the volunteer record
+- `loading`: boolean - Loading state
+- `error`: Error | null - Any error that occurred
+- `refresh`: () => Promise<void> - Manually check assignment
+- `leaveEvent`: () => Promise<void> - Leave current event
+
+### `useFormSubmit(options)`
+Reusable form submission handler with loading and error states.
+
+**Purpose**: Eliminate duplicate form handling logic across components
+- Manages isSubmitting state
+- Handles errors with callbacks
+- Prevents default form submission
+
+**Usage**:
+```typescript
+import { useFormSubmit } from "@/hooks/use-form-submit"
+
+const { isSubmitting, error, handleSubmit, reset } = useFormSubmit({
+  onSubmit: async (data) => {
+    await post('/volunteers', data)
+  },
+  onSuccess: (data) => {
+    toast({ title: "Success!" })
+    onClose()
+  },
+  onError: (error) => {
+    toast({ title: "Error", description: error.message, variant: "destructive" })
+  }
+})
+
+// In your component:
+<form onSubmit={(e) => handleSubmit(e, formData)}>
+  <button type="submit" disabled={isSubmitting}>
+    {isSubmitting ? "Submitting..." : "Submit"}
+  </button>
+</form>
+```
+
+**Options**:
+- `onSubmit`: (data: T) => Promise<void> - Async submission function
+- `onSuccess?`: (data: T) => void - Success callback
+- `onError?`: (error: Error) => void - Error callback
+
+**Returns**:
+- `isSubmitting`: boolean - Submission in progress
+- `error`: Error | null - Last error that occurred
+- `handleSubmit`: (e: FormEvent, data: T) => Promise<void> - Form handler
+- `reset`: () => void - Reset states
+
 ## 🐛 Troubleshooting
 
 ### Page keeps refreshing
@@ -196,6 +317,9 @@ export default function Page() {
 
 ## 📊 State Management
 
+### Architecture Pattern: Clean Separation
+We follow a **hook-based architecture** where business logic is extracted from components into custom hooks.
+
 ### Global State
 ```typescript
 // AuthContext (lib/auth-context.tsx)
@@ -204,32 +328,96 @@ export default function Page() {
 - login(), logout(), refreshUser()
 ```
 
+### Custom Hooks (Business Logic Layer)
+```typescript
+// hooks/use-active-assignment.ts
+// Manages volunteer assignment checking and state
+const { activeEvent, volunteerId, loading, refresh, leaveEvent } = useActiveAssignment(user)
+
+// hooks/use-form-submit.ts
+// Reusable form submission with loading/error states
+const { isSubmitting, error, handleSubmit, reset } = useFormSubmit({
+  onSubmit: async (data) => { await api.post('/endpoint', data) },
+  onSuccess: () => { toast("Success!") },
+  onError: (error) => { toast(error.message) }
+})
+```
+
 ### Local State (page.tsx)
 ```typescript
-- activeTab: which tab is selected
-- myActiveEvent: user's current volunteer assignment
-- myVolunteerId: ID of active volunteer record
-- loading: data fetching state
+// Minimal UI state only
+- currentTab: which tab is currently visible (events/my-event/profile)
+
+// Business logic moved to hooks:
+- useActiveAssignment() handles all volunteer assignment logic
+- No more manual useEffect loops in page component
 ```
+
+### Benefits of Hook Architecture
+✅ **Separation of Concerns**: UI components only handle rendering
+✅ **Reusability**: Hooks can be used in multiple components
+✅ **Testability**: Business logic can be tested independently
+✅ **Maintainability**: Cleaner, smaller component files
+✅ **Type Safety**: Full TypeScript support in hooks
 
 ## 🔄 Data Flow
 
+### Complete Flow with Hooks
+
 ```
-User Action (click button)
+┌─────────────────────────────────────────────────────────────┐
+│ User Action (click button)                                  │
+│     ↓                                                        │
+│ Component calls custom hook                                 │
+│     ↓                                                        │
+│ Hook calls api-client function                              │
+│     ↓                                                        │
+│ api-client adds token from sessionStorage                   │
+│     ↓                                                        │
+│ Fetch to backend API                                        │
+│     ↓                                                        │
+│ ┌───────────────────┬────────────────────┐                  │
+│ │ Success           │ 401 Error          │                  │
+│ │    ↓              │    ↓               │                  │
+│ │ Return data       │ clearAuthToken()   │                  │
+│ │    ↓              │    ↓               │                  │
+│ │ Hook updates      │ Redirect to        │                  │
+│ │ state             │ /login             │                  │
+│ │    ↓              │    ↓               │                  │
+│ │ Component         │ Show "Session      │                  │
+│ │ re-renders        │ expired"           │                  │
+│ └───────────────────┴────────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Example: Joining an Event
+
+```
+User clicks "Join Event"
     ↓
-Component calls api-client function
+EventDetailsDialog.tsx calls createVolunteer()
     ↓
-api-client adds token from sessionStorage
+api-client.ts → post<Volunteer>('/volunteers/', data)
     ↓
-Fetch to backend API
+Backend creates volunteer record
     ↓
-┌─────────────┬──────────────┐
-│ Success     │ 401 Error    │
-│    ↓        │    ↓         │
-│ Return data │ Auto-logout  │
-│    ↓        │ Redirect     │
-│ Update UI   │ to /login    │
-└─────────────┴──────────────┘
+Response returns with volunteer data
+    ↓
+Dialog calls onVolunteerJoined() callback
+    ↓
+EventsFeed calls handleVolunteerJoined()
+    ↓
+page.tsx useActiveAssignment hook detects change
+    ↓
+Hook fetches updated event list
+    ↓
+Finds user's new volunteer assignment
+    ↓
+Updates activeEvent state
+    ↓
+page.tsx switches to "my-event" tab
+    ↓
+MyEventView component renders
 ```
 
 ## ⚡ Performance
@@ -280,4 +468,12 @@ Fetch to backend API
 ---
 
 **Last Updated:** November 21, 2025
-**Version:** 2.0.0 (Clean Architecture)
+**Version:** 3.0.0 (Hook-Based Architecture)
+
+### Changelog v3.0.0
+- ✅ Added custom hooks: `useActiveAssignment`, `useFormSubmit`
+- ✅ Enhanced API client with 5 HTTP methods (GET, POST, PUT, PATCH, DELETE)
+- ✅ Extracted business logic from page.tsx (150 → 70 lines)
+- ✅ Full type safety with no `any` types
+- ✅ Improved error handling with 204 No Content support
+- ✅ Updated documentation with hook patterns and data flow

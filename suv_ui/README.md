@@ -5,10 +5,13 @@ Mobile-first volunteer response application for field operations.
 ## Features
 
 - 📱 **Mobile-First Design**: Optimized for phone screens (375px-428px)
-- 🔄 **Real-Time Updates**: Events refresh every 30 seconds
-- 🎯 **Two-Tab Navigation**: Events feed and user profile
+- 🔄 **Manual Refresh**: On-demand refresh button (no aggressive polling)
+- 🎯 **Three-Tab Navigation**: Events feed, my event, and profile
+- 🔐 **Secure Authentication**: sessionStorage with auto-logout on 401
 - 🎨 **Light Mode UI**: Blue accent theme for daylight readability
 - 📡 **API Integration**: Connects to backend at `localhost:8000`
+- 🪝 **Custom Hooks**: Clean architecture with business logic separation
+- 🔧 **Type Safety**: Full TypeScript support throughout
 
 ## Getting Started
 
@@ -46,17 +49,26 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 suv_ui/
 ├── app/
-│   ├── page.tsx           # Main app with tab routing
-│   ├── layout.tsx         # Root layout
+│   ├── login/             # Login page
+│   ├── register/          # Registration page
+│   ├── page.tsx           # Main app with tab routing (clean architecture)
+│   ├── layout.tsx         # Root layout with AuthProvider
 │   └── globals.css        # Global styles (light blue theme)
 ├── components/
-│   ├── tab-navigation.tsx # Bottom tab bar
-│   ├── event-card.tsx     # Individual event display
-│   ├── events-feed.tsx    # Events list with API integration
-│   └── profile-view.tsx   # User profile placeholder
+│   └── app/               # App-specific components
+│       ├── tab-navigation.tsx        # Bottom tab bar
+│       ├── event-card.tsx            # Individual event display
+│       ├── event-details-dialog.tsx  # Event details modal
+│       ├── events-feed.tsx           # Events list with API integration
+│       ├── my-event-view.tsx         # Active assignment view
+│       └── profile-view.tsx          # User profile
+├── hooks/                 # Custom React hooks (business logic)
+│   ├── use-active-assignment.ts      # Volunteer assignment state
+│   └── use-form-submit.ts            # Reusable form handling
 └── lib/
     ├── types.ts           # TypeScript definitions
-    └── api-client.ts      # API fetch utilities
+    ├── api-client.ts      # API client with 5 HTTP methods + auth
+    └── auth-context.tsx   # Authentication state & auto-redirect
 ```
 
 ## API Integration
@@ -96,10 +108,41 @@ Test in browser DevTools with these viewports:
 - iPhone 12/13: 390 x 844
 - iPhone 14 Pro Max: 428 x 926
 
+## Architecture Highlights
+
+### Clean Architecture Pattern
+- **Custom Hooks**: Business logic extracted from components
+  - `useActiveAssignment`: Manages volunteer assignment state
+  - `useFormSubmit`: Reusable form submission logic
+- **API Client**: 5 HTTP methods (GET, POST, PUT, PATCH, DELETE) with auto-auth
+- **Type Safety**: Full TypeScript throughout with no `any` types
+- **Error Handling**: Automatic 401 logout + redirect
+
+### Authentication Flow
+```
+User → sessionStorage (token) → API Client → Backend
+                ↓
+           401 Error? → Auto-logout → Redirect to /login
+```
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete documentation.
+
 ## Tech Stack
 
-- **Framework**: Next.js 14+ (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State**: React hooks (useState, useEffect)
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4
+- **State**: React 19 hooks + Custom hooks
+- **Auth**: sessionStorage with auto-redirect
 
+## File	One-Line Purpose
+package.json	Lists dependencies & scripts
+package-lock.json	Locks exact versions
+tsconfig.json	TypeScript settings
+next.config.ts	Next.js settings
+eslint.config.mjs	Code quality rules
+postcss.config.mjs	CSS processing (Tailwind)
+.env.local	Secret variables
+.env.local.example	Template for .env.local
+next-env.d.ts	Next.js TypeScript types
+.gitignore	What git should ignore
