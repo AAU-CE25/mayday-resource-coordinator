@@ -8,35 +8,35 @@ import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 /**
- * Get auth token from localStorage
+ * Get auth token from sessionStorage (expires when browser closes - more secure)
  */
 export function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token')
+    return sessionStorage.getItem('auth_token')
   }
   return null
 }
 
 /**
- * Set auth token in localStorage
+ * Set auth token in sessionStorage
  */
 export function setAuthToken(token: string) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token)
+    sessionStorage.setItem('auth_token', token)
   }
 }
 
 /**
- * Clear auth token from localStorage
+ * Clear auth token from sessionStorage
  */
 export function clearAuthToken() {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token')
+    sessionStorage.removeItem('auth_token')
   }
 }
 
 /**
- * Generic fetch wrapper with error handling
+ * Generic fetch wrapper with error handling and auto-logout on 401
  */
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
@@ -52,8 +52,18 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
       ...options,
     })
 
+    // Handle unauthorized - clear token and redirect
+    if (response.status === 401) {
+      clearAuthToken()
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
+      throw new Error('Session expired. Please login again.')
+    }
+
     if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${response.statusText}`)
+      const errorText = await response.text().catch(() => response.statusText)
+      throw new Error(`API error ${response.status}: ${errorText}`)
     }
 
     return response.json()

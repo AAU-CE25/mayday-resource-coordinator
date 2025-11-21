@@ -1,20 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { login as apiLogin, register as apiRegister } from "@/lib/api-client"
+import Link from "next/link"
+import { login as apiLogin } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 
-export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true)
+export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
-  const [phonenumber, setPhonenumber] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   
-  const router = useRouter()
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,27 +19,10 @@ export default function AuthPage() {
     setLoading(true)
 
     try {
-      if (isLogin) {
-        // Login
-        await apiLogin({ email, password })
-        await login()
-        router.push("/")
-      } else {
-        // Register
-        await apiRegister({
-          name,
-          email,
-          phonenumber,
-          password,
-          role: "SUV"
-        })
-        // Auto-login after registration
-        await apiLogin({ email, password })
-        await login()
-        router.push("/")
-      }
+      await apiLogin({ email, password })
+      await login()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed")
+      setError(err instanceof Error ? err.message : "Login failed")
     } finally {
       setLoading(false)
     }
@@ -65,49 +44,11 @@ export default function AuthPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isLogin ? "Welcome Back" : "Join MayDay"}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {isLogin ? "Sign in to continue helping" : "Create your volunteer account"}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+            <p className="text-gray-600 mt-2">Sign in to continue helping</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="John Doe"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="phonenumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    id="phonenumber"
-                    type="tel"
-                    required
-                    value={phonenumber}
-                    onChange={(e) => setPhonenumber(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="+45 12 34 56 78"
-                  />
-                </div>
-              </>
-            )}
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
@@ -120,6 +61,7 @@ export default function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="you@example.com"
+                disabled={loading}
               />
             </div>
 
@@ -135,11 +77,8 @@ export default function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="••••••••"
-                minLength={6}
+                disabled={loading}
               />
-              {!isLogin && (
-                <p className="text-xs text-gray-500 mt-1">At least 6 characters</p>
-              )}
             </div>
 
             {error && (
@@ -162,23 +101,19 @@ export default function AuthPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Please wait...
+                  Signing in...
                 </span>
-              ) : isLogin ? "Sign In" : "Create Account"}
+              ) : "Sign In"}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin)
-                setError(null)
-              }}
+            <Link
+              href="/register"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
-            </button>
+              Need an account? Sign up
+            </Link>
           </div>
         </div>
 

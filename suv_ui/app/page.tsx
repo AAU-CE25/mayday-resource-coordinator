@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react"
 import type { TabType, Event, Volunteer } from "@/lib/types"
-import { TabNavigation } from "@/components/tab-navigation"
-import { EventsFeed } from "@/components/events-feed"
-import { ProfileView } from "@/components/profile-view"
-import { MyEventView } from "@/components/my-event-view"
+import { TabNavigation } from "@/components/app/tab-navigation"
+import { EventsFeed } from "@/components/app/events-feed"
+import { ProfileView } from "@/components/app/profile-view"
+import { MyEventView } from "@/components/app/my-event-view"
 import { useAuth } from "@/lib/auth-context"
 import { fetchActiveVolunteers, fetchEvents, completeVolunteer } from "@/lib/api-client"
 
@@ -18,7 +18,7 @@ export default function Home() {
 
   // Check if user has an active volunteer assignment
   useEffect(() => {
-    const checkActiveAssignment = async () => {
+    async function checkActiveAssignment() {
       if (!user) {
         setMyActiveEvent(null)
         setMyVolunteerId(null)
@@ -52,10 +52,6 @@ export default function Home() {
     }
 
     checkActiveAssignment()
-    
-    // Re-check every 10 seconds for updates
-    const interval = setInterval(checkActiveAssignment, 10000)
-    return () => clearInterval(interval)
   }, [user])
 
   const handleLeaveEvent = async () => {
@@ -68,6 +64,37 @@ export default function Home() {
       setActiveTab("events")
     } catch (error) {
       console.error("Failed to leave event:", error)
+    }
+  }
+
+  const handleRefresh = async () => {
+    if (!user) return
+    
+    setLoading(true)
+    try {
+      const events = await fetchEvents()
+      
+      for (const event of events) {
+        const volunteers = await fetchActiveVolunteers(event.id)
+        const myVolunteer = volunteers.find(
+          (v: Volunteer) => v.user.id === user.id && v.status === 'active'
+        )
+        
+        if (myVolunteer) {
+          setMyActiveEvent(event)
+          setMyVolunteerId(myVolunteer.id)
+          setActiveTab("my-event")
+          return
+        }
+      }
+      
+      // No active event found
+      setMyActiveEvent(null)
+      setMyVolunteerId(null)
+    } catch (error) {
+      console.error("Failed to refresh:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -86,11 +113,23 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gray-50 pb-16">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="px-4 py-4">
-          <h1 className="text-xl font-bold text-gray-900">SUV Response</h1>
-          <p className="text-sm text-gray-600">
-            {myActiveEvent ? "Active Assignment" : "Volunteer Portal"}
-          </p>
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">SUV Response</h1>
+            <p className="text-sm text-gray-600">
+              {myActiveEvent ? "Active Assignment" : "Volunteer Portal"}
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       </header>
 
