@@ -24,9 +24,19 @@ class VolunteerDAO:
             return session.get(Volunteer, volunteer_id)
 
     @staticmethod
-    def get_volunteers(skip, limit) -> list[Volunteer]:
-        """Retrieve all volunteers."""
+    def get_volunteers(event_id: int = None, user_id: int = None, status: str = None, skip: int = 0, limit: int = 100) -> list[Volunteer]:
+        """Retrieve all volunteers with optional filtering."""
         query = select(Volunteer)
+        
+        # Add conditional WHERE clauses for each filter parameter
+        if event_id is not None:
+            query = query.where(Volunteer.event_id == event_id)
+        
+        if user_id is not None:
+            query = query.where(Volunteer.user_id == user_id)
+        
+        if status is not None:
+            query = query.where(Volunteer.status == status)
 
         with Session(engine) as session:
             return session.exec(query.offset(skip).limit(limit)).all()

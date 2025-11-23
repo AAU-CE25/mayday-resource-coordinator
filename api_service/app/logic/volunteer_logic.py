@@ -38,8 +38,15 @@ class VolunteerLogic:
         return response_volunteer
 
 
-    def get_volunteers(skip: int, limit: int) -> list[VolunteerResponse]:
-        volunteers = VolunteerDAO.get_volunteers(skip, limit)
+    def get_volunteers(event_id: int = None, user_id: int = None, status: str = None, skip: int = 0, limit: int = 100) -> list[VolunteerResponse]:
+        """Get volunteers with optional filtering by event_id, user_id, and status."""
+        volunteers = VolunteerDAO.get_volunteers(
+            event_id=event_id,
+            user_id=user_id,
+            status=status,
+            skip=skip,
+            limit=limit
+        )
         result: list[VolunteerResponse] = []
         for volunteer in volunteers:
             result.append(VolunteerLogic.get_volunteer(volunteer.id))
