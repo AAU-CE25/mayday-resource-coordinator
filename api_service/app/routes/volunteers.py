@@ -1,14 +1,21 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from typing import Optional
 
 from domain.schemas import VolunteerCreate, VolunteerResponse, VolunteerUpdate
+from domain.exceptions import UserExistsException
 from api_service.app.logic import VolunteerLogic
 
 router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 
-@router.post("/", response_model=VolunteerResponse)
-def create_volunteer_endpoint(volunteerCreate: VolunteerCreate):
-    return VolunteerLogic.create_volunteer(volunteerCreate)
+@router.post("/", response_model=VolunteerResponse, status_code=status.HTTP_201_CREATED)
+def create_volunteer(volunteer: VolunteerCreate):
+    try:
+        return VolunteerLogic.create_volunteer(volunteer)
+    except UserExistsException:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already exists with this email"
+        )
 
 @router.get("/", response_model=list[VolunteerResponse])
 def read_volunteers(

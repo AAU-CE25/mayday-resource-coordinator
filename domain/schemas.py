@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime as dt
 from typing import Optional
 
@@ -62,8 +62,8 @@ class LocationResponse(BaseModel):
 # ------------------ Event ------------------
 class EventCreate(BaseModel):
     description: str
-    priority: int
-    status: str 
+    priority: int = Field(ge=1, le=5)  # Add validation: 1-5 only
+    status: str
     location: LocationCreate
 
 class EventUpdate(BaseModel):
@@ -91,7 +91,7 @@ class ResourceNeededCreate(BaseModel):
     name: str
     resource_type: str
     description: str
-    quantity: int
+    quantity: int = Field(ge=1)
     is_fulfilled: bool = False
     event_id: int
 
@@ -99,7 +99,7 @@ class ResourceNeededUpdate(BaseModel):
     name: str | None = None
     resource_type: str | None = None
     description: str | None = None
-    quantity: int | None = None
+    quantity: int = Field(None, ge=1)
     is_fulfilled: bool | None = None
     event_id: int | None = None
 
@@ -120,7 +120,7 @@ class ResourceNeededResponse(BaseModel):
 class ResourceAvailableCreate(BaseModel):
     name: str
     resource_type: str
-    quantity: int
+    quantity: int = Field(ge=1)
     description: str
     status: str
     volunteer_id: int
@@ -129,7 +129,7 @@ class ResourceAvailableCreate(BaseModel):
 class ResourceAvailableUpdate(BaseModel):
     name: str | None = None
     resource_type: str | None = None
-    quantity: int | None = None
+    quantity: int = Field(None, ge=1)
     description: str | None = None
     status: str | None = None
     volunteer_id: int | None = None
