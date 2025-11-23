@@ -5,19 +5,22 @@ from typing import Optional
 # ------------------ User ------------------
 class UserCreate(BaseModel):
     name: str
-    email: EmailStr  # Use EmailStr for validation
-    password: str = Field(min_lengeh=6)
-    role: str = Field(default="SUV")
+    email: str
+    phonenumber: str
+    password: str
+    role: str | None = "SUV"
 
 class UserUpdate(BaseModel):
     id: int
     name: str | None = None
     email: str | None = None
+    phonenumber: str | None = None
 
 class UserResponse(BaseModel):
     id: int
     name: str
     email: str
+    phonenumber: str | None = None
     model_config = {
         "from_attributes": True
     }
@@ -148,25 +151,23 @@ class ResourceAvailableResponse(BaseModel):
 
 # ------------------ Volunteer ------------------
 class VolunteerCreate(BaseModel):
-    user: UserCreate
-    phonenumber: str
-    availability: str
-    location_id: int | None = None
+    user_id: int
+    event_id: int
+    status: str = "active"  # active | completed
 
 class VolunteerUpdate(BaseModel):
     id: int 
-    name: str | None = None
-    email: str | None = None
-    phonenumber: str | None = None
-    availability: str | None = None
-    location_id: int | None = None
+    user_id: int | None = None
+    event_id: int | None = None
+    status: str | None = None
 
 class VolunteerResponse(BaseModel):
     id: int
     user: UserResponse
-    phonenumber: str
-    availability: str
-    location_id: int | None = None
+    event_id: int
+    status: str
+    create_time: dt
+    completion_time: dt | None = None
     model_config = {
         "from_attributes": True
     }
