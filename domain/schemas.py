@@ -186,3 +186,13 @@ class StatsResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+# class NotificationResponse:
+#     def __init__(self, id, title, message, read, timestamp):
+#         self.id = id
+#         self.title = title
+#         self.message = message
+#         self.read = read
+#         self.timestamp = timestamp
+
+

@@ -1,12 +1,50 @@
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Query, Depends, WebSocket, WebSocketDisconnect
+from typing import Optional, Set
+from sqlalchemy.orm import Session
+import json
 
 from domain import EventCreate, EventResponse, EventUpdate
 from api_service.app.logic import EventLogic, IngestionLogic
+from api_service.app.models import Event
+from ..db import get_session as get_db
 
-router = APIRouter(prefix="/events", tags=["events"])
+# Create two routers: one for /events endpoints, one for /ws/events
+event_router = APIRouter(prefix="/events", tags=["events"])
+ws_router = APIRouter(tags=["websocket"])
 
-@router.get(
+# Store active WebSocket connections
+active_connections: Set[WebSocket] = set()
+
+# WebSocket endpoint at /ws/events (not under /events prefix)
+@ws_router.websocket("/ws/events")
+async def websocket_events(websocket: WebSocket):
+    await websocket.accept()
+    active_connections.add(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        active_connections.remove(websocket)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+
+# Helper to broadcast event updates to all connected clients
+async def broadcast_event_update(event_data: dict):
+    """Broadcast new/updated event to all connected WebSocket clients"""
+    disconnected = set()
+    for connection in active_connections:
+        try:
+            await connection.send_json(event_data)
+        except Exception:
+            disconnected.add(connection)
+    
+    # Remove dead connections
+    for connection in disconnected:
+        active_connections.discard(connection)
+
+@event_router.get(
     "/", 
     response_model=list[EventResponse],
     summary="Get all events",
@@ -22,7 +60,7 @@ def get_events(
     events = EventLogic.get_events(skip=skip, limit=limit, priority=priority, status=status)
     return events
 
-@router.get(
+@event_router.get(
     "/{event_id}", 
     response_model=EventResponse,
     summary="Get event by ID",
@@ -38,7 +76,7 @@ def get_event(event_id: int):
         raise HTTPException(status_code=404, detail="Event not found")
     return event
 
-@router.post(
+@event_router.post(
     "/", 
     response_model=EventResponse,
     status_code=201,
@@ -46,9 +84,16 @@ def get_event(event_id: int):
     description="Create a new disaster event"
 )
 def create_event(event: EventCreate):
-    return EventLogic.create_event(event)
+    new_event = EventLogic.create_event(event)
+    # Broadcast to WebSocket clients
+    import asyncio
+    try:
+        asyncio.run(broadcast_event_update({"id": new_event.id, "description": new_event.description}))
+    except:
+        pass  # WebSocket broadcast failed, but event still created
+    return new_event
 
-@router.put(
+@event_router.put(
     "/{event_id}", 
     response_model=EventResponse,
     summary="Update event",
@@ -64,7 +109,7 @@ def update_event(event_id: int, event: EventUpdate):
         raise HTTPException(status_code=404, detail="Event not found")
     return EventLogic.update_event(event_id, event)
 
-@router.delete(
+@event_router.delete(
     "/{event_id}", 
     status_code=204,
     summary="Delete event",
@@ -80,7 +125,7 @@ def delete_event(event_id: int):
         raise HTTPException(status_code=404, detail="Event not found")
     return EventLogic.delete_event(event_id)
 
-@router.post("/ingest")
+@event_router.post("/ingest")
 def ingest_event(full_event: dict):
     try:
         # print(full_event)
@@ -88,3 +133,32 @@ def ingest_event(full_event: dict):
         return {"message": "Event successfully ingested", "event_id": event_id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@event_router.post(
+    "/{event_id}/mark-read/",
+    response_model=dict,
+    summary="Mark event as read",
+    description="Mark a specific event notification as read"
+)
+def mark_event_read(event_id: int, db: Session = Depends(get_db)):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    event.read = True
+    db.commit()
+    return {"id": event_id, "read": True}
+
+@event_router.post(
+    "/mark-all-read/",
+    response_model=dict,
+    summary="Mark all events as read",
+    description="Mark all event notifications as read"
+)
+def mark_all_read(db: Session = Depends(get_db)):
+    db.query(Event).update({Event.read: True})
+    db.commit()
+    return {"status": "all marked read"}
+
+# At the bottom of file, export both routers
+# router = [event_router]   Keep for backward compatibility
+__all__ = ["event_router", "ws_router"]

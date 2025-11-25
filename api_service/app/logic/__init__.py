@@ -5,3 +5,14 @@ from .resource_logic import ResourceLogic as ResourceLogic
 from .volunteer_logic import VolunteerLogic as VolunteerLogic
 from .ingestion_logic import IngestionLogic as IngestionLogic
 from .stats_logic import StatsLogic as StatsLogic
+
+
+__all__ = [
+    "EventLogic",
+    "UserLogic",
+    "LocationLogic",
+    "ResourceLogic",
+    "VolunteerLogic",
+    "IngestionLogic",
+    "StatsLogic"
+]
