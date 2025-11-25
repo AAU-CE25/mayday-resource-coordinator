@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { Activity, AlertTriangle, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,8 +8,10 @@ import { NotificationsPopover } from "./notifications-popover"
 import { useNotifications } from "@/hooks/use-notifications"
 
 export function Header() {
-  // const { data: notifications } = useNotifications()
-  // const unreadCount = notifications?.filter((n: any) => !n.read).length || 0
+  console.log("Header Component: Running client-side code.")
+
+  const { data: notifications = [], isLoading } = useNotifications()
+  const unreadCount = (notifications || []).filter((n: any) => !n.read).length || 0
 
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
@@ -24,13 +27,13 @@ export function Header() {
 
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2">
-          <Activity className="h-4 w-4 animate-pulse text-chart-2" />
-          <span className="text-sm font-medium text-foreground">System Active</span>
+          <Activity className={`h-4 w-4 ${!isLoading ? "animate-pulse" : ""} text-chart-2`} />
+          <span className="text-sm font-medium text-foreground">{!isLoading ? "System Active" : "Connecting..."}</span>
         </div>
 
-        {/* <NotificationsPopover>
+        <NotificationsPopover>
           <Button variant="outline" size="icon" className="relative bg-transparent">
-            <Bell className="h-4 w-4" />
+            <Bell className="h-6 w-6" />
             {unreadCount > 0 && (
               <Badge
                 variant="destructive"
@@ -40,7 +43,7 @@ export function Header() {
               </Badge>
             )}
           </Button>
-        </NotificationsPopover> */}
+        </NotificationsPopover>
       </div>
     </header>
   )

@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-
+import * as React from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useNotifications } from "@/hooks/use-notifications"
 import { Card } from "@/components/ui/card"
@@ -9,48 +8,72 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertCircle, CheckCircle, Info, XCircle } from "lucide-react"
-import { mutate } from "swr"
 import { useToast } from "@/hooks/use-toast"
+import { api } from "@/lib/api-client"
 
 interface NotificationsPopoverProps {
   children: React.ReactNode
 }
 
 export function NotificationsPopover({ children }: NotificationsPopoverProps) {
-  const { data: notifications, isLoading } = useNotifications()
+  const { data: notifications, isLoading, mutate } = useNotifications()
   const { toast } = useToast()
+  const [marking, setMarking] = React.useState<number | null>(null)
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  // Mark single notification as read
+  const handleMarkRead = async (notificationId: number) => {
+    setMarking(notificationId)
     try {
-      await fetch(`/api/notifications/${notificationId}/read`, {
-        method: "POST",
+      // Optimistically update local cache
+      mutate((current: any[]) => {
+        return (current ?? []).map((n: any) =>
+          n.id === notificationId ? { ...n, read: true } : n
+        )
+      }, false)
+
+      // Call backend to persist (adjust endpoint if needed)
+      await api.post(`/events/${notificationId}/mark-read/`, {})
+
+      toast({
+        title: "Marked as read",
+        description: "Notification updated.",
       })
-      mutate("/api/notifications")
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to mark notification as read.",
+        description: error.message || "Failed to mark notification as read.",
         variant: "destructive",
       })
+      // Revalidate to revert optimistic update on error
+      mutate()
+    } finally {
+      setMarking(null)
     }
   }
 
-  const handleMarkAllAsRead = async () => {
+  // Mark all notifications as read
+  const handleMarkAllRead = async () => {
     try {
-      await fetch("/api/notifications/read-all", {
-        method: "POST",
-      })
-      mutate("/api/notifications")
+      // Optimistically update local cache
+      mutate((current: any[]) => {
+        return (current ?? []).map((n: any) => ({ ...n, read: true }))
+      }, false)
+
+      // Call backend to persist (adjust endpoint if needed)
+      await api.post("/events/mark-all-read/", {})
+
       toast({
-        title: "Success",
-        description: "All notifications marked as read.",
+        title: "All marked as read",
+        description: "All notifications have been marked as read.",
       })
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to mark all notifications as read.",
+        description: error.message || "Failed to mark all as read.",
         variant: "destructive",
       })
+      // Revalidate to revert optimistic update on error
+      mutate()
     }
   }
 
@@ -74,7 +97,7 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
         <div className="flex items-center justify-between border-b border-border p-4">
           <h3 className="font-semibold text-foreground">Notifications</h3>
           {notifications && notifications.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
+            <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
               Mark all read
             </Button>
           )}
@@ -90,19 +113,26 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
               {notifications.map((notification: any) => (
                 <Card
                   key={notification.id}
-                  className={`cursor-pointer p-3 transition-colors hover:bg-secondary ${
+                  className={`group cursor-pointer p-3 transition-colors hover:bg-secondary ${
                     !notification.read ? "border-primary bg-secondary/50" : ""
                   }`}
-                  onClick={() => !notification.read && handleMarkAsRead(notification.id)}
+                  onClick={() => !notification.read && handleMarkRead(notification.id)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5">{getIcon(notification.type)}</div>
+                    <div className="mt-0.5">{getIcon("info")}</div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium text-foreground">{notification.title}</p>
                         {!notification.read && (
-                          <Badge variant="default" className="h-5 text-xs">
-                            New
+                          <Badge
+                            variant="default"
+                            className="h-5 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMarkRead(notification.id)
+                            }}
+                          >
+                            {marking === notification.id ? "Marking..." : "New"}
                           </Badge>
                         )}
                       </div>

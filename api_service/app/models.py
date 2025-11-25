@@ -55,3 +55,13 @@ class User(SQLModel, table=True):
     phonenumber: str
     password: str
     role: str = Field(default="SUV")  # SUV | VC | AUTHORITY
+
+
+class Notification(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    message: str
+    read: bool = Field(default=False)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
