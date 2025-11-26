@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useEvents } from "@/hooks/use-events"
+import { useVolunteers } from "@/hooks/use-volunteers"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ interface EventsListProps {
 
 export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
   const { data: events, isLoading } = useEvents()
+  const { data: volunteers } = useVolunteers()
   const [searchQuery, setSearchQuery] = useState("")
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -125,6 +127,11 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
                     >
                       {event.status}
                     </Badge>
+                    <Badge variant="outline">{
+                      volunteers
+                        ? volunteers.filter((v: any) => (v.event_id ?? v.assigned_event) === event.id).length
+                        : 0
+                    } Volunteers</Badge>
                   </div>
 
                   {event.resources_needed && event.resources_needed.length > 0 && (

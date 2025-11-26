@@ -81,6 +81,7 @@ class EventResponse(BaseModel):
     create_time: dt
     modified_time: dt
     location: LocationResponse
+    volunteers_count: int = 0
     model_config = {
         "from_attributes": True
     }

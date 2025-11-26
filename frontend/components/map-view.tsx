@@ -108,6 +108,9 @@ export default function MapView({
               <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}">
                 ${event.status}
               </span>
+              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:rgba(77, 75, 75, 1)">
+                ${typeof event.volunteers_count !== 'undefined' ? event.volunteers_count : 0} Volunteers
+              </span>
             </div>
           </div>
         `)

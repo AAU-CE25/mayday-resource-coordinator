@@ -1,4 +1,5 @@
 from sqlmodel import Session, select
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from datetime import datetime
 
@@ -52,6 +53,15 @@ class VolunteerDAO:
 
         with Session(engine) as session:
             return session.exec(query.offset(skip).limit(limit)).all()
+
+    @staticmethod
+    def count_volunteers(event_id: int | None = None) -> int:
+        """Return the number of volunteers, optionally filtered by event_id."""
+        query = select(func.count()).select_from(Volunteer)
+        if event_id is not None:
+            query = query.where(Volunteer.event_id == event_id)
+        with Session(engine) as session:
+            return session.exec(query).one()
 
     @staticmethod
     def update_volunteer(volunteer_update: Volunteer) -> Volunteer | None:
