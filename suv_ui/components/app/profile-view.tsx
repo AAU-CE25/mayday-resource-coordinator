@@ -15,6 +15,8 @@ export function ProfileView() {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
   const { stats, isLoading: statsLoading, error: statsError } = useVolunteerStats(user?.id)
+  // Ensure we have a safe default for stats to avoid runtime/TS errors
+  const safeStats = stats ?? { totalEvents: 0, totalHours: 0, volunteers: [] }
   const [events, setEvents] = useState<Event[]>([])
   const [eventsLoading, setEventsLoading] = useState(true)
 
@@ -144,11 +146,11 @@ export function ProfileView() {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-blue-600">{stats.totalEvents}</p>
+              <p className="text-2xl font-bold text-blue-600">{safeStats.totalEvents}</p>
               <p className="text-sm text-gray-600 mt-1">Total Events</p>
             </div>
             <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-green-600">{stats.totalHours.toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-green-600">{(safeStats.totalHours ?? 0).toFixed(1)}h</p>
               <p className="text-sm text-gray-600 mt-1">Total Time</p>
             </div>
           </div>
@@ -156,7 +158,7 @@ export function ProfileView() {
       </div>
 
       {/* Volunteer History */}
-      {!statsLoading && stats.volunteers.length > 0 && (
+      {!statsLoading && (safeStats.volunteers?.length ?? 0) > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Volunteer History</h3>
           
@@ -166,7 +168,7 @@ export function ProfileView() {
             </div>
           ) : (
             <div className="space-y-3">
-              {stats.volunteers
+              {safeStats.volunteers
                 .sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime())
                 .slice(0, 10)
                 .map((volunteer) => {
