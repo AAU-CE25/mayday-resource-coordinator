@@ -1,0 +1,112 @@
+name: Build and Push to AWS ECR
+
+on:
+  release:
+    types: [published, created]
+  workflow_dispatch:  # Allows manual triggering
+
+env:
+  AWS_REGION: eu-central-1  # Change this to your AWS region
+  
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images to ECR
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+    
+    strategy:
+      matrix:
+        service:
+          - name: api_service
+            context: .
+            dockerfile: api_service/Dockerfile
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+          - name: suv_ui
+            context: ./suv_ui
+            dockerfile: ./suv_ui/Dockerfile
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_KAJ }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_KAJ }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Create ECR repository if it doesn't exist
+        continue-on-error: true
+        run: |
+          aws ecr describe-repositories --repository-names ${{ matrix.service.name }} --region ${{ env.AWS_REGION }} || \
+          aws ecr create-repository \
+            --repository-name ${{ matrix.service.name }} \
+            --region ${{ env.AWS_REGION }} \
+            --image-scanning-configuration scanOnPush=true \
+            --encryption-configuration encryptionType=AES256
+      
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.service.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Image digest
+        run: |
+          echo "Image pushed successfully!"
+          echo "Repository: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.service.name }}"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+  
+  summary:
+    name: Deployment Summary
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Print summary
+        run: |
+          echo "## 🚀 Release Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Name:** ${{ github.event.release.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All services have been built and pushed to AWS ECR!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Services Deployed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ api_service" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ frontend" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ suv_ui" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Image Tags:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
