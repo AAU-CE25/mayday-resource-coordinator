@@ -38,10 +38,19 @@ export function VolunteersList() {
       volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       volunteer.phonenumber.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Determine actual status based on event_id
+    // Determine actual status
     const isAssigned =
       volunteer.event_id !== null && volunteer.event_id !== undefined;
-    const actualStatus = isAssigned ? "assigned" : "available";
+
+    // Check volunteer.status field for unavailable
+    let actualStatus: string;
+    if (volunteer.status === "unavailable") {
+      actualStatus = "unavailable";
+    } else if (isAssigned) {
+      actualStatus = "assigned";
+    } else {
+      actualStatus = "available";
+    }
 
     const matchesStatus =
       statusFilter === "all" || actualStatus === statusFilter;
@@ -102,24 +111,37 @@ export function VolunteersList() {
       ) : (
         <div className="space-y-3">
           {filteredVolunteers.map((volunteer: any) => {
-            // Determine status based on event_id
+            // Determine status based on volunteer.status and event_id
             const isAssigned =
               volunteer.event_id !== null && volunteer.event_id !== undefined;
-            const displayStatus = isAssigned ? "assigned" : "available";
+            const isUnavailable = volunteer.status === "unavailable";
+
+            // Determine colors based on status
+            let bgColor: string;
+            let textColor: string;
+            let icon: React.ReactNode;
+
+            if (isUnavailable) {
+              bgColor = "bg-red-500/20";
+              textColor = "text-red-500";
+              icon = <UserX className={`h-5 w-5 ${textColor}`} />;
+            } else if (isAssigned) {
+              bgColor = "bg-orange-500/20";
+              textColor = "text-orange-500";
+              icon = <User className={`h-5 w-5 ${textColor}`} />;
+            } else {
+              bgColor = "bg-green-500/20";
+              textColor = "text-green-500";
+              icon = <User className={`h-5 w-5 ${textColor}`} />;
+            }
 
             return (
               <Card key={volunteer.id} className="p-4">
                 <div className="flex items-start gap-3">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                      isAssigned ? "bg-orange-500/20" : "bg-green-500/20"
-                    }`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${bgColor}`}
                   >
-                    <User
-                      className={`h-5 w-5 ${
-                        isAssigned ? "text-orange-500" : "text-green-500"
-                      }`}
-                    />
+                    {icon}
                   </div>
 
                   <div className="flex-1">
@@ -138,7 +160,9 @@ export function VolunteersList() {
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
-                      {isAssigned ? (
+                      {isUnavailable ? (
+                        <UserX className="h-4 w-4 text-red-500" />
+                      ) : isAssigned ? (
                         <UserCheck className="h-4 w-4 text-orange-500" />
                       ) : (
                         <UserCheck className="h-4 w-4 text-green-500" />
@@ -165,12 +189,18 @@ export function VolunteersList() {
                       <Badge
                         variant="outline"
                         className={
-                          isAssigned
+                          isUnavailable
+                            ? "border-red-500 bg-red-500/10 text-red-700 dark:text-red-400"
+                            : isAssigned
                             ? "border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400"
                             : "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400"
                         }
                       >
-                        {isAssigned ? "Assigned (Busy)" : "Available"}
+                        {isUnavailable
+                          ? "Unavailable"
+                          : isAssigned
+                          ? "Assigned (Busy)"
+                          : "Available"}
                       </Badge>
                       {volunteer.skills &&
                         volunteer.skills.map((skill: string, idx: number) => (
@@ -188,7 +218,7 @@ export function VolunteersList() {
                       </div>
                     )}
 
-                    {!isAssigned && (
+                    {!isAssigned && !isUnavailable && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -197,6 +227,14 @@ export function VolunteersList() {
                       >
                         Assign to Event
                       </Button>
+                    )}
+
+                    {isUnavailable && (
+                      <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-center">
+                        <p className="text-xs text-red-600 font-medium">
+                          Volunteer marked as unavailable
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -150,10 +150,26 @@ export async function login(credentials: LoginCredentials): Promise<AuthTokenRes
 }
 
 /**
- * Register a new user
+ * Register a new user and automatically create their volunteer profile
  */
 export async function register(data: RegisterData): Promise<User> {
-  return post<User>('/auth/register', data)
+  // Create user account
+  const user = await post<User>('/auth/register', data)
+  
+  // Create volunteer profile linked to the user
+  try {
+    await post<Volunteer>('/volunteers/', {
+      name: data.name,
+      phonenumber: data.phonenumber,
+      user_id: user.id,
+      status: "active"
+    })
+  } catch (error) {
+    console.error('Failed to create volunteer profile:', error)
+    // Don't throw - user account is created successfully
+  }
+  
+  return user
 }
 
 /**
@@ -253,4 +269,27 @@ export async function completeVolunteer(volunteerId: number): Promise<Volunteer>
     id: volunteerId,
     status: "completed",
   })
+}
+
+/**
+ * Update volunteer availability status (available/unavailable)
+ */
+export async function updateVolunteerStatus(volunteerId: number, status: string): Promise<Volunteer> {
+  return put<Volunteer>(`/volunteers/${volunteerId}`, {
+    id: volunteerId,
+    status: status,
+  })
+}
+
+/**
+ * Get volunteer profile for a specific user
+ */
+export async function getUserVolunteerProfile(userId: number): Promise<Volunteer | null> {
+  try {
+    const volunteers = await get<Volunteer[]>(`/volunteers/?user_id=${userId}&limit=1`)
+    return volunteers && volunteers.length > 0 ? volunteers[0] : null
+  } catch (error) {
+    console.error('Failed to fetch volunteer profile:', error)
+    return null
+  }
 }

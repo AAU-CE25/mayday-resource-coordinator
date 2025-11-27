@@ -1,52 +1,107 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "next/navigation"
-import { useVolunteerStats } from "@/hooks/use-volunteer-stats"
-import { useEffect, useState } from "react"
-import { fetchEvents } from "@/lib/api-client"
-import type { Event } from "@/lib/types"
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
+import { useVolunteerStats } from "@/hooks/use-volunteer-stats";
+import { useEffect, useState } from "react";
+import {
+  fetchEvents,
+  getUserVolunteerProfile,
+  updateVolunteerStatus,
+} from "@/lib/api-client";
+import type { Event, Volunteer } from "@/lib/types";
 
 /**
  * Profile view component
  * Displays authenticated user information and volunteer statistics
  */
 export function ProfileView() {
-  const { user, isLoading, logout } = useAuth()
-  const router = useRouter()
-  const { stats, isLoading: statsLoading, error: statsError } = useVolunteerStats(user?.id)
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
+  const {
+    stats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useVolunteerStats(user?.id);
   // Ensure we have a safe default for stats to avoid runtime/TS errors
-  const safeStats = stats ?? { totalEvents: 0, totalHours: 0, volunteers: [] }
-  const [events, setEvents] = useState<Event[]>([])
-  const [eventsLoading, setEventsLoading] = useState(true)
+  const safeStats = stats ?? { totalEvents: 0, totalHours: 0, volunteers: [] };
+  const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [volunteerProfile, setVolunteerProfile] = useState<Volunteer | null>(
+    null
+  );
+  const [statusLoading, setStatusLoading] = useState(false);
 
   // Fetch events for mapping descriptions
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        setEventsLoading(true)
-        const eventData = await fetchEvents()
-        setEvents(eventData)
+        setEventsLoading(true);
+        const eventData = await fetchEvents();
+        setEvents(eventData);
       } catch (error) {
-        console.error("Failed to load events:", error)
+        console.error("Failed to load events:", error);
       } finally {
-        setEventsLoading(false)
+        setEventsLoading(false);
       }
-    }
-    
-    loadEvents()
-  }, [])
+    };
+
+    loadEvents();
+  }, []);
+
+  // Fetch volunteer profile
+  useEffect(() => {
+    const loadVolunteerProfile = async () => {
+      if (user?.id) {
+        const profile = await getUserVolunteerProfile(user.id);
+        setVolunteerProfile(profile);
+      }
+    };
+
+    loadVolunteerProfile();
+  }, [user]);
 
   // Helper to get event description
   const getEventDescription = (eventId: number): string => {
-    const event = events.find(e => e.id === eventId)
-    return event?.description || `Event #${eventId}`
-  }
+    const event = events.find((e) => e.id === eventId);
+    return event?.description || `Event #${eventId}`;
+  };
 
   const handleLogout = () => {
-    logout()
-    router.push("/auth")
-  }
+    logout();
+    router.push("/auth");
+  };
+
+  const handleStatusToggle = async () => {
+    if (!volunteerProfile) return;
+
+    setStatusLoading(true);
+    try {
+      // Toggle between available and unavailable (preserve active/completed for event assignments)
+      const currentStatus = volunteerProfile.status;
+      let newStatus: string;
+
+      if (currentStatus === "unavailable") {
+        newStatus = "available";
+      } else if (currentStatus === "available") {
+        newStatus = "unavailable";
+      } else {
+        // If currently active or completed, default to available
+        newStatus = "available";
+      }
+
+      const updated = await updateVolunteerStatus(
+        volunteerProfile.id,
+        newStatus
+      );
+      setVolunteerProfile(updated);
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      alert("Failed to update status. Please try again.");
+    } finally {
+      setStatusLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -56,14 +111,16 @@ export function ProfileView() {
           <p className="text-gray-600 text-sm">Loading profile...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
     return (
       <div className="p-4 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Please sign in to view your profile</p>
+          <p className="text-gray-600 mb-4">
+            Please sign in to view your profile
+          </p>
           <button
             onClick={() => router.push("/auth")}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -72,33 +129,106 @@ export function ProfileView() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="p-4 space-y-6">
       {/* User Info Card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg
+                className="w-10 h-10 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {user.name}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {user.role || "SUV Volunteer"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">{user.name}</h2>
-            <p className="text-sm text-gray-600">{user.role || "SUV Volunteer"}</p>
-          </div>
+
+          {/* Availability Status Toggle */}
+          {volunteerProfile && (
+            <div className="flex flex-col items-end gap-2">
+              <div className="text-right">
+                <p className="text-xs font-medium text-gray-700">
+                  Availability Status
+                </p>
+                <p className="text-xs text-gray-500">
+                  Toggle your availability
+                </p>
+              </div>
+              <button
+                onClick={handleStatusToggle}
+                disabled={statusLoading}
+                className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  volunteerProfile.status === "available"
+                    ? "bg-green-500"
+                    : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    volunteerProfile.status === "available"
+                      ? "translate-x-6"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                  volunteerProfile.status === "available"
+                    ? "bg-green-50 border border-green-200"
+                    : "bg-gray-50 border border-gray-200"
+                }`}
+              >
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    volunteerProfile.status === "available"
+                      ? "bg-green-500"
+                      : "bg-gray-400"
+                  }`}
+                />
+                <span
+                  className={`text-xs font-medium ${
+                    volunteerProfile.status === "available"
+                      ? "text-green-700"
+                      : "text-gray-600"
+                  }`}
+                >
+                  {volunteerProfile.status === "available"
+                    ? "Available"
+                    : "Unavailable"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 text-gray-400 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -107,14 +237,21 @@ export function ProfileView() {
               />
             </svg>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">
+                Email
+              </p>
               <p className="text-sm text-gray-900">{user.email}</p>
             </div>
           </div>
 
           {user.phonenumber && (
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-5 h-5 text-gray-400 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -123,7 +260,9 @@ export function ProfileView() {
                 />
               </svg>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                  Phone
+                </p>
                 <p className="text-sm text-gray-900">{user.phonenumber}</p>
               </div>
             </div>
@@ -134,7 +273,7 @@ export function ProfileView() {
       {/* Quick Stats */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-900 mb-4">Activity Summary</h3>
-        
+
         {statsLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="inline-block w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -146,11 +285,15 @@ export function ProfileView() {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-blue-600">{safeStats.totalEvents}</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {safeStats.totalEvents}
+              </p>
               <p className="text-sm text-gray-600 mt-1">Total Events</p>
             </div>
             <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-green-600">{(safeStats.totalHours ?? 0).toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-green-600">
+                {(safeStats.totalHours ?? 0).toFixed(1)}h
+              </p>
               <p className="text-sm text-gray-600 mt-1">Total Time</p>
             </div>
           </div>
@@ -160,8 +303,10 @@ export function ProfileView() {
       {/* Volunteer History */}
       {!statsLoading && (safeStats.volunteers?.length ?? 0) > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Volunteer History</h3>
-          
+          <h3 className="font-semibold text-gray-900 mb-4">
+            Volunteer History
+          </h3>
+
           {eventsLoading ? (
             <div className="flex items-center justify-center py-4">
               <div className="inline-block w-5 h-5 border-3 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
@@ -169,10 +314,14 @@ export function ProfileView() {
           ) : (
             <div className="space-y-3">
               {safeStats.volunteers
-                .sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime())
+                .sort(
+                  (a, b) =>
+                    new Date(b.create_time).getTime() -
+                    new Date(a.create_time).getTime()
+                )
                 .slice(0, 10)
                 .map((volunteer) => {
-                  const eventDesc = getEventDescription(volunteer.event_id)
+                  const eventDesc = getEventDescription(volunteer.event_id);
                   return (
                     <div
                       key={volunteer.id}
@@ -185,11 +334,11 @@ export function ProfileView() {
                           </p>
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              volunteer.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : volunteer.status === 'active'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
+                              volunteer.status === "completed"
+                                ? "bg-green-100 text-green-800"
+                                : volunteer.status === "active"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {volunteer.status}
@@ -197,7 +346,12 @@ export function ProfileView() {
                         </div>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -205,11 +359,19 @@ export function ProfileView() {
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                               />
                             </svg>
-                            Joined: {new Date(volunteer.create_time).toLocaleDateString()}
+                            Joined:{" "}
+                            {new Date(
+                              volunteer.create_time
+                            ).toLocaleDateString()}
                           </span>
                           {volunteer.completion_time && (
                             <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
@@ -217,20 +379,24 @@ export function ProfileView() {
                                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                                 />
                               </svg>
-                              Completed: {new Date(volunteer.completion_time).toLocaleDateString()}
+                              Completed:{" "}
+                              {new Date(
+                                volunteer.completion_time
+                              ).toLocaleDateString()}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                  )
+                  );
                 })}
             </div>
           )}
-          
+
           {stats.volunteers.length > 10 && (
             <p className="text-xs text-gray-500 mt-3 text-center">
-              Showing 10 most recent of {stats.volunteers.length} total assignments
+              Showing 10 most recent of {stats.volunteers.length} total
+              assignments
             </p>
           )}
         </div>
@@ -243,7 +409,12 @@ export function ProfileView() {
           onClick={handleLogout}
           className="w-full px-4 py-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -255,5 +426,5 @@ export function ProfileView() {
         </button>
       </div>
     </div>
-  )
+  );
 }
