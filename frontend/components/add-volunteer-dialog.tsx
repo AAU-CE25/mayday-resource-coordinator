@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,24 +11,33 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { mutate } from "swr"
-import { Badge } from "@/components/ui/badge"
-import { X } from "lucide-react"
-import { api } from "@/lib/api-client"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { mutate } from "swr";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
+import { api } from "@/lib/api-client";
 
 interface AddVolunteerDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogProps) {
-  const { toast } = useToast()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function AddVolunteerDialog({
+  open,
+  onOpenChange,
+}: AddVolunteerDialogProps) {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -36,31 +45,31 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
     latitude: "",
     longitude: "",
     status: "available",
-  })
-  const [skills, setSkills] = useState<string[]>([])
-  const [skillInput, setSkillInput] = useState("")
+  });
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !skills.includes(skillInput.trim())) {
-      setSkills([...skills, skillInput.trim()])
-      setSkillInput("")
+      setSkills([...skills, skillInput.trim()]);
+      setSkillInput("");
     }
-  }
+  };
 
   const handleRemoveSkill = (skill: string) => {
-    setSkills(skills.filter((s) => s !== skill))
-  }
+    setSkills(skills.filter((s) => s !== skill));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
       await api.post("/volunteers/", {
         name: formData.name,
         phonenumber: formData.phone,
         status: formData.status,
-      })
+      });
 
       /*
             await api.post("/events/", {
@@ -76,43 +85,43 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
               },
             }) */
 
+      toast({
+        title: "Volunteer registered",
+        description: "The volunteer has been successfully registered.",
+      });
 
-        toast({
-          title: "Volunteer registered",
-          description: "The volunteer has been successfully registered.",
-        })
+      mutate("/volunteers");
+      mutate("/stats");
 
-        mutate("/volunteers")
-        mutate("/stats")
-
-        setFormData({
-          name: "",
-          phone: "",
-          street: "",
-          latitude: "",
-          longitude: "",
-          status: "available",
-        })
-        setSkills([])
-        onOpenChange(false)
-
+      setFormData({
+        name: "",
+        phone: "",
+        street: "",
+        latitude: "",
+        longitude: "",
+        status: "available",
+      });
+      setSkills([]);
+      onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to register volunteer. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Register Volunteer</DialogTitle>
-          <DialogDescription>Add a new volunteer to the coordination system.</DialogDescription>
+          <DialogDescription>
+            Add a new volunteer to the coordination system.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
@@ -123,7 +132,9 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                 id="name"
                 placeholder="Enter volunteer name..."
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 required
               />
             </div>
@@ -135,13 +146,20 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                 type="tel"
                 placeholder="+1234567890"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select
+                value={formData.status}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
                 <SelectTrigger id="status">
                   <SelectValue />
                 </SelectTrigger>
@@ -162,12 +180,16 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                   onChange={(e) => setSkillInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      e.preventDefault()
-                      handleAddSkill()
+                      e.preventDefault();
+                      handleAddSkill();
                     }
                   }}
                 />
-                <Button type="button" variant="outline" onClick={handleAddSkill}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddSkill}
+                >
                   Add
                 </Button>
               </div>
@@ -176,7 +198,10 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                   {skills.map((skill) => (
                     <Badge key={skill} variant="secondary" className="gap-1">
                       {skill}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => handleRemoveSkill(skill)} />
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => handleRemoveSkill(skill)}
+                      />
                     </Badge>
                   ))}
                 </div>
@@ -189,7 +214,9 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                 id="address"
                 placeholder="Enter location address..."
                 value={formData.street}
-                onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, street: e.target.value })
+                }
               />
             </div>
 
@@ -202,7 +229,9 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                   step="any"
                   placeholder="-12.8432905"
                   value={formData.latitude}
-                  onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, latitude: e.target.value })
+                  }
                 />
               </div>
 
@@ -214,14 +243,20 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
                   step="any"
                   placeholder="175.065665"
                   value={formData.longitude}
-                  onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, longitude: e.target.value })
+                  }
                 />
               </div>
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
@@ -231,5 +266,5 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

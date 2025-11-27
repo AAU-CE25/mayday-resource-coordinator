@@ -1,46 +1,66 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useVolunteers } from "@/hooks/use-volunteers"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { User, Phone, MapPin, Plus, Search, UserCheck, UserX } from "lucide-react"
-import { AddVolunteerDialog } from "./add-volunteer-dialog"
-import { AssignVolunteerDialog } from "./assign-volunteer-dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState } from "react";
+import { useVolunteers } from "@/hooks/use-volunteers";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  User,
+  Phone,
+  MapPin,
+  Plus,
+  Search,
+  UserCheck,
+  UserX,
+} from "lucide-react";
+import { AddVolunteerDialog } from "./add-volunteer-dialog";
+import { AssignVolunteerDialog } from "./assign-volunteer-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function VolunteersList() {
-  const { data: volunteers, isLoading } = useVolunteers()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
-  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null)
+  const { data: volunteers, isLoading } = useVolunteers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
 
   const filteredVolunteers = volunteers?.filter((volunteer: any) => {
     const matchesSearch =
       volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      volunteer.phonenumber.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    // Determine actual status based on event_id
-    const isAssigned = volunteer.event_id !== null && volunteer.event_id !== undefined
-    const actualStatus = isAssigned ? "assigned" : "available"
-    
-    const matchesStatus = statusFilter === "all" || actualStatus === statusFilter
+      volunteer.phonenumber.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch && matchesStatus
-  })
+    // Determine actual status based on event_id
+    const isAssigned =
+      volunteer.event_id !== null && volunteer.event_id !== undefined;
+    const actualStatus = isAssigned ? "assigned" : "available";
+
+    const matchesStatus =
+      statusFilter === "all" || actualStatus === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   if (isLoading) {
-    return <div className="text-center text-muted-foreground">Loading volunteers...</div>
+    return (
+      <div className="text-center text-muted-foreground">
+        Loading volunteers...
+      </div>
+    );
   }
 
   const handleAssign = (volunteer: any) => {
-    setSelectedVolunteer(volunteer)
-    setIsAssignDialogOpen(true)
-  }
+    setSelectedVolunteer(volunteer);
+    setIsAssignDialogOpen(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -75,119 +95,126 @@ export function VolunteersList() {
 
       {!filteredVolunteers || filteredVolunteers.length === 0 ? (
         <div className="text-center text-muted-foreground">
-          {searchQuery || statusFilter !== "all" ? "No volunteers match your filters" : "No volunteers registered"}
+          {searchQuery || statusFilter !== "all"
+            ? "No volunteers match your filters"
+            : "No volunteers registered"}
         </div>
       ) : (
         <div className="space-y-3">
           {filteredVolunteers.map((volunteer: any) => {
             // Determine status based on event_id
-            const isAssigned = volunteer.event_id !== null && volunteer.event_id !== undefined
-            const displayStatus = isAssigned ? "assigned" : "available"
-            
-            return (
-            <Card key={volunteer.id} className="p-4">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                    isAssigned
-                      ? "bg-orange-500/20"
-                      : "bg-green-500/20"
-                  }`}
-                >
-                  <User
-                    className={`h-5 w-5 ${
-                      isAssigned
-                        ? "text-orange-500"
-                        : "text-green-500"
-                    }`}
-                  />
-                </div>
+            const isAssigned =
+              volunteer.event_id !== null && volunteer.event_id !== undefined;
+            const displayStatus = isAssigned ? "assigned" : "available";
 
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{volunteer.name}</h3>
+            return (
+              <Card key={volunteer.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                      isAssigned ? "bg-orange-500/20" : "bg-green-500/20"
+                    }`}
+                  >
+                    <User
+                      className={`h-5 w-5 ${
+                        isAssigned ? "text-orange-500" : "text-green-500"
+                      }`}
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">
+                          {volunteer.name}
+                        </h3>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleAssign(volunteer)}
+                          className="ml-2"
+                          aria-label={`Assign ${volunteer.name} to event`}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {isAssigned ? (
+                        <UserCheck className="h-4 w-4 text-orange-500" />
+                      ) : (
+                        <UserCheck className="h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+
+                    {volunteer.phonenumber && (
+                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-3 w-3" />
+                        <span>{volunteer.phonenumber}</span>
+                      </div>
+                    )}
+
+                    {volunteer.location && (
+                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        <span>
+                          {volunteer.location.address || "Location available"}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Badge
+                        variant="outline"
+                        className={
+                          isAssigned
+                            ? "border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400"
+                            : "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400"
+                        }
+                      >
+                        {isAssigned ? "Assigned (Busy)" : "Available"}
+                      </Badge>
+                      {volunteer.skills &&
+                        volunteer.skills.map((skill: string, idx: number) => (
+                          <Badge key={idx} variant="outline">
+                            {skill}
+                          </Badge>
+                        ))}
+                    </div>
+
+                    {isAssigned && volunteer.event_id && (
+                      <div className="mt-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Assigned to Event #{volunteer.event_id}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {!isAssigned && (
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
+                        className="mt-3 w-full bg-transparent"
                         onClick={() => handleAssign(volunteer)}
-                        className="ml-2"
-                        aria-label={`Assign ${volunteer.name} to event`}
                       >
-                        <Plus className="h-4 w-4" />
+                        Assign to Event
                       </Button>
-                    </div>
-                    {isAssigned ? (
-                      <UserCheck className="h-4 w-4 text-orange-500" />
-                    ) : (
-                      <UserCheck className="h-4 w-4 text-green-500" />
                     )}
                   </div>
-
-                  {volunteer.phonenumber && (
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-3 w-3" />
-                      <span>{volunteer.phonenumber}</span>
-                    </div>
-                  )}
-
-                  {volunteer.location && (
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>{volunteer.location.address || "Location available"}</span>
-                    </div>
-                  )}
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge
-                      variant="outline"
-                      className={
-                        isAssigned
-                          ? "border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400"
-                          : "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400"
-                      }
-                    >
-                      {isAssigned ? "Assigned (Busy)" : "Available"}
-                    </Badge>
-                    {volunteer.skills &&
-                      volunteer.skills.map((skill: string, idx: number) => (
-                        <Badge key={idx} variant="outline">
-                          {skill}
-                        </Badge>
-                      ))}
-                  </div>
-
-                  {isAssigned && volunteer.event_id && (
-                    <div className="mt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        Assigned to Event #{volunteer.event_id}
-                      </Badge>
-                    </div>
-                  )}
-
-                  {!isAssigned && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3 w-full bg-transparent"
-                      onClick={() => handleAssign(volunteer)}
-                    >
-                      Assign to Event
-                    </Button>
-                  )}
                 </div>
-              </div>
-            </Card>
-          )})}
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      <AddVolunteerDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <AddVolunteerDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      />
       <AssignVolunteerDialog
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
         volunteer={selectedVolunteer}
       />
     </div>
-  )
+  );
 }

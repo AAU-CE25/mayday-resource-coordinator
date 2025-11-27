@@ -1,67 +1,77 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useEvents } from "@/hooks/use-events"
-import { useVolunteers } from "@/hooks/use-volunteers"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { MapPin, AlertCircle, Plus, Search, Filter } from "lucide-react"
-import { CreateEventDialog } from "./create-event-dialog"
-import AssignToEventDialog from "./assign-to-event-dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatAddress } from "@/lib/utils"
+import { useState, useEffect } from "react";
+import { useEvents } from "@/hooks/use-events";
+import { useVolunteers } from "@/hooks/use-volunteers";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MapPin, AlertCircle, Plus, Search, Filter } from "lucide-react";
+import { CreateEventDialog } from "./create-event-dialog";
+import AssignToEventDialog from "./assign-to-event-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatAddress } from "@/lib/utils";
 
 interface EventsListProps {
-  selectedEvent: string | null
-  onEventSelect?: (eventId: string | null) => void
+  selectedEvent: string | null;
+  onEventSelect?: (eventId: string | null) => void;
 }
 
 export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
-  const { data: events, isLoading } = useEvents()
-  const { data: volunteers } = useVolunteers()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [priorityFilter, setPriorityFilter] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
-  const [assignEvent, setAssignEvent] = useState<any | null>(null)
+  const { data: events, isLoading } = useEvents();
+  const { data: volunteers } = useVolunteers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assignEvent, setAssignEvent] = useState<any | null>(null);
 
   const filteredEvents = events?.filter((event: any) => {
-    const locStr = formatAddress(event.location).toLowerCase()
+    const locStr = formatAddress(event.location).toLowerCase();
     const matchesSearch =
       event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      locStr.includes(searchQuery.toLowerCase())
-    const matchesPriority = priorityFilter === "all" || event.priority.toString() === priorityFilter
-    const matchesStatus = statusFilter === "all" || event.status === statusFilter
+      locStr.includes(searchQuery.toLowerCase());
+    const matchesPriority =
+      priorityFilter === "all" || event.priority.toString() === priorityFilter;
+    const matchesStatus =
+      statusFilter === "all" || event.status === statusFilter;
 
-    return matchesSearch && matchesPriority && matchesStatus
-  })
+    return matchesSearch && matchesPriority && matchesStatus;
+  });
 
   // listen for popup requests from map markers
   useEffect(() => {
     function handler(e: any) {
       console.log("Received openAssignToEvent event:", e?.detail);
-      const eventId = e?.detail
-      if (!eventId) return
-      const evt = events?.find((ev: any) => ev.id === eventId)
+      const eventId = e?.detail;
+      if (!eventId) return;
+      const evt = events?.find((ev: any) => ev.id === eventId);
       console.log("Found event:", evt);
       if (evt) {
-        setAssignEvent(evt)
-        setAssignDialogOpen(true)
+        setAssignEvent(evt);
+        setAssignDialogOpen(true);
       }
     }
-    window.addEventListener("openAssignToEvent", handler)
+    window.addEventListener("openAssignToEvent", handler);
     console.log("Added openAssignToEvent listener");
     return () => {
-      window.removeEventListener("openAssignToEvent", handler)
+      window.removeEventListener("openAssignToEvent", handler);
       console.log("Removed openAssignToEvent listener");
-    }
-  }, [events])
+    };
+  }, [events]);
 
   if (isLoading) {
-    return <div className="text-center text-muted-foreground">Loading events...</div>
+    return (
+      <div className="text-center text-muted-foreground">Loading events...</div>
+    );
   }
 
   return (
@@ -122,7 +132,9 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
             <Card
               key={event.id}
               className={`cursor-pointer p-4 transition-all hover:shadow-md ${
-                selectedEvent === event.id ? "border-primary bg-secondary ring-2 ring-primary" : ""
+                selectedEvent === event.id
+                  ? "border-primary bg-secondary ring-2 ring-primary"
+                  : ""
               }`}
               onClick={() => onEventSelect?.(event.id)}
             >
@@ -130,14 +142,16 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-chart-5" />
-                    <h3 className="font-semibold text-foreground">{event.description}</h3>
+                    <h3 className="font-semibold text-foreground">
+                      {event.description}
+                    </h3>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        setAssignEvent(event)
-                        setAssignDialogOpen(true)
+                        e.stopPropagation();
+                        setAssignEvent(event);
+                        setAssignDialogOpen(true);
                       }}
                       className="ml-2"
                     >
@@ -152,39 +166,68 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Badge
-                      variant={event.priority === 1 ? "destructive" : event.priority === 2 ? "default" : "secondary"}
+                      variant={
+                        event.priority === 1
+                          ? "destructive"
+                          : event.priority === 2
+                          ? "default"
+                          : "secondary"
+                      }
                     >
                       Priority {event.priority}
                     </Badge>
                     <Badge
                       variant={
-                        event.status === "active" ? "destructive" : event.status === "pending" ? "default" : "outline"
+                        event.status === "active"
+                          ? "destructive"
+                          : event.status === "pending"
+                          ? "default"
+                          : "outline"
                       }
                     >
                       {event.status}
                     </Badge>
-                    <Badge variant="outline">{
-                      volunteers
-                        ? volunteers.filter((v: any) => (v.event_id ?? v.assigned_event) === event.id).length
-                        : 0
-                    } Volunteers</Badge>
+                    <Badge variant="outline">
+                      {volunteers
+                        ? volunteers.filter(
+                            (v: any) =>
+                              (v.event_id ?? v.assigned_event) === event.id
+                          ).length
+                        : 0}{" "}
+                      Volunteers
+                    </Badge>
                   </div>
 
-                  {event.resources_needed && event.resources_needed.length > 0 && (
-                    <div className="mt-3 space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">Resources Needed:</p>
-                      {event.resources_needed.map((resource: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between text-xs">
-                          <span className="text-foreground">
-                            {resource.name} ({resource.quantity})
-                          </span>
-                          <Badge variant={resource.is_fulfilled ? "default" : "destructive"} className="text-xs">
-                            {resource.is_fulfilled ? "Fulfilled" : "Needed"}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {event.resources_needed &&
+                    event.resources_needed.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Resources Needed:
+                        </p>
+                        {event.resources_needed.map(
+                          (resource: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between text-xs"
+                            >
+                              <span className="text-foreground">
+                                {resource.name} ({resource.quantity})
+                              </span>
+                              <Badge
+                                variant={
+                                  resource.is_fulfilled
+                                    ? "default"
+                                    : "destructive"
+                                }
+                                className="text-xs"
+                              >
+                                {resource.is_fulfilled ? "Fulfilled" : "Needed"}
+                              </Badge>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
             </Card>
@@ -192,11 +235,18 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
         </div>
       )}
 
-      <CreateEventDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
-      <AssignToEventDialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen} event={assignEvent} />
+      <CreateEventDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
+      <AssignToEventDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        event={assignEvent}
+      />
     </div>
-  )
+  );
 }
 
 // add default export so both named and default imports work
-export default EventsList
+export default EventsList;
