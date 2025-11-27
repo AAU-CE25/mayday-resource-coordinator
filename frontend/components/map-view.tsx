@@ -117,42 +117,55 @@ export default function MapView({
             <p class="text-sm text-gray-300 mt-1">${
               event.location.address?.street || ""
             }</p>
-            <div class="mt-3 flex items-center gap-2">
-              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}">
+            <div class="mt-3 flex items-center gap-2" style="display: flex; gap: 8px; align-items: center;">
+              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}; border-radius: 4px; padding: 4px 8px;">
                 Priority ${event.priority}
               </span>
-              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}">
+              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:${markerColor}; border-radius: 4px; padding: 4px 8px;">
                 ${event.status}
               </span>
-              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:rgba(77, 75, 75, 1)">
+              <span class="rounded px-2 py-1 text-xs font-medium text-white" style="background:rgba(77, 75, 75, 1); border-radius: 4px; padding: 4px 8px;">
                 ${
                   typeof event.volunteers_count !== "undefined"
                     ? event.volunteers_count
                     : 0
                 } Volunteers
               </span>
-              <a href="#"   id="assign-${
+              <button id="assign-${
                 event.id
-              }"   class="text-xs ml-2 rounded px-2 py-1 text-white"   style="background: rgba(77, 75, 75, 1);">+</a>
+              }" class="text-xs rounded px-2 py-1 text-white" style="background: #3b82f6; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-weight: 600;">+</button>
             </div>
           </div>
         `);
 
         // attach click handler for the assign link when popup opens
         marker.on("popupopen", () => {
-          try {
-            const el = document.getElementById(`assign-${event.id}`);
-            if (el) {
-              el.addEventListener("click", (ev: any) => {
-                ev.preventDefault();
-                window.dispatchEvent(
-                  new CustomEvent("openAssignToEvent", { detail: event.id })
+          setTimeout(() => {
+            try {
+              const el = document.getElementById(`assign-${event.id}`);
+              console.log("Found assign button:", el, "for event:", event.id);
+              if (el) {
+                el.addEventListener("click", (ev: any) => {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  console.log(
+                    "Dispatching openAssignToEvent for event:",
+                    event.id
+                  );
+                  window.dispatchEvent(
+                    new CustomEvent("openAssignToEvent", { detail: event.id })
+                  );
+                });
+              } else {
+                console.error(
+                  "Could not find assign button for event:",
+                  event.id
                 );
-              });
+              }
+            } catch (e) {
+              console.error("Error attaching click handler:", e);
             }
-          } catch (e) {
-            // ignore
-          }
+          }, 100);
         });
 
         marker.on("click", () => {

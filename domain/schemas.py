@@ -152,20 +152,26 @@ class ResourceAvailableResponse(BaseModel):
 
 # ------------------ Volunteer ------------------
 class VolunteerCreate(BaseModel):
-    user_id: int
-    event_id: int
+    name: str
+    phonenumber: str
+    event_id: int | None = None
+    user_id: int | None = None  # Optional - link to user account if they have one
     status: str = "active"  # active | completed
 
 class VolunteerUpdate(BaseModel):
-    id: int 
+    id: int
+    name: str | None = None
+    phonenumber: str | None = None
     user_id: int | None = None
     event_id: int | None = None
     status: str | None = None
 
 class VolunteerResponse(BaseModel):
     id: int
-    user: UserResponse
-    event_id: int
+    name: str
+    phonenumber: str
+    user: UserResponse | None = None  # Optional - only if linked to a user account
+    event_id: int | None = None
     status: str
     create_time: dt
     completion_time: dt | None = None

@@ -38,15 +38,47 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
     }
   }, [open])
 
+  const handleUnassign = async () => {
+    setIsSubmitting(true)
+
+    try {
+      await api.put(`/volunteers/${volunteer.id}`, {
+        id: volunteer.id,
+        event_id: null
+      })
+
+      toast({
+        title: "Volunteer unassigned",
+        description: `${volunteer.name} has been removed from the event.`,
+      })
+
+      mutate("volunteers")
+      mutate("events")
+
+      onOpenChange(false)
+
+    } catch (error) {
+      console.error("Unassignment error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to unassign volunteer. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
     try {
-      await api.post("/volunteers/assign", {
-          volunteer_id: volunteer.id,
-          event_id: selectedEventId,
-        })
+      // Update the volunteer's event assignment
+      await api.put(`/volunteers/${volunteer.id}`, {
+        id: volunteer.id,
+        event_id: parseInt(selectedEventId)
+      })
 
       toast({
         title: "Volunteer assigned",
@@ -60,6 +92,7 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
       onOpenChange(false)
 
     } catch (error) {
+      console.error("Assignment error:", error)
       toast({
         title: "Error",
         description: "Failed to assign volunteer. Please try again.",
@@ -73,6 +106,8 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
   if (!volunteer) return null
 
   const activeEvents = events?.filter((e: any) => e.status === "active" || e.status === "pending") || []
+  const currentEvent = volunteer.event_id ? events?.find((e: any) => e.id === volunteer.event_id) : null
+  const isAssigned = volunteer.event_id !== null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,7 +121,7 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
           <div className="space-y-4 py-4">
             <div className="rounded-lg bg-secondary p-4">
               <h4 className="font-semibold text-foreground">{volunteer.name}</h4>
-              {volunteer.phone && <p className="text-sm text-muted-foreground">{volunteer.phone}</p>}
+              {volunteer.phonenumber && <p className="text-sm text-muted-foreground">{volunteer.phonenumber}</p>}
               {volunteer.skills && volunteer.skills.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {volunteer.skills.map((skill: string, idx: number) => (
@@ -97,6 +132,29 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
                 </div>
               )}
             </div>
+
+            {isAssigned && currentEvent && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-950/20">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">Currently assigned:</p>
+                    <p className="mt-1 font-semibold text-orange-950 dark:text-orange-50">{currentEvent.description}</p>
+                    {currentEvent.location?.address?.street && (
+                      <p className="mt-0.5 text-xs text-orange-700 dark:text-orange-300">{currentEvent.location.address.street}</p>
+                    )}
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={handleUnassign}
+                    disabled={isSubmitting}
+                  >
+                    Unassign
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="event">Select Event</Label>
@@ -109,10 +167,10 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
                     <div className="p-2 text-sm text-muted-foreground">No active events</div>
                   ) : (
                     activeEvents.map((event: any) => (
-                      <SelectItem key={event.id} value={event.id}>
+                      <SelectItem key={event.id} value={String(event.id)}>
                         <div className="flex flex-col">
                           <span className="font-medium">{event.description}</span>
-                          <span className="text-xs text-muted-foreground">{event.location.address}</span>
+                          <span className="text-xs text-muted-foreground">{event.location?.address?.street || ''}</span>
                         </div>
                       </SelectItem>
                     ))

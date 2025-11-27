@@ -92,29 +92,28 @@ def generate_random_event():
 
 def generate_random_volunteer(created_users: list[dict], created_events: list[dict]):
     """
-    Generate a random volunteer for an existing user and event.
-    
+    Generate a random volunteer - independent entity with optional user link.
     """
-    if not created_users:
-        raise ValueError("No users available to assign volunteer to. Create users first.")
     if not created_events:
         raise ValueError("No events available to assign volunteer to. Create events first.")
     
-    user = random.choice(created_users)
-    event = random.choice(created_events)
+    name = fake.name()
+    phonenumber = fake.phone_number()
+    event = random.choice(created_events) if random.random() > 0.3 else None  # 70% assigned, 30% available
+    event_id = event.get("id") if event else None
     
-    user_id = user.get("id")
-    event_id = event.get("id")
-    
-    if not user_id:
-        raise ValueError(f"Selected user has no ID: {user}")
-    if not event_id:
-        raise ValueError(f"Selected event has no ID: {event}")
+    # Optional: link to a user account (30% chance)
+    user_id = None
+    if created_users and random.random() > 0.7:
+        user = random.choice(created_users)
+        user_id = user.get("id")
     
     volunteer = {
-        "user_id": user_id,
+        "name": name,
+        "phonenumber": phonenumber,
         "event_id": event_id,
-        "status": "active"  # All new volunteers start as active
+        "user_id": user_id,
+        "status": "active"
     }
     return volunteer
 

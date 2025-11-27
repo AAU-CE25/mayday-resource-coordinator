@@ -43,16 +43,32 @@ export function AssignToEventDialog({ open, onOpenChange, event }: AssignToEvent
     setIsSubmitting(true)
 
     try {
-      // try assign endpoint first, fall back to creating a volunteer assignment
-      await api.post("/volunteers/assign", {
-        volunteer_id: selectedVolunteerId,
-        event_id: event.id,
-      })
+      const selectedVol = volunteers?.find((v: any) => String(v.id) === selectedVolunteerId)
+      const isAssignedToThisEvent = selectedVol && (selectedVol.event_id === event.id || selectedVol.assigned_event === event.id)
 
-      toast({
-        title: "Volunteer assigned",
-        description: `Volunteer has been assigned to ${event.description}`,
-      })
+      if (isAssignedToThisEvent) {
+        // Unassign: Clear event_id to make volunteer available again
+        await api.put(`/volunteers/${selectedVolunteerId}`, {
+          id: parseInt(selectedVolunteerId),
+          event_id: null
+        })
+
+        toast({
+          title: "Volunteer unassigned",
+          description: `Volunteer has been removed from ${event.description}`,
+        })
+      } else {
+        // Assign: Update volunteer's event_id
+        await api.put(`/volunteers/${selectedVolunteerId}`, {
+          id: parseInt(selectedVolunteerId),
+          event_id: event.id
+        })
+
+        toast({
+          title: "Volunteer assigned",
+          description: `Volunteer has been assigned to ${event.description}`,
+        })
+      }
 
       mutate("volunteers")
       mutate("events")
@@ -61,9 +77,10 @@ export function AssignToEventDialog({ open, onOpenChange, event }: AssignToEvent
       onOpenChange(false)
 
     } catch (error) {
+      console.error("Error updating volunteer assignment:", error)
       toast({
         title: "Error",
-        description: "Failed to assign volunteer. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update volunteer assignment. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -73,7 +90,8 @@ export function AssignToEventDialog({ open, onOpenChange, event }: AssignToEvent
 
   if (!event) return null
 
-  const availableVolunteers = volunteers?.filter((v: any) => v.availability === "available") || []
+  // Show ALL volunteers, not just available
+  const allVolunteers = volunteers || []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,17 +115,29 @@ export function AssignToEventDialog({ open, onOpenChange, event }: AssignToEvent
                   <SelectValue placeholder="Choose a volunteer..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableVolunteers.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground">No available volunteers</div>
+                  {allVolunteers.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">No volunteers registered</div>
                   ) : (
-                    availableVolunteers.map((vol: any) => (
-                      <SelectItem key={vol.id} value={String(vol.id)}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{vol.user?.name || vol.user}</span>
-                          <span className="text-xs text-muted-foreground">{vol.phonenumber}</span>
-                        </div>
-                      </SelectItem>
-                    ))
+                    allVolunteers.map((vol: any) => {
+                      const isAssignedHere = vol.event_id === event.id || vol.assigned_event === event.id
+                      const isAssignedElsewhere = !isAssignedHere && (vol.event_id || vol.assigned_event)
+                      return (
+                        <SelectItem key={vol.id} value={String(vol.id)}>
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col flex-1">
+                              <span className="font-medium">{vol.name}</span>
+                              <span className="text-xs text-muted-foreground">{vol.phonenumber}</span>
+                            </div>
+                            {isAssignedHere && (
+                              <Badge variant="default" className="text-xs">Assigned Here</Badge>
+                            )}
+                            {isAssignedElsewhere && (
+                              <Badge variant="secondary" className="text-xs">Assigned Event #{vol.event_id || vol.assigned_event}</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      )
+                    })
                   )}
                 </SelectContent>
               </Select>
@@ -119,7 +149,11 @@ export function AssignToEventDialog({ open, onOpenChange, event }: AssignToEvent
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !selectedVolunteerId}>
-              {isSubmitting ? "Assigning..." : "Assign"}
+              {isSubmitting ? "Updating..." : (
+                allVolunteers.find((v: any) => String(v.id) === selectedVolunteerId && (v.event_id === event.id || v.assigned_event === event.id))
+                  ? "Remove from Event"
+                  : "Assign to Event"
+              )}
             </Button>
           </DialogFooter>
         </form>

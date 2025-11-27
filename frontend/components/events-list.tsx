@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useEvents } from "@/hooks/use-events"
 import { useVolunteers } from "@/hooks/use-volunteers"
 import { Card } from "@/components/ui/card"
@@ -38,6 +38,27 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
 
     return matchesSearch && matchesPriority && matchesStatus
   })
+
+  // listen for popup requests from map markers
+  useEffect(() => {
+    function handler(e: any) {
+      console.log("Received openAssignToEvent event:", e?.detail);
+      const eventId = e?.detail
+      if (!eventId) return
+      const evt = events?.find((ev: any) => ev.id === eventId)
+      console.log("Found event:", evt);
+      if (evt) {
+        setAssignEvent(evt)
+        setAssignDialogOpen(true)
+      }
+    }
+    window.addEventListener("openAssignToEvent", handler)
+    console.log("Added openAssignToEvent listener");
+    return () => {
+      window.removeEventListener("openAssignToEvent", handler)
+      console.log("Removed openAssignToEvent listener");
+    }
+  }, [events])
 
   if (isLoading) {
     return <div className="text-center text-muted-foreground">Loading events...</div>

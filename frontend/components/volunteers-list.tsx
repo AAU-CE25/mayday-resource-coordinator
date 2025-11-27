@@ -21,9 +21,14 @@ export function VolunteersList() {
 
   const filteredVolunteers = volunteers?.filter((volunteer: any) => {
     const matchesSearch =
-      volunteer.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       volunteer.phonenumber.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || volunteer.availability === statusFilter
+    
+    // Determine actual status based on event_id
+    const isAssigned = volunteer.event_id !== null && volunteer.event_id !== undefined
+    const actualStatus = isAssigned ? "assigned" : "available"
+    
+    const matchesStatus = statusFilter === "all" || actualStatus === statusFilter
 
     return matchesSearch && matchesStatus
   })
@@ -74,25 +79,26 @@ export function VolunteersList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredVolunteers.map((volunteer: any) => (
+          {filteredVolunteers.map((volunteer: any) => {
+            // Determine status based on event_id
+            const isAssigned = volunteer.event_id !== null && volunteer.event_id !== undefined
+            const displayStatus = isAssigned ? "assigned" : "available"
+            
+            return (
             <Card key={volunteer.id} className="p-4">
               <div className="flex items-start gap-3">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                    volunteer.availability === "available"
-                      ? "bg-chart-2/20"
-                      : volunteer.availability === "assigned"
-                        ? "bg-chart-4/20"
-                        : "bg-muted"
+                    isAssigned
+                      ? "bg-orange-500/20"
+                      : "bg-green-500/20"
                   }`}
                 >
                   <User
                     className={`h-5 w-5 ${
-                      volunteer.availability === "available"
-                        ? "text-chart-2"
-                        : volunteer.availability === "assigned"
-                          ? "text-chart-4"
-                          : "text-muted-foreground"
+                      isAssigned
+                        ? "text-orange-500"
+                        : "text-green-500"
                     }`}
                   />
                 </div>
@@ -100,23 +106,21 @@ export function VolunteersList() {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{volunteer.user.name}</h3>
+                      <h3 className="font-semibold text-foreground">{volunteer.name}</h3>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleAssign(volunteer)}
                         className="ml-2"
-                        aria-label={`Assign ${volunteer.user.name} to event`}
+                        aria-label={`Assign ${volunteer.name} to event`}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                    {volunteer.availability === "available" ? (
-                      <UserCheck className="h-4 w-4 text-chart-2" />
-                    ) : volunteer.availability === "assigned" ? (
-                      <UserCheck className="h-4 w-4 text-chart-4" />
+                    {isAssigned ? (
+                      <UserCheck className="h-4 w-4 text-orange-500" />
                     ) : (
-                      <UserX className="h-4 w-4 text-muted-foreground" />
+                      <UserCheck className="h-4 w-4 text-green-500" />
                     )}
                   </div>
 
@@ -136,15 +140,14 @@ export function VolunteersList() {
 
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Badge
-                      variant={
-                        volunteer.availability === "available"
-                          ? "default"
-                          : volunteer.availability === "assigned"
-                            ? "secondary"
-                            : "outline"
+                      variant="outline"
+                      className={
+                        isAssigned
+                          ? "border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400"
+                          : "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400"
                       }
                     >
-                      {volunteer.availability || "Available"}
+                      {isAssigned ? "Assigned (Busy)" : "Available"}
                     </Badge>
                     {volunteer.skills &&
                       volunteer.skills.map((skill: string, idx: number) => (
@@ -154,15 +157,15 @@ export function VolunteersList() {
                       ))}
                   </div>
 
-                  {volunteer.assigned_event && (
+                  {isAssigned && volunteer.event_id && (
                     <div className="mt-2">
                       <Badge variant="secondary" className="text-xs">
-                        Assigned to Event #{volunteer.assigned_event}
+                        Assigned to Event #{volunteer.event_id}
                       </Badge>
                     </div>
                   )}
 
-                  {volunteer.availability === "available" && (
+                  {!isAssigned && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -175,16 +178,16 @@ export function VolunteersList() {
                 </div>
               </div>
             </Card>
-          ))}
+          )})}
         </div>
       )}
 
-      {/* <AddVolunteerDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <AddVolunteerDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
       <AssignVolunteerDialog
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
         volunteer={selectedVolunteer}
-      /> */}
+      />
     </div>
   )
 }

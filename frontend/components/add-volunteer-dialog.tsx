@@ -56,18 +56,10 @@ export function AddVolunteerDialog({ open, onOpenChange }: AddVolunteerDialogPro
     setIsSubmitting(true)
 
     try {
-      await api.post("/volunteers", {
+      await api.post("/volunteers/", {
         name: formData.name,
-        phone: formData.phone,
-          status: formData.status,
-          skills,
-          location: {
-            address: {
-              street: formData.street,
-            },
-            latitude: Number.parseFloat(formData.latitude),
-            longitude: Number.parseFloat(formData.longitude),
-          },
+        phonenumber: formData.phone,
+        status: formData.status,
       })
 
       /*

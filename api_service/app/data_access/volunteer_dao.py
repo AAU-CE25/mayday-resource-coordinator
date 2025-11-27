@@ -74,8 +74,9 @@ class VolunteerDAO:
                     return None  # Volunteer not found; do not insert new row
 
                 # Copy updated fields from input object
-                for key, value in volunteer_update.model_dump().items():
-                    if key != "id" and value is not None:
+                # Use model_dump(exclude_unset=True) to only update fields that were explicitly set
+                for key, value in volunteer_update.model_dump(exclude_unset=True).items():
+                    if key != "id":
                         setattr(existing, key, value)
 
                 # If status is being set to 'completed', set completion_time
