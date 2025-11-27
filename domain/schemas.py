@@ -125,6 +125,7 @@ class ResourceAvailableCreate(BaseModel):
     description: str
     status: str
     volunteer_id: int
+    event_id: int | None = None
     is_allocated: bool = False
 
 class ResourceAvailableUpdate(BaseModel):
@@ -134,6 +135,7 @@ class ResourceAvailableUpdate(BaseModel):
     description: str | None = None
     status: str | None = None
     volunteer_id: int | None = None
+    event_id: int | None = None
     is_allocated: bool | None = None
 
 class ResourceAvailableResponse(BaseModel):
@@ -144,6 +146,7 @@ class ResourceAvailableResponse(BaseModel):
     description: str
     status: str
     volunteer_id: int
+    event_id: int | None = None
     is_allocated: bool
     model_config = {
         "from_attributes": True

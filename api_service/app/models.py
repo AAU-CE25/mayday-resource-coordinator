@@ -28,6 +28,7 @@ class ResourceAvailable(SQLModel, table=True):
     description: str
     status: str
     volunteer_id: int = Field(foreign_key="volunteer.id")
+    event_id: Optional[int] = Field(default=None, foreign_key="event.id")  # Optional - resource can be assigned to event
     is_allocated: bool
 
 class Volunteer(SQLModel, table=True):

@@ -10,6 +10,7 @@ import {
   updateVolunteerStatus,
 } from "@/lib/api-client";
 import type { Event, Volunteer } from "@/lib/types";
+import { ResourcesManager } from "./resources-manager";
 
 /**
  * Profile view component
@@ -321,7 +322,9 @@ export function ProfileView() {
                 )
                 .slice(0, 10)
                 .map((volunteer) => {
-                  const eventDesc = getEventDescription(volunteer.event_id);
+                  const eventDesc = volunteer.event_id
+                    ? getEventDescription(volunteer.event_id)
+                    : "No event assigned";
                   return (
                     <div
                       key={volunteer.id}
@@ -400,6 +403,11 @@ export function ProfileView() {
             </p>
           )}
         </div>
+      )}
+
+      {/* Resources Manager */}
+      {volunteerProfile && (
+        <ResourcesManager volunteerId={volunteerProfile.id} />
       )}
 
       {/* Account Actions */}

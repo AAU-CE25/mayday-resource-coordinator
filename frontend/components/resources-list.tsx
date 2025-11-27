@@ -1,52 +1,92 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useResourcesAvailable } from "@/hooks/use-resources-available"
-import { useResourcesNeeded } from "@/hooks/use-resources-needed"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Package, CheckCircle, XCircle, Plus, Search, TrendingUp, TrendingDown } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AddResourceDialog } from "./add-resource-dialog"
-import { AllocateResourceDialog } from "./allocate-resource-dialog"
+import { useState, useEffect } from "react";
+import { useResourcesAvailable } from "@/hooks/use-resources-available";
+import { useResourcesNeeded } from "@/hooks/use-resources-needed";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Package,
+  CheckCircle,
+  XCircle,
+  Plus,
+  Search,
+  TrendingUp,
+  TrendingDown,
+  User,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AddResourceDialog } from "./add-resource-dialog";
+import { AllocateResourceDialog } from "./allocate-resource-dialog";
+import { AssignResourceDialog } from "./assign-resource-dialog";
+import { fetchAllVolunteers } from "@/lib/api-client";
+import { useEvents } from "@/hooks/use-events";
 
 export function ResourcesList() {
-  const { data: resourcesAvailable, isLoading: isLoadingAvailable } = useResourcesAvailable()
-  const { data: resourcesNeeded, isLoading: isLoadingNeeded } = useResourcesNeeded()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isAllocateDialogOpen, setIsAllocateDialogOpen] = useState(false)
-  const [selectedResource, setSelectedResource] = useState<any>(null)
+  const { data: resourcesAvailable, isLoading: isLoadingAvailable } =
+    useResourcesAvailable();
+  const { data: resourcesNeeded, isLoading: isLoadingNeeded } =
+    useResourcesNeeded();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAllocateDialogOpen, setIsAllocateDialogOpen] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const { data: events } = useEvents();
 
-  const available = resourcesAvailable || []
-  const needed = resourcesNeeded || []
+  useEffect(() => {
+    const loadVolunteers = async () => {
+      try {
+        const data = await fetchAllVolunteers();
+        setVolunteers(data);
+      } catch (error) {
+        console.error("Failed to load volunteers:", error);
+      }
+    };
+    loadVolunteers();
+  }, []);
+
+  const available = resourcesAvailable || [];
+  const needed = resourcesNeeded || [];
 
   const filteredAvailable = available.filter((resource: any) =>
-    resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+    resource.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const filteredNeeded = needed.filter((resource: any) =>
-    resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+    resource.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoadingAvailable || isLoadingNeeded) {
-    return <div className="text-center text-muted-foreground">Loading resources...</div>
+    return (
+      <div className="text-center text-muted-foreground">
+        Loading resources...
+      </div>
+    );
   }
 
   if (!resourcesAvailable || !resourcesNeeded) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-center text-muted-foreground">Failed to load resources</div>
+        <div className="text-center text-muted-foreground">
+          Failed to load resources
+        </div>
       </div>
-    )
+    );
   }
 
   const handleAllocate = (resource: any) => {
-    setSelectedResource(resource)
-    setIsAllocateDialogOpen(true)
-  }
+    setSelectedResource(resource);
+    setIsAllocateDialogOpen(true);
+  };
+
+  const handleAssign = (resource: any) => {
+    setSelectedResource(resource);
+    setIsAssignDialogOpen(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -78,45 +118,101 @@ export function ResourcesList() {
         <TabsContent value="available" className="space-y-3">
           {filteredAvailable.length === 0 ? (
             <div className="text-center text-muted-foreground">
-              {searchQuery ? "No resources match your search" : "No resources available"}
+              {searchQuery
+                ? "No resources match your search"
+                : "No resources available"}
             </div>
           ) : (
             filteredAvailable.map((resource: any) => (
               <Card key={resource.id} className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-2/20">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-chart-2/20">
                     <Package className="h-5 w-5 text-chart-2" />
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">{resource.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-foreground">
+                        {resource.name}
+                      </h3>
                       <CheckCircle className="h-4 w-4 text-chart-2" />
                     </div>
 
-                    <p className="mt-1 text-sm text-muted-foreground">{resource.description}</p>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                      {resource.description}
+                    </p>
 
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary">
+                    {(() => {
+                      if (resource.event_id) {
+                        const allocatedEvent = events?.find(
+                          (e: any) => e.id === resource.event_id
+                        );
+                        return allocatedEvent ? (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">
+                              <span className="mr-1">Allocated to Event:</span>
+                              <span className="font-medium text-foreground">
+                                {allocatedEvent.description}
+                              </span>
+                            </span>
+                          </div>
+                        ) : null;
+                      } else if (resource.volunteer_id) {
+                        const allocatedVolunteer = volunteers.find(
+                          (v) => v.id === resource.volunteer_id
+                        );
+                        return allocatedVolunteer ? (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">
+                              <span className="mr-1">Allocated to:</span>
+                              <span className="font-medium text-foreground">
+                                {allocatedVolunteer.name}
+                              </span>
+                              {allocatedVolunteer.phonenumber && (
+                                <span className="ml-1 text-muted-foreground">
+                                  ({allocatedVolunteer.phonenumber})
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        ) : null;
+                      }
+                      return null;
+                    })()}
+
+                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                      <Badge
+                        variant="secondary"
+                        className="px-2 py-0.5 text-xs"
+                      >
                         <TrendingUp className="mr-1 h-3 w-3" />
                         Qty: {resource.quantity}
                       </Badge>
-                      <Badge variant="outline">{resource.resource_type}</Badge>
+                      <Badge variant="outline" className="px-2 py-0.5 text-xs">
+                        {resource.resource_type}
+                      </Badge>
                       {resource.location && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge
+                          variant="outline"
+                          className="px-2 py-0.5 text-xs"
+                        >
                           {resource.location}
                         </Badge>
                       )}
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3 w-full bg-transparent"
-                      onClick={() => handleAllocate(resource)}
-                    >
-                      Allocate to Event
-                    </Button>
+                    <div className="mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleAssign(resource)}
+                      >
+                        Assign
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -127,7 +223,9 @@ export function ResourcesList() {
         <TabsContent value="needed" className="space-y-3">
           {filteredNeeded.length === 0 ? (
             <div className="text-center text-muted-foreground">
-              {searchQuery ? "No resources match your search" : "No resources needed"}
+              {searchQuery
+                ? "No resources match your search"
+                : "No resources needed"}
             </div>
           ) : (
             filteredNeeded.map((resource: any) => (
@@ -139,11 +237,15 @@ export function ResourcesList() {
 
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">{resource.name}</h3>
+                      <h3 className="font-semibold text-foreground">
+                        {resource.name}
+                      </h3>
                       <XCircle className="h-4 w-4 text-chart-5" />
                     </div>
 
-                    <p className="mt-1 text-sm text-muted-foreground">{resource.description}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {resource.description}
+                    </p>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge variant="destructive">
@@ -173,12 +275,20 @@ export function ResourcesList() {
         </TabsContent>
       </Tabs>
 
-      <AddResourceDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <AddResourceDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      />
       <AllocateResourceDialog
         open={isAllocateDialogOpen}
         onOpenChange={setIsAllocateDialogOpen}
         resource={selectedResource}
       />
+      <AssignResourceDialog
+        open={isAssignDialogOpen}
+        onOpenChange={setIsAssignDialogOpen}
+        resource={selectedResource}
+      />
     </div>
-  )
+  );
 }
