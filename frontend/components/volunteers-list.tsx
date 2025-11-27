@@ -99,7 +99,18 @@ export function VolunteersList() {
 
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground">{volunteer.user.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground">{volunteer.user.name}</h3>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleAssign(volunteer)}
+                        className="ml-2"
+                        aria-label={`Assign ${volunteer.user.name} to event`}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                     {volunteer.availability === "available" ? (
                       <UserCheck className="h-4 w-4 text-chart-2" />
                     ) : volunteer.availability === "assigned" ? (

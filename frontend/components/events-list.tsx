@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MapPin, AlertCircle, Plus, Search, Filter } from "lucide-react"
 import { CreateEventDialog } from "./create-event-dialog"
+import AssignToEventDialog from "./assign-to-event-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { formatAddress } from "@/lib/utils"
 
@@ -24,6 +25,8 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
+  const [assignEvent, setAssignEvent] = useState<any | null>(null)
 
   const filteredEvents = events?.filter((event: any) => {
     const locStr = formatAddress(event.location).toLowerCase()
@@ -107,6 +110,18 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-chart-5" />
                     <h3 className="font-semibold text-foreground">{event.description}</h3>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setAssignEvent(event)
+                        setAssignDialogOpen(true)
+                      }}
+                      className="ml-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
 
                   <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -157,6 +172,7 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
       )}
 
       <CreateEventDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <AssignToEventDialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen} event={assignEvent} />
     </div>
   )
 }
