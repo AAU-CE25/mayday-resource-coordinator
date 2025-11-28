@@ -5,14 +5,14 @@ from api_service.app.data_access import VolunteerDAO
 
 class VolunteerLogic:
     def create_volunteer(volunteerCreate: VolunteerCreate) -> VolunteerResponse:
-        # Create the volunteer
+        # Fetch the user for the response
+        user = UserLogic.get_user(volunteer.user_id)
+        if not user:
+            raise ValueError(f"User with id {volunteer.user_id} not found")
+       
+       # Create the volunteer with the provided user_id
         new_volunteer = Volunteer(**volunteerCreate.model_dump())
         volunteer = VolunteerDAO.create_volunteer(new_volunteer)
-        
-        # Fetch the user for the response if linked
-        user = None
-        if volunteer.user_id:
-            user = UserLogic.get_user(volunteer.user_id)
         
         return VolunteerResponse.model_validate({
             **volunteer.model_dump(),
@@ -25,13 +25,15 @@ class VolunteerLogic:
             return None
         
         # Load the associated user if it exists
-        user = None
+        user : UserResponse= None
         if response_volunteer.user_id:
-            user = UserLogic.get_user(response_volunteer.user_id)
+            user = UserLogic.get_user(response_volunteer.user_id) 
+        if not user:
+            return None
         
-        # Validate the volunteer including optional nested user
+        # Validate the volunteer including nested user
         return VolunteerResponse.model_validate({
-            **response_volunteer.model_dump(),
+            **response_volunteer.model_dump(),  # Volunteer fields
             "user": user
         })
 
@@ -59,15 +61,15 @@ class VolunteerLogic:
         return result
 
     def update_volunteer(volunteer_update: VolunteerUpdate) -> VolunteerResponse | None:
-        _volunteer = Volunteer(**volunteer_update.model_dump(exclude_unset=True))
+        _volunteer = Volunteer(**volunteer_update.model_dump())
         response_volunteer = VolunteerDAO.update_volunteer(_volunteer)
         if not response_volunteer:
             return None
         
-        # Fetch the user for the response if linked
-        user = None
-        if response_volunteer.user_id:
-            user = UserLogic.get_user(response_volunteer.user_id)
+        # Fetch the user for the response
+        user = UserLogic.get_user(response_volunteer.user_id)
+        if not user:
+            return None
         
         return VolunteerResponse.model_validate({
             **response_volunteer.model_dump(),

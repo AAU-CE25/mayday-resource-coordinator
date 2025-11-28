@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from domain import EventCreate, EventResponse, EventUpdate, LocationResponse
-from api_service.app.data_access import EventDAO, VolunteerDAO
-from .location_logic import LocationLogic
+from api_service.app.data_access import EventDAO
+from logic import LocationLogic, VolunteerLogic
 from ..models import Event
 
 
@@ -46,17 +46,14 @@ class EventLogic:
             location = LocationLogic.get_location(response_event.location_id) 
         if not location:
             return None
+        
         # Compute volunteers count for the event
-        try:
-            volunteers_count = VolunteerDAO.count_volunteers(event_id)
-        except Exception:
-            volunteers_count = 0
+        response_event.volunteers_count = len(VolunteerLogic.get_volunteers(event_id=event_id))
 
         # Validate the event including nested location
         return EventResponse.model_validate({
             **response_event.model_dump(),  # Event fields
-            "location": location.model_dump(),
-            "volunteers_count": volunteers_count,
+            "location": location.model_dump()
         })
 
     def get_events(skip: int, limit: int, priority: int | None = None, status: str | None = None) -> list[EventResponse]:

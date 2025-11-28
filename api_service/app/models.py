@@ -33,13 +33,11 @@ class ResourceAvailable(SQLModel, table=True):
 
 class Volunteer(SQLModel, table=True):
     id: int = Field(primary_key=True) 
-    name: str
-    phonenumber: str
     create_time: datetime = Field(default=None)
     completion_time: Optional[datetime] = Field(default=None)
     status: str = Field(default="active")
-    event_id: Optional[int] = Field(default=None, foreign_key="event.id")  # Optional - volunteer can be unassigned
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id")  # Optional - volunteer may have a user account  
+    event_id: int = Field(default=None, foreign_key="event.id")  # Optional - volunteer can be unassigned
+    user_id: int = Field(default=None, foreign_key="user.id")  # Optional - volunteer may have a user account  
 
 class Location(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
