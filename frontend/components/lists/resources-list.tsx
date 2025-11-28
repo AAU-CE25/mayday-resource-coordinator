@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddResourceDialog } from "@/components/dialogs/add-resource-dialog";
 import { AllocateResourceDialog } from "@/components/dialogs/allocate-resource-dialog";
 import { AssignResourceDialog } from "@/components/dialogs/assign-resource-dialog";
-import { fetchAllVolunteers } from "@/lib/api-client";
+import { useUsers } from "@/hooks/use-users";
 import { useEvents } from "@/hooks/use-events";
 
 export function ResourcesList() {
@@ -33,21 +33,9 @@ export function ResourcesList() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAllocateDialogOpen, setIsAllocateDialogOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState<any>(null);
-  const [volunteers, setVolunteers] = useState<any[]>([]);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const { data: events } = useEvents();
-
-  useEffect(() => {
-    const loadVolunteers = async () => {
-      try {
-        const data = await fetchAllVolunteers();
-        setVolunteers(data);
-      } catch (error) {
-        console.error("Failed to load volunteers:", error);
-      }
-    };
-    loadVolunteers();
-  }, []);
+  const { data: users } = useUsers();
 
   const available = resourcesAvailable || [];
   const needed = resourcesNeeded || [];
@@ -159,20 +147,20 @@ export function ResourcesList() {
                           </div>
                         ) : null;
                       } else if (resource.volunteer_id) {
-                        const allocatedVolunteer = volunteers.find(
-                          (v) => v.id === resource.volunteer_id
+                        const allocatedUser = users?.find(
+                          (u: any) => u.id === resource.volunteer_id
                         );
-                        return allocatedVolunteer ? (
+                        return allocatedUser ? (
                           <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4 flex-shrink-0" />
                             <span className="truncate">
                               <span className="mr-1">Allocated to:</span>
                               <span className="font-medium text-foreground">
-                                {allocatedVolunteer.name}
+                                {allocatedUser.name}
                               </span>
-                              {allocatedVolunteer.phonenumber && (
+                              {allocatedUser.phonenumber && (
                                 <span className="ml-1 text-muted-foreground">
-                                  ({allocatedVolunteer.phonenumber})
+                                  ({allocatedUser.phonenumber})
                                 </span>
                               )}
                             </span>

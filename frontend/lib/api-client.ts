@@ -2,14 +2,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 console.log('API_BASE configured as:', API_BASE)
 
-export const fetchAllVolunteers = async () => {
-  const response = await fetch(`${API_BASE}/volunteers/`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch volunteers')
-  }
-  return response.json()
-}
-
 export const api = {
   get: async (endpoint: string) => {
     console.log('API GET:', `${API_BASE}${endpoint}`)
