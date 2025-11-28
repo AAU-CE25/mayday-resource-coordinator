@@ -20,16 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { useEvents } from "@/hooks/use-events";
-import { mutate } from "swr";
-import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api-client";
+import { useCreateVolunteer } from "@/hooks/use-volunteer-mutations";
+import type { UserResponse } from "@/lib/types";
 
 interface AssignVolunteerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  volunteer: any;
+  volunteer: UserResponse | null;  // This is actually a User being assigned to an event
 }
 
 export function AssignVolunteerDialog({
@@ -37,10 +35,15 @@ export function AssignVolunteerDialog({
   onOpenChange,
   volunteer,
 }: AssignVolunteerDialogProps) {
-  const { toast } = useToast();
   const { data: events } = useEvents();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState("");
+
+  const resetAndClose = () => {
+    setSelectedEventId("");
+    onOpenChange(false);
+  };
+
+  const createVolunteer = useCreateVolunteer({ onSuccess: resetAndClose });
 
   useEffect(() => {
     if (open) {
@@ -48,67 +51,16 @@ export function AssignVolunteerDialog({
     }
   }, [open]);
 
-  const handleUnassign = async () => {
-    setIsSubmitting(true);
-
-    try {
-      await api.put(`/volunteers/${volunteer.id}`, {
-        id: volunteer.id,
-        event_id: null,
-      });
-
-      toast({
-        title: "Volunteer unassigned",
-        description: `${volunteer.name} has been removed from the event.`,
-      });
-
-      mutate("volunteers");
-      mutate("events");
-
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Unassignment error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to unassign volunteer. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (!volunteer || !selectedEventId) return;
 
-    try {
-      // Update the volunteer's event assignment
-      await api.put(`/volunteers/${volunteer.id}`, {
-        id: volunteer.id,
-        event_id: parseInt(selectedEventId),
-      });
-
-      toast({
-        title: "Volunteer assigned",
-        description: `${volunteer.name} has been assigned to the event.`,
-      });
-
-      mutate("volunteers");
-      mutate("events");
-
-      setSelectedEventId("");
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Assignment error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to assign volunteer. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Create a new Volunteer record linking the user to the event
+    createVolunteer.mutate({
+      user_id: volunteer.id,
+      event_id: parseInt(selectedEventId),
+      status: "active",
+    });
   };
 
   if (!volunteer) return null;
@@ -117,18 +69,14 @@ export function AssignVolunteerDialog({
     events?.filter(
       (e: any) => e.status === "active" || e.status === "pending"
     ) || [];
-  const currentEvent = volunteer.event_id
-    ? events?.find((e: any) => e.id === volunteer.event_id)
-    : null;
-  const isAssigned = volunteer.event_id !== null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Assign Volunteer</DialogTitle>
+          <DialogTitle>Assign User to Event</DialogTitle>
           <DialogDescription>
-            Assign {volunteer.name} to an emergency event.
+            Assign {volunteer.name} to an emergency event as a volunteer.
           </DialogDescription>
         </DialogHeader>
 
@@ -143,45 +91,12 @@ export function AssignVolunteerDialog({
                   {volunteer.phonenumber}
                 </p>
               )}
-              {volunteer.skills && volunteer.skills.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {volunteer.skills.map((skill: string, idx: number) => (
-                    <Badge key={idx} variant="outline" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
+              {volunteer.email && (
+                <p className="text-sm text-muted-foreground">
+                  {volunteer.email}
+                </p>
               )}
             </div>
-
-            {isAssigned && currentEvent && (
-              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-950/20">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                      Currently assigned:
-                    </p>
-                    <p className="mt-1 font-semibold text-orange-950 dark:text-orange-50">
-                      {currentEvent.description}
-                    </p>
-                    {currentEvent.location?.address?.street && (
-                      <p className="mt-0.5 text-xs text-orange-700 dark:text-orange-300">
-                        {currentEvent.location.address.street}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleUnassign}
-                    disabled={isSubmitting}
-                  >
-                    Unassign
-                  </Button>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="event">Select Event</Label>
@@ -225,8 +140,8 @@ export function AssignVolunteerDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !selectedEventId}>
-              {isSubmitting ? "Assigning..." : "Assign"}
+            <Button type="submit" disabled={createVolunteer.isPending || !selectedEventId}>
+              {createVolunteer.isPending ? "Assigning..." : "Assign to Event"}
             </Button>
           </DialogFooter>
         </form>

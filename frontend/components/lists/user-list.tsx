@@ -15,7 +15,7 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
-import { AddVolunteerDialog } from "@/components/dialogs/add-volunteer-dialog";
+import { AddUserDialog } from "@/components/dialogs/add-user-dialog";
 import { AssignVolunteerDialog } from "@/components/dialogs/assign-volunteer-dialog";
 import {
   Select,
@@ -244,7 +244,7 @@ export function UserList() {
         </div>
       )}
 
-      <AddVolunteerDialog
+      <AddUserDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
       />

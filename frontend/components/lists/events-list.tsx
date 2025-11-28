@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useEvents } from "@/hooks/use-events";
-import { useUsers } from "@/hooks/use-users";
+import { useVolunteers } from "@/hooks/use-volunteers";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ interface EventsListProps {
 
 export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
   const { data: events, isLoading } = useEvents();
-  const { data: volunteers } = useUsers();
+  const { data: volunteers } = useVolunteers();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");

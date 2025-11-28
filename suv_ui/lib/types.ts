@@ -22,6 +22,7 @@ export interface User {
   name: string
   email: string
   phonenumber?: string | null
+  status: string
   role?: string
 }
 
