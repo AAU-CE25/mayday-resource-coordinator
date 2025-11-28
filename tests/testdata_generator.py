@@ -6,7 +6,7 @@ from faker import Faker
 fake = Faker()
 
 # ------------------ CONFIG ------------------
-API_BASE = "http://localhost:8000"  # <-- change if needed
+API_BASE = "http://35.159.81.61:8000"  # <-- change if needed
 COPENHAGEN_COORDS = {"lat": 55.6761, "lon": 12.5683}
 
 # ------------------ STATIC DATA ------------------
