@@ -1,10 +1,6 @@
 #!/bin/bash
 
-# Script to push Docker images to AWS ECR
-# Usage: ./push_to_ecr.sh [aws-account-id]
-# 
-# The script defaults to eu-central-1 region
-# If you need a different region, modify AWS_REGION below
+
 
 set -e  # Exit on error
 
