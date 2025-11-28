@@ -11,10 +11,10 @@ router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 def create_volunteer(volunteer: VolunteerCreate):
     try:
         return VolunteerLogic.create_volunteer(volunteer)
-    except UserExistsException:
+    except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists with this email"
+            detail=str(ve)
         )
 
 @router.get("/", response_model=list[VolunteerResponse])

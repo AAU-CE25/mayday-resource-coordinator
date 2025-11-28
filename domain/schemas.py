@@ -67,7 +67,6 @@ class EventCreate(BaseModel):
     location: LocationCreate
 
 class EventUpdate(BaseModel):
-    id: int
     description: str | None = None
     priority: int | None = None
     status: str | None = None

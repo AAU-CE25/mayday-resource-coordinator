@@ -1,15 +1,18 @@
 from domain.schemas import VolunteerCreate, VolunteerResponse, VolunteerUpdate, UserResponse
 from ..models import Volunteer
 from .user_logic import UserLogic
-from api_service.app.data_access import VolunteerDAO
+from api_service.app.data_access import VolunteerDAO, EventDAO
 
 class VolunteerLogic:
     def create_volunteer(volunteerCreate: VolunteerCreate) -> VolunteerResponse:
         # Fetch the user for the response
-        user = UserLogic.get_user(volunteer.user_id)
+        user = UserLogic.get_user(volunteerCreate.user_id)
         if not user:
-            raise ValueError(f"User with id {volunteer.user_id} not found")
+            raise ValueError(f"User with id {volunteerCreate.user_id} not found")
        
+        event = EventDAO.get_event(volunteerCreate.event_id)
+        if not event:
+            raise ValueError(f"Event with id {volunteerCreate.event_id} not found")
        # Create the volunteer with the provided user_id
         new_volunteer = Volunteer(**volunteerCreate.model_dump())
         volunteer = VolunteerDAO.create_volunteer(new_volunteer)
