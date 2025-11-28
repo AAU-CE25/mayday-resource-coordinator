@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mayday
-  labels:
-    name: mayday
-    environment: production
