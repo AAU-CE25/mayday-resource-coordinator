@@ -21,15 +21,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Register user
-      const user = await apiRegister({
-        name,
-        email,
-        phonenumber,
-        password,
-        role: "SUV",
-      });
-
       // Auto-login after registration
       await apiLogin({ email, password });
       await login();

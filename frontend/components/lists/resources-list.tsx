@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useResourcesAvailable } from "@/hooks/use-resources-available";
 import { useResourcesNeeded } from "@/hooks/use-resources-needed";
 import { Card } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import {
   Package,
   CheckCircle,
   XCircle,
-  Plus,
   Search,
   TrendingUp,
   TrendingDown,

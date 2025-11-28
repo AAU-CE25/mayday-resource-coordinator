@@ -1,5 +1,4 @@
 from sqlmodel import Session, select
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from datetime import datetime
 
