@@ -18,9 +18,9 @@ import {
   User,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AddResourceDialog } from "./add-resource-dialog";
-import { AllocateResourceDialog } from "./allocate-resource-dialog";
-import { AssignResourceDialog } from "./assign-resource-dialog";
+import { AddResourceDialog } from "@/components/dialogs/add-resource-dialog";
+import { AllocateResourceDialog } from "@/components/dialogs/allocate-resource-dialog";
+import { AssignResourceDialog } from "@/components/dialogs/assign-resource-dialog";
 import { fetchAllVolunteers } from "@/lib/api-client";
 import { useEvents } from "@/hooks/use-events";
 

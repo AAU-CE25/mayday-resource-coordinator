@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useVolunteers } from "@/hooks/use-volunteers";
+import { useUsers } from "@/hooks/use-users";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,8 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
-import { AddVolunteerDialog } from "./add-volunteer-dialog";
-import { AssignVolunteerDialog } from "./assign-volunteer-dialog";
+import { AddVolunteerDialog } from "@/components/dialogs/add-volunteer-dialog";
+import { AssignVolunteerDialog } from "@/components/dialogs/assign-volunteer-dialog";
 import {
   Select,
   SelectContent,
@@ -25,26 +25,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function VolunteersList() {
-  const { data: volunteers, isLoading } = useVolunteers();
+export function UserList() {
+  const { data: users, isLoading } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const filteredVolunteers = volunteers?.filter((volunteer: any) => {
-    const matchesSearch =
-      volunteer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      volunteer.phonenumber.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredUsers = users?.filter((user: any) => {
+    const nameMatch = user.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const phoneMatch = user.phonenumber?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = nameMatch || phoneMatch;
 
     // Determine actual status
     const isAssigned =
-      volunteer.event_id !== null && volunteer.event_id !== undefined;
+      user.event_id !== null && user.event_id !== undefined;
 
-    // Check volunteer.status field for unavailable
+    // Check user.status field for unavailable
     let actualStatus: string;
-    if (volunteer.status === "unavailable") {
+    if (user.status === "unavailable") {
       actualStatus = "unavailable";
     } else if (isAssigned) {
       actualStatus = "assigned";
@@ -61,13 +61,13 @@ export function VolunteersList() {
   if (isLoading) {
     return (
       <div className="text-center text-muted-foreground">
-        Loading volunteers...
+        Loading users...
       </div>
     );
   }
 
-  const handleAssign = (volunteer: any) => {
-    setSelectedVolunteer(volunteer);
+  const handleAssign = (user: any) => {
+    setSelectedUser(user);
     setIsAssignDialogOpen(true);
   };
 
@@ -78,7 +78,7 @@ export function VolunteersList() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search volunteers..."
+              placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -102,19 +102,19 @@ export function VolunteersList() {
         </Select>
       </div>
 
-      {!filteredVolunteers || filteredVolunteers.length === 0 ? (
+      {!filteredUsers || filteredUsers.length === 0 ? (
         <div className="text-center text-muted-foreground">
           {searchQuery || statusFilter !== "all"
-            ? "No volunteers match your filters"
-            : "No volunteers registered"}
+            ? "No users match your filters"
+            : "No users registered"}
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredVolunteers.map((volunteer: any) => {
-            // Determine status based on volunteer.status and event_id
+          {filteredUsers.map((user: any) => {
+            // Determine status based on user.status and event_id
             const isAssigned =
-              volunteer.event_id !== null && volunteer.event_id !== undefined;
-            const isUnavailable = volunteer.status === "unavailable";
+              user.event_id !== null && user.event_id !== undefined;
+            const isUnavailable = user.status === "unavailable";
 
             // Determine colors based on status
             let bgColor: string;
@@ -136,7 +136,7 @@ export function VolunteersList() {
             }
 
             return (
-              <Card key={volunteer.id} className="p-4">
+              <Card key={user.id} className="p-4">
                 <div className="flex items-start gap-3">
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-full ${bgColor}`}
@@ -148,14 +148,14 @@ export function VolunteersList() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-foreground">
-                          {volunteer.name}
+                          {user.name}
                         </h3>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleAssign(volunteer)}
+                          onClick={() => handleAssign(user)}
                           className="ml-2"
-                          aria-label={`Assign ${volunteer.name} to event`}
+                          aria-label={`Assign ${user.name} to event`}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -169,18 +169,18 @@ export function VolunteersList() {
                       )}
                     </div>
 
-                    {volunteer.phonenumber && (
+                    {user.phonenumber && (
                       <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-3 w-3" />
-                        <span>{volunteer.phonenumber}</span>
+                        <span>{user.phonenumber}</span>
                       </div>
                     )}
 
-                    {volunteer.location && (
+                    {user.location && (
                       <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-3 w-3" />
                         <span>
-                          {volunteer.location.address || "Location available"}
+                          {user.location.address || "Location available"}
                         </span>
                       </div>
                     )}
@@ -202,18 +202,18 @@ export function VolunteersList() {
                           ? "Assigned (Busy)"
                           : "Available"}
                       </Badge>
-                      {volunteer.skills &&
-                        volunteer.skills.map((skill: string, idx: number) => (
+                      {user.skills &&
+                        user.skills.map((skill: string, idx: number) => (
                           <Badge key={idx} variant="outline">
                             {skill}
                           </Badge>
                         ))}
                     </div>
 
-                    {isAssigned && volunteer.event_id && (
+                    {isAssigned && user.event_id && (
                       <div className="mt-2">
                         <Badge variant="secondary" className="text-xs">
-                          Assigned to Event #{volunteer.event_id}
+                          Assigned to Event #{user.event_id}
                         </Badge>
                       </div>
                     )}
@@ -223,7 +223,7 @@ export function VolunteersList() {
                         size="sm"
                         variant="outline"
                         className="mt-3 w-full bg-transparent"
-                        onClick={() => handleAssign(volunteer)}
+                        onClick={() => handleAssign(user)}
                       >
                         Assign to Event
                       </Button>
@@ -232,7 +232,7 @@ export function VolunteersList() {
                     {isUnavailable && (
                       <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-center">
                         <p className="text-xs text-red-600 font-medium">
-                          Volunteer marked as unavailable
+                          User marked as unavailable
                         </p>
                       </div>
                     )}
@@ -251,7 +251,7 @@ export function VolunteersList() {
       <AssignVolunteerDialog
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
-        volunteer={selectedVolunteer}
+        volunteer={selectedUser}
       />
     </div>
   );

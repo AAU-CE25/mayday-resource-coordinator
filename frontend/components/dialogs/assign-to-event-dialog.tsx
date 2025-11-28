@@ -21,8 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useVolunteers } from "@/hooks/use-volunteers";
-import { mutate } from "swr";
+import { useUsers } from "@/hooks/use-users";
+import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api-client";
 
@@ -38,13 +38,14 @@ export function AssignToEventDialog({
   event,
 }: AssignToEventDialogProps) {
   const { toast } = useToast();
-  const { data: volunteers } = useVolunteers();
+  const { data: users } = useUsers();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedVolunteerId, setSelectedVolunteerId] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   useEffect(() => {
     if (open) {
-      setSelectedVolunteerId("");
+      setSelectedUserId("");
     }
   }, [open]);
 
@@ -53,51 +54,52 @@ export function AssignToEventDialog({
     setIsSubmitting(true);
 
     try {
-      const selectedVol = volunteers?.find(
-        (v: any) => String(v.id) === selectedVolunteerId
+      const selectedUser = users?.find(
+        (u: any) => String(u.id) === selectedUserId
       );
-      const isAssignedToThisEvent =
-        selectedVol &&
-        (selectedVol.event_id === event.id ||
-          selectedVol.assigned_event === event.id);
+      const isVolunteerForThisEvent =
+        selectedUser &&
+        (selectedUser.event_id === event.id ||
+          selectedUser.assigned_event === event.id);
 
-      if (isAssignedToThisEvent) {
-        // Unassign: Clear event_id to make volunteer available again
-        await api.put(`/volunteers/${selectedVolunteerId}`, {
-          id: parseInt(selectedVolunteerId),
+      if (isVolunteerForThisEvent) {
+        // Unassign: Remove user as volunteer from this event
+        await api.put(`/users/${selectedUserId}`, {
+          id: parseInt(selectedUserId),
           event_id: null,
         });
 
         toast({
-          title: "Volunteer unassigned",
-          description: `Volunteer has been removed from ${event.description}`,
+          title: "User removed from event",
+          description: `User is no longer volunteering for ${event.description}`,
         });
       } else {
-        // Assign: Update volunteer's event_id
-        await api.put(`/volunteers/${selectedVolunteerId}`, {
-          id: parseInt(selectedVolunteerId),
+        // Assign: Make user a volunteer for this event
+        await api.put(`/users/${selectedUserId}`, {
+          id: parseInt(selectedUserId),
           event_id: event.id,
         });
 
         toast({
-          title: "Volunteer assigned",
-          description: `Volunteer has been assigned to ${event.description}`,
+          title: "User assigned as volunteer",
+          description: `User is now volunteering for ${event.description}`,
         });
       }
 
-      mutate("volunteers");
-      mutate("events");
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
 
-      setSelectedVolunteerId("");
+      setSelectedUserId("");
       onOpenChange(false);
     } catch (error) {
-      console.error("Error updating volunteer assignment:", error);
+      console.error("Error updating user assignment:", error);
       toast({
         title: "Error",
         description:
           error instanceof Error
             ? error.message
-            : "Failed to update volunteer assignment. Please try again.",
+            : "Failed to update assignment. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -107,16 +109,16 @@ export function AssignToEventDialog({
 
   if (!event) return null;
 
-  // Show ALL volunteers, not just available
-  const allVolunteers = volunteers || [];
+  // Show ALL users
+  const allUsers = users || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Assign Volunteer to Event</DialogTitle>
+          <DialogTitle>Assign User to Event</DialogTitle>
           <DialogDescription>
-            Assign a volunteer to {event.description}.
+            Assign a user as a volunteer to {event.description}.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,45 +134,45 @@ export function AssignToEventDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="volunteer">Select Volunteer</Label>
+              <Label htmlFor="user">Select User</Label>
               <Select
-                value={selectedVolunteerId}
-                onValueChange={setSelectedVolunteerId}
+                value={selectedUserId}
+                onValueChange={setSelectedUserId}
                 required
               >
-                <SelectTrigger id="volunteer">
-                  <SelectValue placeholder="Choose a volunteer..." />
+                <SelectTrigger id="user">
+                  <SelectValue placeholder="Choose a user..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {allVolunteers.length === 0 ? (
+                  {allUsers.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground">
-                      No volunteers registered
+                      No users registered
                     </div>
                   ) : (
-                    allVolunteers.map((vol: any) => {
-                      const isAssignedHere =
-                        vol.event_id === event.id ||
-                        vol.assigned_event === event.id;
-                      const isAssignedElsewhere =
-                        !isAssignedHere && (vol.event_id || vol.assigned_event);
+                    allUsers.map((user: any) => {
+                      const isVolunteerHere =
+                        user.event_id === event.id ||
+                        user.assigned_event === event.id;
+                      const isVolunteerElsewhere =
+                        !isVolunteerHere && (user.event_id || user.assigned_event);
                       return (
-                        <SelectItem key={vol.id} value={String(vol.id)}>
+                        <SelectItem key={user.id} value={String(user.id)}>
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col flex-1">
-                              <span className="font-medium">{vol.name}</span>
+                              <span className="font-medium">{user.name}</span>
                               <span className="text-xs text-muted-foreground">
-                                {vol.phonenumber}
+                                {user.phonenumber}
                               </span>
                             </div>
-                            {isAssignedHere && (
+                            {isVolunteerHere && (
                               <Badge variant="default" className="text-xs">
-                                Assigned Here
+                                Volunteering Here
                               </Badge>
                             )}
-                            {isAssignedElsewhere && (
+                            {isVolunteerElsewhere && (
                               <Badge variant="secondary" className="text-xs">
-                                Assigned Event #
-                                {vol.event_id || vol.assigned_event}
+                                Volunteering Event #
+                                {user.event_id || user.assigned_event}
                               </Badge>
                             )}
                           </div>
@@ -193,17 +195,17 @@ export function AssignToEventDialog({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !selectedVolunteerId}
+              disabled={isSubmitting || !selectedUserId}
             >
               {isSubmitting
                 ? "Updating..."
-                : allVolunteers.find(
-                    (v: any) =>
-                      String(v.id) === selectedVolunteerId &&
-                      (v.event_id === event.id || v.assigned_event === event.id)
+                : allUsers.find(
+                    (u: any) =>
+                      String(u.id) === selectedUserId &&
+                      (u.event_id === event.id || u.assigned_event === event.id)
                   )
                 ? "Remove from Event"
-                : "Assign to Event"}
+                : "Assign as Volunteer"}
             </Button>
           </DialogFooter>
         </form>

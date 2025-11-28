@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useEvents } from "@/hooks/use-events";
-import { useVolunteers } from "@/hooks/use-volunteers";
+import { useUsers } from "@/hooks/use-users";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, AlertCircle, Plus, Search, Filter } from "lucide-react";
-import { CreateEventDialog } from "./create-event-dialog";
-import AssignToEventDialog from "./assign-to-event-dialog";
+import { CreateEventDialog } from "@/components/dialogs/create-event-dialog";
+import AssignToEventDialog from "@/components/dialogs/assign-to-event-dialog";
 import {
   Select,
   SelectContent,
@@ -26,7 +26,7 @@ interface EventsListProps {
 
 export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
   const { data: events, isLoading } = useEvents();
-  const { data: volunteers } = useVolunteers();
+  const { data: volunteers } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");

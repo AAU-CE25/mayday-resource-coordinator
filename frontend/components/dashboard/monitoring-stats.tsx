@@ -2,7 +2,7 @@
 
 import { useStats } from "@/hooks/use-stats"
 import { AlertCircle, Users, Package, MapPin } from "lucide-react"
-import { LiveStatusIndicator } from "./live-status-indicator"
+import { LiveStatusIndicator } from "@/components/dashboard/live-status-indicator"
 
 export function MonitoringStats() {
   const { data: stats } = useStats()
