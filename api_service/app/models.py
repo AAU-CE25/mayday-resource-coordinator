@@ -55,4 +55,5 @@ class User(SQLModel, table=True):
     email: str
     phonenumber: str
     password: str
+    status: str = Field(default="available")  # available | assigned | unavailable
     role: str = Field(default="SUV")  # SUV | VC | AUTHORITY

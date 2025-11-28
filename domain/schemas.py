@@ -11,16 +11,18 @@ class UserCreate(BaseModel):
     role: str | None = "SUV"
 
 class UserUpdate(BaseModel):
-    id: int
     name: str | None = None
     email: str | None = None
     phonenumber: str | None = None
+    status: str | None = None
 
 class UserResponse(BaseModel):
     id: int
     name: str
     email: str
     phonenumber: str | None = None
+    status: str = "available"  # available | unavailable
+    role: str | None = None
     model_config = {
         "from_attributes": True
     }
