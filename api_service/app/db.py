@@ -5,7 +5,7 @@ from .core.config import settings
 # Create engine
 engine = create_engine(
     settings.database_url_computed,
-    echo=True,
+    echo=settings.DB_LOGGING_ENABLED,
     pool_pre_ping=True,
 )
 
