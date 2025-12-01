@@ -6,6 +6,12 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+
+# Build-time environment variables
+# REQUIRED: NEXT_PUBLIC_API_URL must be provided at build time - no default value
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 RUN npm run build
 
 # ---- Runner stage ----

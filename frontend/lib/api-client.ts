@@ -1,4 +1,18 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Get API URL from environment variable - throws if not configured
+function getApiBaseUrl(): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+  
+  if (!apiUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in your .env file or build arguments.'
+    )
+  }
+  
+  return apiUrl
+}
+
+const API_BASE = getApiBaseUrl()
 
 export const api = {
   get: async (endpoint: string) => {
