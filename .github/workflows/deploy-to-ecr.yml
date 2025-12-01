@@ -2,8 +2,7 @@ name: Build and Push to AWS ECR
 
 on:
   push:
-    branches:
-      - feature/MDAY-44-cloud-deployment
+    branches: [main, feature/MDAY-44-cloud-deployment]
   release:
     types: [published, created]
   workflow_dispatch:  # Allows manual triggering

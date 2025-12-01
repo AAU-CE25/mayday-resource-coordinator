@@ -17,11 +17,6 @@ origins = [
     "http://127.0.0.1:5173",
     "http://frontend_container:3000",   # optional - if frontend runs in Docker
     "http://suv_ui_container:3030",   # optional - if suv ui runs in Docker
-    
-    # Kubernetes internal service names (for pod-to-pod communication)
-    "http://api-service.mayday.svc.cluster.local",
-    "http://frontend-service.mayday.svc.cluster.local",
-    "http://suv-ui-service.mayday.svc.cluster.local",
 ]
 
 # Add environment variable support for cloud LoadBalancer URLs
@@ -29,6 +24,9 @@ import os
 frontend_url = os.getenv("FRONTEND_URL")
 suv_ui_url = os.getenv("SUV_UI_URL")
 api_url = os.getenv("API_URL")
+
+# For ECS/cloud deployments with dynamic IPs, set CORS_ALLOW_ALL=true
+allow_all_origins = os.getenv("CORS_ALLOW_ALL", "false").lower() == "true"
 
 if frontend_url:
     origins.append(frontend_url)
@@ -42,8 +40,8 @@ if api_url:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,      # or ["*"] for all origins (dev only)
-    allow_credentials=True,
+    allow_origins=["*"] if allow_all_origins else origins,
+    allow_credentials=not allow_all_origins,  # credentials not supported with "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
