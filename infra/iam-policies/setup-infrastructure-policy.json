@@ -147,7 +147,12 @@
         "logs:DescribeLogGroups",
         "logs:PutRetentionPolicy"
       ],
-      "Resource": "*"
+      "Resource": [
+        "arn:aws:logs:*:*:log-group:/ecs/mayday-cluster/*",
+        "arn:aws:logs:*:*:log-group:/ecs/*-cluster/*",
+        "arn:aws:logs:eu-central-1:390299133544:log-group::log-stream:"
+      ]
+
     },
     {
       "Sid": "ServiceDiscoveryManagement",
