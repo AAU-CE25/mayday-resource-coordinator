@@ -2,6 +2,16 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "EC2DescribeOperations",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeAccountAttributes",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeInternetGateways"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "VPCManagement",
       "Effect": "Allow",
       "Action": [
@@ -19,7 +29,6 @@
       "Action": [
         "ec2:CreateInternetGateway",
         "ec2:DeleteInternetGateway",
-        "ec2:DescribeInternetGateways",
         "ec2:AttachInternetGateway",
         "ec2:DetachInternetGateway"
       ],
