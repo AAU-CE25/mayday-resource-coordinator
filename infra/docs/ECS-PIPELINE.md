@@ -6,14 +6,20 @@ This document describes the GitHub Actions workflow that deploys the Mayday Reso
 
 **Workflow file:** `.github/workflows/deploy-to-ecs.yml`
 
-The ECS pipeline creates or updates all required AWS infrastructure and deploys the application services to ECS Fargate. It's designed to be idempotent - running it multiple times will either create new resources or update existing ones.
+The ECS pipeline deploys application services to ECS Fargate using pre-existing infrastructure. It requires that the infrastructure has already been created by the `setup-infrastructure.yml` workflow.
+
+## Prerequisites
+
+Before running this workflow:
+
+1. **Run the Infrastructure Setup workflow** (`setup-infrastructure.yml`)
+2. **Run the ECR Build workflow** (`deploy-to-ecr.yml`) to push images
 
 ## Triggers
 
 | Trigger | Description |
 |---------|-------------|
-| Push to `main` | Automatic deployment on merge |
-| Manual dispatch | Deploy with custom cluster name |
+| Manual dispatch | Deploy with optional custom cluster name |
 
 ### Manual Dispatch Inputs
 
@@ -24,90 +30,82 @@ The ECS pipeline creates or updates all required AWS infrastructure and deploys 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                           VPC (10.0.0.0/16)                     │
-│  ┌─────────────────────┐       ┌─────────────────────┐          │
-│  │   Subnet 1          │       │   Subnet 2          │          │
-│  │   10.0.1.0/24       │       │   10.0.2.0/24       │          │
-│  │   (AZ 1)            │       │   (AZ 2)            │          │
-│  └─────────────────────┘       └─────────────────────┘          │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │                    ECS Cluster                              │ │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │ │
-│  │  │    DB    │ │   API    │ │ Frontend │ │  SUV UI  │       │ │
-│  │  │  :5432   │ │  :8000   │ │  :3000   │ │  :3030   │       │ │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│  Service Discovery: *.mayday-cluster.local                      │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           VPC (10.0.0.0/16)                             │
+│  ┌─────────────────────┐       ┌─────────────────────┐                  │
+│  │   Subnet 1          │       │   Subnet 2          │                  │
+│  │   10.0.1.0/24       │       │   10.0.2.0/24       │                  │
+│  │   (AZ 1)            │       │   (AZ 2)            │                  │
+│  └─────────────────────┘       └─────────────────────┘                  │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │                 Application Load Balancer (ALB)                     │ │
+│  │                      :80 → API Service                              │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                    │                                     │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │                         ECS Cluster                                 │ │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐               │ │
+│  │  │    DB    │ │   API    │ │ Frontend │ │  SUV UI  │               │ │
+│  │  │  :5432   │ │  :8000   │ │  :3000   │ │  :3030   │               │ │
+│  │  │          │ │  (ALB)   │ │          │ │          │               │ │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘               │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  Service Discovery: *.mayday-cluster.local (internal)                   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Services Deployed
 
-| Service | Image | Port | Internal Endpoint |
-|---------|-------|------|-------------------|
-| Database | `postgres:18` | 5432 | `db.mayday-cluster.local:5432` |
-| API Service | `api_service:latest` | 8000 | `api.mayday-cluster.local:8000` |
-| Frontend | `frontend:latest` | 3000 | `frontend.mayday-cluster.local:3000` |
-| SUV UI | `suv_ui:latest` | 3030 | `suv-ui.mayday-cluster.local:3030` |
+| Service | Image | Port | Endpoint |
+|---------|-------|------|----------|
+| Database | `postgres:18` | 5432 | `db.mayday-cluster.local:5432` (internal) |
+| API Service | `api_service:latest` | 8000 | ALB public DNS (port 80) |
+| Frontend | `frontend:latest` | 3000 | Public IP:3000 |
+| SUV UI | `suv_ui:latest` | 3030 | Public IP:3030 |
 
-## Infrastructure Created
+## Workflow Steps
 
-### Networking
+The workflow performs the following steps:
 
-| Resource | Description |
-|----------|-------------|
-| VPC | Virtual Private Cloud with CIDR `10.0.0.0/16` |
-| Subnets | Two public subnets in different AZs (`10.0.1.0/24`, `10.0.2.0/24`) |
-| Internet Gateway | Enables internet access for the VPC |
-| Route Table | Routes traffic to the Internet Gateway |
+### 1. Get Infrastructure IDs
 
-### Security
+Retrieves existing infrastructure created by `setup-infrastructure.yml`:
+- VPC ID
+- Subnet IDs
+- Security Group ID
+- Target Group ARN
+- IAM Role ARN
+- Service Discovery Namespace ID
 
-| Resource | Description |
-|----------|-------------|
-| Security Group | Controls inbound/outbound traffic |
+### 2. Register Task Definitions
 
-**Inbound Rules:**
-| Port | Protocol | Source | Purpose |
-|------|----------|--------|---------|
-| 8000 | TCP | 0.0.0.0/0 | API Service |
-| 3000 | TCP | 0.0.0.0/0 | Frontend |
-| 3030 | TCP | 0.0.0.0/0 | SUV UI |
-| 5432 | TCP | Self (SG) | PostgreSQL (internal only) |
+Creates/updates ECS task definitions for all services:
+- Database (postgres:18)
+- API Service
+- Frontend
+- SUV UI
 
-### ECS Resources
+### 3. Deploy Services
 
-| Resource | Description |
-|----------|-------------|
-| ECS Cluster | Fargate cluster for running containers |
-| Task Definitions | Container configurations for each service |
-| ECS Services | Manage desired container count and deployment |
-| IAM Role | Task execution role with ECR and CloudWatch permissions |
+Creates or updates ECS services in order:
+1. **Database** - Must be running first
+2. **Wait 30 seconds** - Allow database to initialize
+3. **API Service** - With ALB target group attachment
+4. **Frontend** - Depends on API
+5. **SUV UI** - Depends on API
 
-### Service Discovery
+### 4. Wait and Output
 
-| Resource | Description |
-|----------|-------------|
-| Private DNS Namespace | `mayday-cluster.local` |
-| Service Discovery Services | DNS records for each service |
-
-### Logging
-
-| Log Group | Service |
-|-----------|---------|
-| `/ecs/mayday-cluster/db` | Database |
-| `/ecs/mayday-cluster/api_service` | API Service |
-| `/ecs/mayday-cluster/frontend` | Frontend |
-| `/ecs/mayday-cluster/suv_ui` | SUV UI |
+- Waits for services to stabilize
+- Outputs public IPs and ALB DNS
 
 ## Task Definitions
 
 ### Resource Allocation
 
-All services use the same resource allocation:
+All services use:
 - **CPU:** 512 units (0.5 vCPU)
 - **Memory:** 1024 MB (1 GB)
 - **Launch Type:** Fargate
@@ -132,21 +130,27 @@ POSTGRES_PORT=5432
 CORS_ALLOW_ALL=true
 ```
 
-#### Frontend & SUV UI
+#### SUV UI
 ```
-NEXT_PUBLIC_API_URL=http://api.mayday-cluster.local:8000
-PORT=3030  # SUV UI only
+PORT=3030
 ```
 
-## Deployment Order
+> **Note:** Frontend and SUV UI get `NEXT_PUBLIC_API_URL` baked in at build time via the ECR workflow.
 
-Services are deployed in the following order to respect dependencies:
+## Accessing Services
 
-1. **Database** - Must be running first
-2. **Wait 30 seconds** - Allow database to initialize
-3. **API Service** - Depends on database
-4. **Frontend** - Depends on API
-5. **SUV UI** - Depends on API
+### API (via ALB)
+```
+http://<alb-dns-name>
+```
+The ALB DNS is shown in the workflow summary.
+
+### Frontend & SUV UI
+Access via their public IPs (shown in workflow output):
+```
+Frontend: http://<frontend-ip>:3000
+SUV UI:   http://<suv-ui-ip>:3030
+```
 
 ## Required Secrets
 
@@ -154,20 +158,12 @@ Services are deployed in the following order to respect dependencies:
 |--------|-------------|
 | `AWS_ACCESS_KEY_ID_KAJ` | AWS access key |
 | `AWS_SECRET_ACCESS_KEY_KAJ` | AWS secret key |
-| `AWS_ACCOUNT_ID` | AWS account ID for ECR registry |
 
-## Required IAM Permissions
+## Required Variables
 
-The AWS credentials need permissions for:
-
-- **EC2:** VPC, Subnets, Security Groups, Internet Gateway, Route Tables
-- **ECS:** Clusters, Task Definitions, Services
-- **ECR:** Repository access (read)
-- **IAM:** Create/manage roles and policies
-- **CloudWatch Logs:** Create log groups
-- **Service Discovery:** Namespaces and services
-
-See [IAM-POLICY.md](./IAM-POLICY.md) for the complete IAM policy.
+| Variable | Description |
+|----------|-------------|
+| `AWS_ACCOUNT_ID_KAJ` | AWS account ID for ECR registry |
 
 ## Configuration
 
@@ -175,44 +171,20 @@ See [IAM-POLICY.md](./IAM-POLICY.md) for the complete IAM policy.
 |---------------------|-------|-------------|
 | `AWS_REGION` | `eu-central-1` | AWS region |
 | `CLUSTER_NAME` | `mayday-cluster` | ECS cluster name |
-| `VPC_CIDR` | `10.0.0.0/16` | VPC CIDR block |
-
-## Workflow Steps
-
-1. **Configure AWS credentials**
-2. **Create/get VPC** - With DNS hostnames enabled
-3. **Create/get Internet Gateway** - Attached to VPC
-4. **Create/get Subnets** - Two subnets in different AZs
-5. **Create/get Route Table** - With route to Internet Gateway
-6. **Create/get Security Group** - With required ingress rules
-7. **Create/get ECS Cluster**
-8. **Create/get IAM Execution Role** - For ECS tasks
-9. **Create CloudWatch Log Groups**
-10. **Register Task Definitions** - For all services
-11. **Create/get Service Discovery Namespace**
-12. **Deploy Services** - Create or update ECS services
-13. **Wait for Stabilization** - Ensure services are healthy
-14. **Output Public IPs** - Display service endpoints
-
-## Accessing Services
-
-After deployment, services receive public IPs. The workflow outputs these IPs in the "Get Service Public IPs" step.
-
-**Access URLs:**
-- API: `http://<api-public-ip>:8000`
-- Frontend: `http://<frontend-public-ip>:3000`
-- SUV UI: `http://<suv-ui-public-ip>:3030`
 
 ## Idempotency
 
 The workflow is idempotent:
-- **First run:** Creates all resources
-- **Subsequent runs:** Updates existing resources with `--force-new-deployment`
+- **First run:** Creates all ECS services
+- **Subsequent runs:** Updates existing services with `--force-new-deployment`
 
 ## Troubleshooting
 
+### "VPC not found" error
+The infrastructure doesn't exist. Run `Setup AWS Infrastructure` workflow first.
+
 ### Services fail to start
-Check CloudWatch logs for the specific service:
+Check CloudWatch logs:
 ```bash
 aws logs tail /ecs/mayday-cluster/<service_name> --follow
 ```
@@ -222,13 +194,15 @@ aws logs tail /ecs/mayday-cluster/<service_name> --follow
 - Check that the API service is using the correct hostname (`db.mayday-cluster.local`)
 - Ensure security group allows port 5432 from within the security group
 
-### Service discovery not working
-- Wait a few minutes for DNS propagation
-- Verify the namespace exists: `aws servicediscovery list-namespaces`
-- Check service registrations: `aws servicediscovery list-services`
+### API not reachable via ALB
+- Check ALB target group health in AWS Console
+- Verify security group allows port 80 from 0.0.0.0/0
+- Check API service health check endpoint (`/health`)
 
-### Public IPs not assigned
-Ensure subnets have `MapPublicIpOnLaunch` enabled and the route table has a route to the Internet Gateway.
+### Frontend shows API errors
+- Verify the ALB_DNS was set correctly before building frontend images
+- Check browser developer tools for the API URL being used
+- Rebuild frontend/suv_ui images if ALB DNS changed
 
 ## Cleanup
 
@@ -238,3 +212,10 @@ To tear down the infrastructure, use the teardown script:
 ```
 
 This removes all ECS services, task definitions, and associated resources.
+
+## Related Workflows
+
+| Workflow | Purpose |
+|----------|---------|
+| `setup-infrastructure.yml` | Creates VPC, ALB, ECS cluster (run first) |
+| `deploy-to-ecr.yml` | Builds and pushes Docker images |

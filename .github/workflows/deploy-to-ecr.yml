@@ -14,15 +14,13 @@ on:
   workflow_dispatch:
     inputs:
       api_url:
-        description: 'API URL for frontend builds (defaults to service discovery URL)'
+        description: 'API URL for frontend builds (e.g., http://mayday-cluster-api-alb-123456.eu-central-1.elb.amazonaws.com)'
         required: false
         default: ''
 
 env:
   AWS_REGION: eu-central-1
   CLUSTER_NAME: mayday-cluster
-  # Service discovery URL for internal container communication
-  API_SERVICE_DISCOVERY_URL: http://api.mayday-cluster.local:8000
 
 jobs:
   # Detect which services have changes
@@ -74,7 +72,7 @@ jobs:
             echo "suv_ui=false" >> $GITHUB_OUTPUT
           fi
 
-  # API Service - Only builds when api_service/ or domain/ changes
+  # API Service
   build-api:
     name: Build API Service
     runs-on: ubuntu-latest
@@ -133,39 +131,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Clean up old images
-        run: |
-          echo "🧹 Cleaning up old images..."
-          LATEST_DIGEST=$(aws ecr describe-images \
-            --repository-name api_service \
-            --image-ids imageTag=latest \
-            --query 'imageDetails[0].imageDigest' \
-            --output text \
-            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
-          
-          if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
-            OLD_DIGESTS=$(aws ecr describe-images \
-              --repository-name api_service \
-              --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
-              --output text \
-              --region ${{ env.AWS_REGION }} 2>/dev/null) || true
-            
-            if [ -n "$OLD_DIGESTS" ] && [ "$OLD_DIGESTS" != "None" ]; then
-              for digest in $OLD_DIGESTS; do
-                echo "Deleting old image: $digest"
-                aws ecr batch-delete-image \
-                  --repository-name api_service \
-                  --image-ids imageDigest=$digest \
-                  --region ${{ env.AWS_REGION }} || true
-              done
-              echo "✅ Old images deleted"
-            else
-              echo "✅ No old images to delete"
-            fi
-          fi
 
-  # Frontend - Only builds when frontend/ changes
+  # Frontend
   build-frontend:
     name: Build Frontend
     runs-on: ubuntu-latest
@@ -217,11 +184,17 @@ jobs:
       - name: Set API URL
         id: api-url
         run: |
-          # Use manual input if provided, otherwise use service discovery URL
+          # Priority: manual input > repository variable > fail
           if [ -n "${{ github.event.inputs.api_url }}" ]; then
             API_URL="${{ github.event.inputs.api_url }}"
+          elif [ -n "${{ vars.ALB_DNS }}" ]; then
+            API_URL="http://${{ vars.ALB_DNS }}"
           else
-            API_URL="${{ env.API_SERVICE_DISCOVERY_URL }}"
+            echo "❌ Error: No API URL provided!"
+            echo "Either:"
+            echo "  1. Set the ALB_DNS repository variable, or"
+            echo "  2. Provide api_url when triggering manually"
+            exit 1
           fi
           echo "url=${API_URL}" >> $GITHUB_OUTPUT
           echo "📡 Using API URL: ${API_URL}"
@@ -238,39 +211,8 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ steps.api-url.outputs.url }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Clean up old images
-        run: |
-          echo "🧹 Cleaning up old images..."
-          LATEST_DIGEST=$(aws ecr describe-images \
-            --repository-name frontend \
-            --image-ids imageTag=latest \
-            --query 'imageDetails[0].imageDigest' \
-            --output text \
-            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
-          
-          if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
-            OLD_DIGESTS=$(aws ecr describe-images \
-              --repository-name frontend \
-              --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
-              --output text \
-              --region ${{ env.AWS_REGION }} 2>/dev/null) || true
-            
-            if [ -n "$OLD_DIGESTS" ] && [ "$OLD_DIGESTS" != "None" ]; then
-              for digest in $OLD_DIGESTS; do
-                echo "Deleting old image: $digest"
-                aws ecr batch-delete-image \
-                  --repository-name frontend \
-                  --image-ids imageDigest=$digest \
-                  --region ${{ env.AWS_REGION }} || true
-              done
-              echo "✅ Old images deleted"
-            else
-              echo "✅ No old images to delete"
-            fi
-          fi
 
-  # SUV UI - Only builds when suv_ui/ changes
+  # SUV UI
   build-suv-ui:
     name: Build SUV UI
     runs-on: ubuntu-latest
@@ -322,11 +264,17 @@ jobs:
       - name: Set API URL
         id: api-url
         run: |
-          # Use manual input if provided, otherwise use service discovery URL
+          # Priority: manual input > repository variable > fail
           if [ -n "${{ github.event.inputs.api_url }}" ]; then
             API_URL="${{ github.event.inputs.api_url }}"
+          elif [ -n "${{ vars.ALB_DNS }}" ]; then
+            API_URL="http://${{ vars.ALB_DNS }}"
           else
-            API_URL="${{ env.API_SERVICE_DISCOVERY_URL }}"
+            echo "❌ Error: No API URL provided!"
+            echo "Either:"
+            echo "  1. Set the ALB_DNS repository variable, or"
+            echo "  2. Provide api_url when triggering manually"
+            exit 1
           fi
           echo "url=${API_URL}" >> $GITHUB_OUTPUT
           echo "📡 Using API URL: ${API_URL}"
@@ -343,40 +291,9 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ steps.api-url.outputs.url }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
-      - name: Clean up old images
-        run: |
-          echo "🧹 Cleaning up old images..."
-          LATEST_DIGEST=$(aws ecr describe-images \
-            --repository-name suv_ui \
-            --image-ids imageTag=latest \
-            --query 'imageDetails[0].imageDigest' \
-            --output text \
-            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
-          
-          if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
-            OLD_DIGESTS=$(aws ecr describe-images \
-              --repository-name suv_ui \
-              --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
-              --output text \
-              --region ${{ env.AWS_REGION }} 2>/dev/null) || true
-            
-            if [ -n "$OLD_DIGESTS" ] && [ "$OLD_DIGESTS" != "None" ]; then
-              for digest in $OLD_DIGESTS; do
-                echo "Deleting old image: $digest"
-                aws ecr batch-delete-image \
-                  --repository-name suv_ui \
-                  --image-ids imageDigest=$digest \
-                  --region ${{ env.AWS_REGION }} || true
-              done
-              echo "✅ Old images deleted"
-            else
-              echo "✅ No old images to delete"
-            fi
-          fi
 
   summary:
-    name: Deployment Summary
+    name: Build Summary
     needs: [build-api, build-frontend, build-suv-ui]
     runs-on: ubuntu-latest
     if: always()
@@ -386,31 +303,26 @@ jobs:
         run: |
           echo "## 🚀 ECR Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 API URL (baked into frontends)" >> $GITHUB_STEP_SUMMARY
-          echo "\`${{ env.API_SERVICE_DISCOVERY_URL }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Services Built:" >> $GITHUB_STEP_SUMMARY
           if [ "${{ needs.build-api.result }}" == "success" ]; then
-            echo "- ✅ api_service (changes detected)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ api_service" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.build-api.result }}" == "skipped" ]; then
             echo "- ⏭️ api_service (no changes)" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ❌ api_service (failed)" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ needs.build-frontend.result }}" == "success" ]; then
-            echo "- ✅ frontend (changes detected)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ frontend" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.build-frontend.result }}" == "skipped" ]; then
             echo "- ⏭️ frontend (no changes)" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ❌ frontend (failed)" >> $GITHUB_STEP_SUMMARY
           fi
           if [ "${{ needs.build-suv-ui.result }}" == "success" ]; then
-            echo "- ✅ suv_ui (changes detected)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ suv_ui" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.build-suv-ui.result }}" == "skipped" ]; then
             echo "- ⏭️ suv_ui (no changes)" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ❌ suv_ui (failed)" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Image Tag: \`latest\`" >> $GITHUB_STEP_SUMMARY
 

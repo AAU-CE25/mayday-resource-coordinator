@@ -1,0 +1,533 @@
+name: Setup AWS Infrastructure
+
+on:
+  push: 
+    branches: [feature/MDAY-44-cloud-deployment]
+  workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: 'ECS Cluster Name'
+        required: false
+        default: 'mayday-cluster'
+
+env:
+  AWS_REGION: eu-central-1
+  CLUSTER_NAME: ${{ github.event.inputs.cluster_name || 'mayday-cluster' }}
+  VPC_CIDR: "10.0.0.0/16"
+
+jobs:
+  setup:
+    name: Setup Infrastructure
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_KAJ }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_KAJ }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      # ========================================
+      # VPC and Networking
+      # ========================================
+      - name: Create or get VPC
+        id: vpc
+        run: |
+          VPC_ID=$(aws ec2 describe-vpcs \
+            --filters "Name=tag:Name,Values=${{ env.CLUSTER_NAME }}-vpc" \
+            --query "Vpcs[0].VpcId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ "$VPC_ID" == "None" ] || [ -z "$VPC_ID" ]; then
+            echo "Creating new VPC..."
+            VPC_ID=$(aws ec2 create-vpc \
+              --cidr-block ${{ env.VPC_CIDR }} \
+              --query 'Vpc.VpcId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            aws ec2 create-tags \
+              --resources ${VPC_ID} \
+              --tags Key=Name,Value=${{ env.CLUSTER_NAME }}-vpc \
+              --region ${{ env.AWS_REGION }}
+            
+            aws ec2 modify-vpc-attribute \
+              --vpc-id ${VPC_ID} \
+              --enable-dns-hostnames \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "✅ Created VPC: ${VPC_ID}"
+          else
+            echo "✅ Using existing VPC: ${VPC_ID}"
+          fi
+          
+          echo "vpc_id=${VPC_ID}" >> $GITHUB_OUTPUT
+      
+      - name: Create or get Internet Gateway
+        id: igw
+        run: |
+          IGW_ID=$(aws ec2 describe-internet-gateways \
+            --filters "Name=attachment.vpc-id,Values=${{ steps.vpc.outputs.vpc_id }}" \
+            --query "InternetGateways[0].InternetGatewayId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ "$IGW_ID" == "None" ] || [ -z "$IGW_ID" ]; then
+            echo "Creating Internet Gateway..."
+            IGW_ID=$(aws ec2 create-internet-gateway \
+              --query 'InternetGateway.InternetGatewayId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            aws ec2 attach-internet-gateway \
+              --internet-gateway-id ${IGW_ID} \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --region ${{ env.AWS_REGION }}
+            
+            aws ec2 create-tags \
+              --resources ${IGW_ID} \
+              --tags Key=Name,Value=${{ env.CLUSTER_NAME }}-igw \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "✅ Created Internet Gateway: ${IGW_ID}"
+          else
+            echo "✅ Using existing Internet Gateway: ${IGW_ID}"
+          fi
+          
+          echo "igw_id=${IGW_ID}" >> $GITHUB_OUTPUT
+      
+      - name: Create or get Subnets
+        id: subnets
+        run: |
+          # Get availability zones
+          AZS=$(aws ec2 describe-availability-zones \
+            --query "AvailabilityZones[0:2].ZoneName" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          AZ1=$(echo $AZS | awk '{print $1}')
+          AZ2=$(echo $AZS | awk '{print $2}')
+          
+          # Subnet 1
+          SUBNET1_ID=$(aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=${{ steps.vpc.outputs.vpc_id }}" "Name=tag:Name,Values=${{ env.CLUSTER_NAME }}-subnet-1" \
+            --query "Subnets[0].SubnetId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ "$SUBNET1_ID" == "None" ] || [ -z "$SUBNET1_ID" ]; then
+            SUBNET1_ID=$(aws ec2 create-subnet \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --cidr-block "10.0.1.0/24" \
+              --availability-zone ${AZ1} \
+              --query 'Subnet.SubnetId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            aws ec2 create-tags \
+              --resources ${SUBNET1_ID} \
+              --tags Key=Name,Value=${{ env.CLUSTER_NAME }}-subnet-1 \
+              --region ${{ env.AWS_REGION }}
+            
+            aws ec2 modify-subnet-attribute \
+              --subnet-id ${SUBNET1_ID} \
+              --map-public-ip-on-launch \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "✅ Created Subnet 1: ${SUBNET1_ID}"
+          else
+            echo "✅ Using existing Subnet 1: ${SUBNET1_ID}"
+          fi
+          
+          # Subnet 2
+          SUBNET2_ID=$(aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=${{ steps.vpc.outputs.vpc_id }}" "Name=tag:Name,Values=${{ env.CLUSTER_NAME }}-subnet-2" \
+            --query "Subnets[0].SubnetId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ "$SUBNET2_ID" == "None" ] || [ -z "$SUBNET2_ID" ]; then
+            SUBNET2_ID=$(aws ec2 create-subnet \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --cidr-block "10.0.2.0/24" \
+              --availability-zone ${AZ2} \
+              --query 'Subnet.SubnetId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            aws ec2 create-tags \
+              --resources ${SUBNET2_ID} \
+              --tags Key=Name,Value=${{ env.CLUSTER_NAME }}-subnet-2 \
+              --region ${{ env.AWS_REGION }}
+            
+            aws ec2 modify-subnet-attribute \
+              --subnet-id ${SUBNET2_ID} \
+              --map-public-ip-on-launch \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "✅ Created Subnet 2: ${SUBNET2_ID}"
+          else
+            echo "✅ Using existing Subnet 2: ${SUBNET2_ID}"
+          fi
+          
+          echo "subnet1_id=${SUBNET1_ID}" >> $GITHUB_OUTPUT
+          echo "subnet2_id=${SUBNET2_ID}" >> $GITHUB_OUTPUT
+      
+      - name: Create or get Route Table
+        run: |
+          RT_ID=$(aws ec2 describe-route-tables \
+            --filters "Name=vpc-id,Values=${{ steps.vpc.outputs.vpc_id }}" "Name=tag:Name,Values=${{ env.CLUSTER_NAME }}-rt" \
+            --query "RouteTables[0].RouteTableId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ "$RT_ID" == "None" ] || [ -z "$RT_ID" ]; then
+            RT_ID=$(aws ec2 create-route-table \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --query 'RouteTable.RouteTableId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            aws ec2 create-tags \
+              --resources ${RT_ID} \
+              --tags Key=Name,Value=${{ env.CLUSTER_NAME }}-rt \
+              --region ${{ env.AWS_REGION }}
+            
+            aws ec2 create-route \
+              --route-table-id ${RT_ID} \
+              --destination-cidr-block "0.0.0.0/0" \
+              --gateway-id ${{ steps.igw.outputs.igw_id }} \
+              --region ${{ env.AWS_REGION }} || true
+            
+            aws ec2 associate-route-table \
+              --route-table-id ${RT_ID} \
+              --subnet-id ${{ steps.subnets.outputs.subnet1_id }} \
+              --region ${{ env.AWS_REGION }} || true
+            
+            aws ec2 associate-route-table \
+              --route-table-id ${RT_ID} \
+              --subnet-id ${{ steps.subnets.outputs.subnet2_id }} \
+              --region ${{ env.AWS_REGION }} || true
+            
+            echo "✅ Created Route Table: ${RT_ID}"
+          else
+            echo "✅ Using existing Route Table: ${RT_ID}"
+          fi
+      
+      # ========================================
+      # Security Group
+      # ========================================
+      - name: Create or get Security Group
+        id: sg
+        run: |
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=vpc-id,Values=${{ steps.vpc.outputs.vpc_id }}" "Name=group-name,Values=${{ env.CLUSTER_NAME }}-sg" \
+            --query "SecurityGroups[0].GroupId" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ "$SG_ID" == "None" ] || [ -z "$SG_ID" ]; then
+            SG_ID=$(aws ec2 create-security-group \
+              --group-name ${{ env.CLUSTER_NAME }}-sg \
+              --description "Security group for ${{ env.CLUSTER_NAME }} ECS services" \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --query 'GroupId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            # ALB HTTP (80)
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 80 --cidr 0.0.0.0/0 \
+              --region ${{ env.AWS_REGION }} || true
+            
+            # API Service (8000)
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 8000 --cidr 0.0.0.0/0 \
+              --region ${{ env.AWS_REGION }} || true
+            
+            # Frontend (3000)
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 3000 --cidr 0.0.0.0/0 \
+              --region ${{ env.AWS_REGION }} || true
+            
+            # SUV UI (3030)
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 3030 --cidr 0.0.0.0/0 \
+              --region ${{ env.AWS_REGION }} || true
+            
+            # PostgreSQL (5432) - internal only
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 5432 --source-group ${SG_ID} \
+              --region ${{ env.AWS_REGION }} || true
+            
+            echo "✅ Created Security Group: ${SG_ID}"
+          else
+            echo "✅ Using existing Security Group: ${SG_ID}"
+          fi
+          
+          echo "sg_id=${SG_ID}" >> $GITHUB_OUTPUT
+      
+      # ========================================
+      # Application Load Balancer
+      # ========================================
+      - name: Create or get Application Load Balancer
+        id: alb
+        run: |
+          ALB_NAME="${{ env.CLUSTER_NAME }}-api-alb"
+          
+          ALB_ARN=$(aws elbv2 describe-load-balancers \
+            --names ${ALB_NAME} \
+            --query "LoadBalancers[0].LoadBalancerArn" \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+          
+          if [ -z "$ALB_ARN" ] || [ "$ALB_ARN" == "None" ]; then
+            echo "Creating Application Load Balancer..."
+            ALB_ARN=$(aws elbv2 create-load-balancer \
+              --name ${ALB_NAME} \
+              --subnets ${{ steps.subnets.outputs.subnet1_id }} ${{ steps.subnets.outputs.subnet2_id }} \
+              --security-groups ${{ steps.sg.outputs.sg_id }} \
+              --scheme internet-facing \
+              --type application \
+              --ip-address-type ipv4 \
+              --query 'LoadBalancers[0].LoadBalancerArn' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            echo "✅ Created ALB: ${ALB_ARN}"
+          else
+            echo "✅ Using existing ALB: ${ALB_ARN}"
+          fi
+          
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --load-balancer-arns ${ALB_ARN} \
+            --query "LoadBalancers[0].DNSName" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          echo "alb_arn=${ALB_ARN}" >> $GITHUB_OUTPUT
+          echo "alb_dns=${ALB_DNS}" >> $GITHUB_OUTPUT
+      
+      - name: Create or get Target Group
+        id: tg
+        run: |
+          TG_NAME="${{ env.CLUSTER_NAME }}-api-tg"
+          
+          TG_ARN=$(aws elbv2 describe-target-groups \
+            --names ${TG_NAME} \
+            --query "TargetGroups[0].TargetGroupArn" \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+          
+          if [ -z "$TG_ARN" ] || [ "$TG_ARN" == "None" ]; then
+            echo "Creating Target Group..."
+            TG_ARN=$(aws elbv2 create-target-group \
+              --name ${TG_NAME} \
+              --protocol HTTP \
+              --port 8000 \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --target-type ip \
+              --health-check-enabled \
+              --health-check-path "/health" \
+              --health-check-interval-seconds 30 \
+              --health-check-timeout-seconds 5 \
+              --healthy-threshold-count 2 \
+              --unhealthy-threshold-count 3 \
+              --query 'TargetGroups[0].TargetGroupArn' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            echo "✅ Created Target Group: ${TG_ARN}"
+          else
+            echo "✅ Using existing Target Group: ${TG_ARN}"
+          fi
+          
+          echo "tg_arn=${TG_ARN}" >> $GITHUB_OUTPUT
+      
+      - name: Create or get ALB Listener
+        run: |
+          LISTENER_ARN=$(aws elbv2 describe-listeners \
+            --load-balancer-arn ${{ steps.alb.outputs.alb_arn }} \
+            --query "Listeners[?Port==\`80\`].ListenerArn | [0]" \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+          
+          if [ -z "$LISTENER_ARN" ] || [ "$LISTENER_ARN" == "None" ]; then
+            echo "Creating ALB Listener..."
+            aws elbv2 create-listener \
+              --load-balancer-arn ${{ steps.alb.outputs.alb_arn }} \
+              --protocol HTTP \
+              --port 80 \
+              --default-actions Type=forward,TargetGroupArn=${{ steps.tg.outputs.tg_arn }} \
+              --region ${{ env.AWS_REGION }} > /dev/null
+            
+            echo "✅ Created ALB Listener"
+          else
+            echo "✅ Listener already exists"
+          fi
+      
+      # ========================================
+      # ECS Cluster
+      # ========================================
+      - name: Create or get ECS Cluster
+        run: |
+          CLUSTER_ARN=$(aws ecs describe-clusters \
+            --clusters ${{ env.CLUSTER_NAME }} \
+            --query "clusters[?status=='ACTIVE'].clusterArn" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ -z "$CLUSTER_ARN" ]; then
+            aws ecs create-cluster \
+              --cluster-name ${{ env.CLUSTER_NAME }} \
+              --region ${{ env.AWS_REGION }} > /dev/null
+            echo "✅ Created ECS Cluster"
+          else
+            echo "✅ Using existing ECS Cluster"
+          fi
+      
+      # ========================================
+      # IAM Role
+      # ========================================
+      - name: Create or get IAM Execution Role
+        id: iam
+        run: |
+          ROLE_NAME="${{ env.CLUSTER_NAME }}-task-execution-role"
+          
+          ROLE_ARN=$(aws iam get-role \
+            --role-name ${ROLE_NAME} \
+            --query 'Role.Arn' \
+            --output text 2>/dev/null) || true
+          
+          if [ -z "$ROLE_ARN" ]; then
+            cat > /tmp/trust-policy.json << 'EOF'
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Principal": {"Service": "ecs-tasks.amazonaws.com"},
+              "Action": "sts:AssumeRole"
+            }]
+          }
+          EOF
+            
+            ROLE_ARN=$(aws iam create-role \
+              --role-name ${ROLE_NAME} \
+              --assume-role-policy-document file:///tmp/trust-policy.json \
+              --query 'Role.Arn' \
+              --output text)
+            
+            aws iam attach-role-policy \
+              --role-name ${ROLE_NAME} \
+              --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+            
+            echo "✅ Created IAM Role: ${ROLE_ARN}"
+          else
+            echo "✅ Using existing IAM Role: ${ROLE_ARN}"
+          fi
+          
+          echo "role_arn=${ROLE_ARN}" >> $GITHUB_OUTPUT
+      
+      # ========================================
+      # CloudWatch Log Groups
+      # ========================================
+      - name: Create CloudWatch Log Groups
+        run: |
+          for service in "db" "api_service" "frontend" "suv_ui"; do
+            LOG_GROUP="/ecs/${{ env.CLUSTER_NAME }}/${service}"
+            
+            EXISTS=$(aws logs describe-log-groups \
+              --log-group-name-prefix ${LOG_GROUP} \
+              --query "logGroups[?logGroupName=='${LOG_GROUP}'].logGroupName" \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            if [ -z "$EXISTS" ]; then
+              aws logs create-log-group --log-group-name ${LOG_GROUP} --region ${{ env.AWS_REGION }}
+              echo "✅ Created Log Group: ${LOG_GROUP}"
+            else
+              echo "✅ Log Group exists: ${LOG_GROUP}"
+            fi
+          done
+      
+      # ========================================
+      # Service Discovery
+      # ========================================
+      - name: Create or get Service Discovery Namespace
+        id: namespace
+        run: |
+          NAMESPACE_ID=$(aws servicediscovery list-namespaces \
+            --query "Namespaces[?Name=='${{ env.CLUSTER_NAME }}.local'].Id | [0]" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ -z "$NAMESPACE_ID" ] || [ "$NAMESPACE_ID" == "None" ]; then
+            echo "Creating namespace..."
+            OPERATION_ID=$(aws servicediscovery create-private-dns-namespace \
+              --name "${{ env.CLUSTER_NAME }}.local" \
+              --vpc ${{ steps.vpc.outputs.vpc_id }} \
+              --query 'OperationId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            echo "Waiting for namespace creation..."
+            for i in {1..30}; do
+              STATUS=$(aws servicediscovery get-operation \
+                --operation-id ${OPERATION_ID} \
+                --query 'Operation.Status' \
+                --output text \
+                --region ${{ env.AWS_REGION }})
+              
+              if [ "$STATUS" == "SUCCESS" ]; then
+                break
+              elif [ "$STATUS" == "FAIL" ]; then
+                echo "❌ Namespace creation failed"
+                exit 1
+              fi
+              sleep 5
+            done
+            
+            NAMESPACE_ID=$(aws servicediscovery list-namespaces \
+              --query "Namespaces[?Name=='${{ env.CLUSTER_NAME }}.local'].Id | [0]" \
+              --output text \
+              --region ${{ env.AWS_REGION }})
+            
+            echo "✅ Created Namespace: ${NAMESPACE_ID}"
+          else
+            echo "✅ Using existing Namespace: ${NAMESPACE_ID}"
+          fi
+          
+          echo "namespace_id=${NAMESPACE_ID}" >> $GITHUB_OUTPUT
+      
+      # ========================================
+      # Summary
+      # ========================================
+      - name: Print Infrastructure Summary
+        run: |
+          echo "## 🏗️ Infrastructure Setup Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Resources Created/Verified" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | ID/Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| VPC | ${{ steps.vpc.outputs.vpc_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Subnet 1 | ${{ steps.subnets.outputs.subnet1_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Subnet 2 | ${{ steps.subnets.outputs.subnet2_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Group | ${{ steps.sg.outputs.sg_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ECS Cluster | ${{ env.CLUSTER_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service Discovery | ${{ env.CLUSTER_NAME }}.local |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌐 ALB Information" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **ALB DNS** | \`${{ steps.alb.outputs.alb_dns }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **API URL** | \`http://${{ steps.alb.outputs.alb_dns }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Copy the ALB DNS above" >> $GITHUB_STEP_SUMMARY
+          echo "2. Add it as a GitHub repository variable: \`ALB_DNS\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. Or use it when triggering the ECR build workflow manually" >> $GITHUB_STEP_SUMMARY
