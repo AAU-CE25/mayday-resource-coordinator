@@ -3,34 +3,78 @@ name: Build and Push to AWS ECR
 on:
   push:
     branches: [main, feature/MDAY-44-cloud-deployment]
+    paths:
+      - 'api_service/**'
+      - 'domain/**'
+      - 'frontend/**'
+      - 'suv_ui/**'
+      - '.github/workflows/deploy-to-ecr.yml'
   release:
     types: [published, created]
   workflow_dispatch:  # Allows manual triggering
 
 env:
-  AWS_REGION: eu-central-1  # Change this to your AWS region
-  
+  AWS_REGION: eu-central-1
+
 jobs:
-  build-and-push:
-    name: Build and Push Docker Images to ECR
+  # Detect which services have changes
+  detect-changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
-    
+    outputs:
+      api: ${{ steps.changes.outputs.api }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      suv_ui: ${{ steps.changes.outputs.suv_ui }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check for changes
+        id: changes
+        run: |
+          # For manual dispatch or release, build everything
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "release" ]; then
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "suv_ui=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD)
+          
+          # Check api_service or domain changes
+          if echo "$CHANGED_FILES" | grep -qE "^(api_service|domain)/"; then
+            echo "api=true" >> $GITHUB_OUTPUT
+          else
+            echo "api=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check frontend changes
+          if echo "$CHANGED_FILES" | grep -q "^frontend/"; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check suv_ui changes
+          if echo "$CHANGED_FILES" | grep -q "^suv_ui/"; then
+            echo "suv_ui=true" >> $GITHUB_OUTPUT
+          else
+            echo "suv_ui=false" >> $GITHUB_OUTPUT
+          fi
+
+  # API Service - Only builds when api_service/ or domain/ changes
+  build-api:
+    name: Build API Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
     permissions:
       contents: read
-      id-token: write  # Required for OIDC authentication
-    
-    strategy:
-      matrix:
-        service:
-          - name: api_service
-            context: .
-            dockerfile: api_service/Dockerfile
-          - name: frontend
-            context: ./frontend
-            dockerfile: ./frontend/Dockerfile
-          - name: suv_ui
-            context: ./suv_ui
-            dockerfile: ./suv_ui/Dockerfile
+      id-token: write
     
     steps:
       - name: Checkout code
@@ -53,18 +97,18 @@ jobs:
       - name: Create ECR repository if it doesn't exist
         continue-on-error: true
         run: |
-          aws ecr describe-repositories --repository-names ${{ matrix.service.name }} --region ${{ env.AWS_REGION }} || \
+          aws ecr describe-repositories --repository-names api_service --region ${{ env.AWS_REGION }} || \
           aws ecr create-repository \
-            --repository-name ${{ matrix.service.name }} \
+            --repository-name api_service \
             --region ${{ env.AWS_REGION }} \
             --image-scanning-configuration scanOnPush=true \
             --encryption-configuration encryptionType=AES256
       
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.service.name }}
+          images: ${{ steps.login-ecr.outputs.registry }}/api_service
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -74,36 +118,27 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.service.context }}
-          file: ${{ matrix.service.dockerfile }}
+          context: .
+          file: api_service/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Image digest
-        run: |
-          echo "Image pushed successfully!"
-          echo "Repository: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.service.name }}"
-          echo "Tags: ${{ steps.meta.outputs.tags }}"
-      
-      - name: Clean up old images (keep only latest)
+      - name: Clean up old images
         run: |
           echo "🧹 Cleaning up old images..."
-          
-          # Get all image digests except the one tagged as 'latest'
           LATEST_DIGEST=$(aws ecr describe-images \
-            --repository-name ${{ matrix.service.name }} \
+            --repository-name api_service \
             --image-ids imageTag=latest \
             --query 'imageDetails[0].imageDigest' \
             --output text \
             --region ${{ env.AWS_REGION }} 2>/dev/null) || true
           
           if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
-            # Get all image digests that are NOT the latest
             OLD_DIGESTS=$(aws ecr describe-images \
-              --repository-name ${{ matrix.service.name }} \
+              --repository-name api_service \
               --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
               --output text \
               --region ${{ env.AWS_REGION }} 2>/dev/null) || true
@@ -112,7 +147,7 @@ jobs:
               for digest in $OLD_DIGESTS; do
                 echo "Deleting old image: $digest"
                 aws ecr batch-delete-image \
-                  --repository-name ${{ matrix.service.name }} \
+                  --repository-name api_service \
                   --image-ids imageDigest=$digest \
                   --region ${{ env.AWS_REGION }} || true
               done
@@ -120,31 +155,222 @@ jobs:
             else
               echo "✅ No old images to delete"
             fi
-          else
-            echo "⚠️ Could not find latest image digest, skipping cleanup"
           fi
-  
+
+  # Frontend - Only builds when frontend/ changes
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_KAJ }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_KAJ }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Create ECR repository if it doesn't exist
+        continue-on-error: true
+        run: |
+          aws ecr describe-repositories --repository-names frontend --region ${{ env.AWS_REGION }} || \
+          aws ecr create-repository \
+            --repository-name frontend \
+            --region ${{ env.AWS_REGION }} \
+            --image-scanning-configuration scanOnPush=true \
+            --encryption-configuration encryptionType=AES256
+      
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Clean up old images
+        run: |
+          echo "🧹 Cleaning up old images..."
+          LATEST_DIGEST=$(aws ecr describe-images \
+            --repository-name frontend \
+            --image-ids imageTag=latest \
+            --query 'imageDetails[0].imageDigest' \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+          
+          if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
+            OLD_DIGESTS=$(aws ecr describe-images \
+              --repository-name frontend \
+              --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
+              --output text \
+              --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+            
+            if [ -n "$OLD_DIGESTS" ] && [ "$OLD_DIGESTS" != "None" ]; then
+              for digest in $OLD_DIGESTS; do
+                echo "Deleting old image: $digest"
+                aws ecr batch-delete-image \
+                  --repository-name frontend \
+                  --image-ids imageDigest=$digest \
+                  --region ${{ env.AWS_REGION }} || true
+              done
+              echo "✅ Old images deleted"
+            else
+              echo "✅ No old images to delete"
+            fi
+          fi
+
+  # SUV UI - Only builds when suv_ui/ changes
+  build-suv-ui:
+    name: Build SUV UI
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.suv_ui == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_KAJ }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_KAJ }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Create ECR repository if it doesn't exist
+        continue-on-error: true
+        run: |
+          aws ecr describe-repositories --repository-names suv_ui --region ${{ env.AWS_REGION }} || \
+          aws ecr create-repository \
+            --repository-name suv_ui \
+            --region ${{ env.AWS_REGION }} \
+            --image-scanning-configuration scanOnPush=true \
+            --encryption-configuration encryptionType=AES256
+      
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/suv_ui
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./suv_ui
+          file: ./suv_ui/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Clean up old images
+        run: |
+          echo "🧹 Cleaning up old images..."
+          LATEST_DIGEST=$(aws ecr describe-images \
+            --repository-name suv_ui \
+            --image-ids imageTag=latest \
+            --query 'imageDetails[0].imageDigest' \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+          
+          if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
+            OLD_DIGESTS=$(aws ecr describe-images \
+              --repository-name suv_ui \
+              --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
+              --output text \
+              --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+            
+            if [ -n "$OLD_DIGESTS" ] && [ "$OLD_DIGESTS" != "None" ]; then
+              for digest in $OLD_DIGESTS; do
+                echo "Deleting old image: $digest"
+                aws ecr batch-delete-image \
+                  --repository-name suv_ui \
+                  --image-ids imageDigest=$digest \
+                  --region ${{ env.AWS_REGION }} || true
+              done
+              echo "✅ Old images deleted"
+            else
+              echo "✅ No old images to delete"
+            fi
+          fi
+
   summary:
     name: Deployment Summary
-    needs: build-and-push
+    needs: [build-api, build-frontend, build-suv-ui]
     runs-on: ubuntu-latest
     if: always()
     
     steps:
       - name: Print summary
         run: |
-          echo "## 🚀 Release Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 ECR Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Release:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release Name:** ${{ github.event.release.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Services Built:" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.build-api.result }}" == "success" ]; then
+            echo "- ✅ api_service (changes detected)" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.build-api.result }}" == "skipped" ]; then
+            echo "- ⏭️ api_service (no changes)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ api_service (failed)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.build-frontend.result }}" == "success" ]; then
+            echo "- ✅ frontend (changes detected)" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.build-frontend.result }}" == "skipped" ]; then
+            echo "- ⏭️ frontend (no changes)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ frontend (failed)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ needs.build-suv-ui.result }}" == "success" ]; then
+            echo "- ✅ suv_ui (changes detected)" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.build-suv-ui.result }}" == "skipped" ]; then
+            echo "- ⏭️ suv_ui (no changes)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ suv_ui (failed)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All services have been built and pushed to AWS ECR!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Services Deployed:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ api_service" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ frontend" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ suv_ui" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Image Tags:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Image Tag: \`latest\`" >> $GITHUB_STEP_SUMMARY
