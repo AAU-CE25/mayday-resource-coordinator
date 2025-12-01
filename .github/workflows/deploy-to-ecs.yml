@@ -516,27 +516,50 @@ jobs:
         id: namespace
         run: |
           NAMESPACE_ID=$(aws servicediscovery list-namespaces \
-            --query "Namespaces[?Name=='${{ env.CLUSTER_NAME }}.local'].Id" \
+            --query "Namespaces[?Name=='${{ env.CLUSTER_NAME }}.local'].Id | [0]" \
             --output text \
             --region ${{ env.AWS_REGION }})
           
           if [ -z "$NAMESPACE_ID" ] || [ "$NAMESPACE_ID" == "None" ]; then
-            aws servicediscovery create-private-dns-namespace \
+            echo "Creating namespace..."
+            OPERATION_ID=$(aws servicediscovery create-private-dns-namespace \
               --name "${{ env.CLUSTER_NAME }}.local" \
               --vpc ${{ steps.vpc.outputs.vpc_id }} \
-              --region ${{ env.AWS_REGION }} > /dev/null
+              --query 'OperationId' \
+              --output text \
+              --region ${{ env.AWS_REGION }})
             
-            echo "Waiting for namespace creation..."
-            sleep 15
+            echo "Waiting for namespace creation (Operation: ${OPERATION_ID})..."
+            for i in {1..30}; do
+              STATUS=$(aws servicediscovery get-operation \
+                --operation-id ${OPERATION_ID} \
+                --query 'Operation.Status' \
+                --output text \
+                --region ${{ env.AWS_REGION }})
+              
+              if [ "$STATUS" == "SUCCESS" ]; then
+                break
+              elif [ "$STATUS" == "FAIL" ]; then
+                echo "❌ Namespace creation failed"
+                exit 1
+              fi
+              echo "Status: ${STATUS}, waiting..."
+              sleep 5
+            done
             
             NAMESPACE_ID=$(aws servicediscovery list-namespaces \
-              --query "Namespaces[?Name=='${{ env.CLUSTER_NAME }}.local'].Id" \
+              --query "Namespaces[?Name=='${{ env.CLUSTER_NAME }}.local'].Id | [0]" \
               --output text \
               --region ${{ env.AWS_REGION }})
             
             echo "✅ Created Namespace: ${NAMESPACE_ID}"
           else
             echo "✅ Using existing Namespace: ${NAMESPACE_ID}"
+          fi
+          
+          if [ -z "$NAMESPACE_ID" ] || [ "$NAMESPACE_ID" == "None" ]; then
+            echo "❌ Failed to get namespace ID"
+            exit 1
           fi
           
           echo "namespace_id=${NAMESPACE_ID}" >> $GITHUB_OUTPUT
