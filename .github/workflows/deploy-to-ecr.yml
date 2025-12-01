@@ -16,7 +16,7 @@ on:
       api_url:
         description: 'API URL for frontend builds (e.g., http://mayday-cluster-api-alb-123456.eu-central-1.elb.amazonaws.com)'
         required: false
-        default: ''
+        default: 'mayday-cluster-api-alb-370453844.eu-central-1.elb.amazonaws.com'
 
 env:
   AWS_REGION: eu-central-1
