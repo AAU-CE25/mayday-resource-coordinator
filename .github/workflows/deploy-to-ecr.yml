@@ -87,6 +87,42 @@ jobs:
           echo "Image pushed successfully!"
           echo "Repository: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.service.name }}"
           echo "Tags: ${{ steps.meta.outputs.tags }}"
+      
+      - name: Clean up old images (keep only latest)
+        run: |
+          echo "🧹 Cleaning up old images..."
+          
+          # Get all image digests except the one tagged as 'latest'
+          LATEST_DIGEST=$(aws ecr describe-images \
+            --repository-name ${{ matrix.service.name }} \
+            --image-ids imageTag=latest \
+            --query 'imageDetails[0].imageDigest' \
+            --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+          
+          if [ -n "$LATEST_DIGEST" ] && [ "$LATEST_DIGEST" != "None" ]; then
+            # Get all image digests that are NOT the latest
+            OLD_DIGESTS=$(aws ecr describe-images \
+              --repository-name ${{ matrix.service.name }} \
+              --query "imageDetails[?imageDigest!='${LATEST_DIGEST}'].imageDigest" \
+              --output text \
+              --region ${{ env.AWS_REGION }} 2>/dev/null) || true
+            
+            if [ -n "$OLD_DIGESTS" ] && [ "$OLD_DIGESTS" != "None" ]; then
+              for digest in $OLD_DIGESTS; do
+                echo "Deleting old image: $digest"
+                aws ecr batch-delete-image \
+                  --repository-name ${{ matrix.service.name }} \
+                  --image-ids imageDigest=$digest \
+                  --region ${{ env.AWS_REGION }} || true
+              done
+              echo "✅ Old images deleted"
+            else
+              echo "✅ No old images to delete"
+            fi
+          else
+            echo "⚠️ Could not find latest image digest, skipping cleanup"
+          fi
   
   summary:
     name: Deployment Summary
