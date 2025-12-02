@@ -460,10 +460,14 @@ jobs:
             --region ${{ env.AWS_REGION }} || echo "⚠️ Services timeout - may still be deploying"
       
       - name: Get Service Public IPs
+        id: ips
         run: |
-          echo "📡 Service Public IPs:"
+          echo "📡 Getting Service Public IPs..."
           TASKS=$(aws ecs list-tasks --cluster ${{ env.CLUSTER_NAME }} \
             --query "taskArns" --output text --region ${{ env.AWS_REGION }})
+          
+          FRONTEND_IP=""
+          SUV_UI_IP=""
           
           for task in $TASKS; do
             INFO=$(aws ecs describe-tasks --cluster ${{ env.CLUSTER_NAME }} --tasks $task \
@@ -478,8 +482,17 @@ jobs:
                 --query "NetworkInterfaces[0].Association.PublicIp" \
                 --output text --region ${{ env.AWS_REGION }})
               echo "${NAME}: ${IP}"
+              
+              if [ "$NAME" == "frontend" ]; then
+                FRONTEND_IP="${IP}"
+              elif [ "$NAME" == "suv_ui" ]; then
+                SUV_UI_IP="${IP}"
+              fi
             fi
           done
+          
+          echo "frontend_ip=${FRONTEND_IP}" >> $GITHUB_OUTPUT
+          echo "suv_ui_ip=${SUV_UI_IP}" >> $GITHUB_OUTPUT
       
       - name: Get ALB DNS
         id: alb
@@ -495,10 +508,12 @@ jobs:
         run: |
           echo "## 🚀 ECS Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🌐 Access Points" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌐 Public Access Points" >> $GITHUB_STEP_SUMMARY
           echo "| Service | URL |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
           echo "| **API** | http://${{ steps.alb.outputs.alb_dns }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Frontend** | http://${{ steps.ips.outputs.frontend_ip }}:3000 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **SUV UI** | http://${{ steps.ips.outputs.suv_ui_ip }}:3030 |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ Services Deployed" >> $GITHUB_STEP_SUMMARY
           echo "- db-service" >> $GITHUB_STEP_SUMMARY
