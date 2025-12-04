@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - feature/YOUR_BRANCH_NAME
-      - feature/MADY-44-cloud-deployment
+      - feature/MDAY-44-cloud-deployment
     paths:
       - 'infra/terraform/**'
       - '.github/workflows/terraform.yml'
