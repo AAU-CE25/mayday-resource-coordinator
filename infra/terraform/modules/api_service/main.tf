@@ -120,7 +120,7 @@ resource "aws_ecs_service" "api" {
   name            = "${var.cluster_name}-api-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.api.arn
-  desired_count   = 2  # Increased for high availability
+  desired_count   = 2 # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {

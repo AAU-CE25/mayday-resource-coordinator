@@ -1,0 +1,144 @@
+name: Deploy to ECS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
+        default: 'production'
+      services:
+        description: 'Services to deploy (comma-separated: api,frontend,suv-ui,database,all)'
+        required: true
+        default: 'all'
+  # Optionally trigger after ECR push
+  # repository_dispatch:
+  #   types: [deploy-to-ecs]
+
+env:
+  AWS_REGION: eu-central-1
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  CLUSTER_NAME: mayday-cluster
+
+jobs:
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy API Service
+        if: contains(github.event.inputs.services, 'api') || contains(github.event.inputs.services, 'all')
+        run: |
+          echo "Deploying API Service..."
+          aws ecs update-service \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --service ${{ env.CLUSTER_NAME }}-api-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "Waiting for API service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --services ${{ env.CLUSTER_NAME }}-api-service \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✓ API Service deployed successfully"
+
+      - name: Deploy Frontend Service
+        if: contains(github.event.inputs.services, 'frontend') || contains(github.event.inputs.services, 'all')
+        run: |
+          echo "Deploying Frontend Service..."
+          aws ecs update-service \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --service ${{ env.CLUSTER_NAME }}-frontend-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "Waiting for Frontend service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --services ${{ env.CLUSTER_NAME }}-frontend-service \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✓ Frontend Service deployed successfully"
+
+      - name: Deploy SUV UI Service
+        if: contains(github.event.inputs.services, 'suv-ui') || contains(github.event.inputs.services, 'all')
+        run: |
+          echo "Deploying SUV UI Service..."
+          aws ecs update-service \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --service ${{ env.CLUSTER_NAME }}-suv-ui-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "Waiting for SUV UI service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --services ${{ env.CLUSTER_NAME }}-suv-ui-service \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✓ SUV UI Service deployed successfully"
+
+      - name: Deploy Database Service
+        if: contains(github.event.inputs.services, 'database') || contains(github.event.inputs.services, 'all')
+        run: |
+          echo "Deploying Database Service..."
+          aws ecs update-service \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --service ${{ env.CLUSTER_NAME }}-db-service \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "Waiting for Database service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --services ${{ env.CLUSTER_NAME }}-db-service \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✓ Database Service deployed successfully"
+
+      - name: Get deployment status
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Services: ${{ github.event.inputs.services }}"
+          echo "Cluster: ${{ env.CLUSTER_NAME }}"
+          echo ""
+          echo "=== Service Status ==="
+          aws ecs describe-services \
+            --cluster ${{ env.CLUSTER_NAME }} \
+            --services \
+              ${{ env.CLUSTER_NAME }}-api-service \
+              ${{ env.CLUSTER_NAME }}-frontend-service \
+              ${{ env.CLUSTER_NAME }}-suv-ui-service \
+              ${{ env.CLUSTER_NAME }}-db-service \
+            --query 'services[*].[serviceName,status,runningCount,desiredCount]' \
+            --output table \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Get ALB URL
+        run: |
+          echo "=== Access URLs ==="
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --query "LoadBalancers[?contains(LoadBalancerName, 'mayday-cluster')].DNSName" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          echo "API: http://${ALB_DNS}/"
+          echo "Frontend: http://${ALB_DNS}/dashboard"
+          echo "SUV UI: http://${ALB_DNS}/volunteer"

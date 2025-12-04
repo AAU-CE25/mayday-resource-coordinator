@@ -91,3 +91,29 @@ output "suv_ui_ecr_repository_url" {
   description = "URL of the SUV UI ECR repository"
   value       = module.suv_ui.ecr_repository_url
 }
+
+# ECR outputs
+output "ecr_repository_urls" {
+  description = "Map of all ECR repository URLs"
+  value       = module.ecr.repository_urls
+}
+
+output "ecr_api_repository_url" {
+  description = "ECR repository URL for API service"
+  value       = module.ecr.api_repository_url
+}
+
+output "ecr_frontend_repository_url" {
+  description = "ECR repository URL for Frontend service"
+  value       = module.ecr.frontend_repository_url
+}
+
+output "ecr_suv_ui_repository_url" {
+  description = "ECR repository URL for SUV UI service"
+  value       = module.ecr.suv_ui_repository_url
+}
+
+output "ecr_database_repository_url" {
+  description = "ECR repository URL for Database service"
+  value       = module.ecr.database_repository_url
+}

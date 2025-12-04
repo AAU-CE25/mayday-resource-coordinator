@@ -1,13 +1,13 @@
 cluster_name   = "mayday-cluster"
 aws_region     = "eu-central-1"
-aws_account_id = "390299133544"  # Replace with your AWS account ID
+aws_account_id = "390299133544" # Replace with your AWS account ID
 
 vpc_cidr     = "10.0.0.0/16"
 subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
 
 # Database credentials (change these!)
 postgres_user     = "postgres"
-postgres_password = "postgres"  # CHANGE THIS IN PRODUCTION
+postgres_password = "postgres" # CHANGE THIS IN PRODUCTION
 postgres_db       = "mayday"
 
 tags = {

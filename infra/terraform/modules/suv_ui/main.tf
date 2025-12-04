@@ -100,7 +100,7 @@ resource "aws_ecs_service" "suv_ui" {
   name            = "${var.cluster_name}-suv-ui-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.suv_ui.arn
-  desired_count   = 2  # Increased for high availability
+  desired_count   = 2 # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {

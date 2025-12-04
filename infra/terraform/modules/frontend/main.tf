@@ -93,7 +93,7 @@ resource "aws_ecs_service" "frontend" {
   name            = "${var.cluster_name}-frontend-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = 2  # Increased for high availability
+  desired_count   = 2 # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {

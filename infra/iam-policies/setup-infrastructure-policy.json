@@ -227,6 +227,27 @@
         "application-autoscaling:DescribeScalingActivities"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "ECRRepositoryManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:DescribeRepositories",
+        "ecr:ListTagsForResource",
+        "ecr:TagResource",
+        "ecr:UntagResource",
+        "ecr:PutImageTagMutability",
+        "ecr:PutImageScanningConfiguration",
+        "ecr:PutLifecyclePolicy",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:SetRepositoryPolicy",
+        "ecr:DeleteRepositoryPolicy",
+        "ecr:GetRepositoryPolicy"
+      ],
+      "Resource": "*"
     }
   ]
 }

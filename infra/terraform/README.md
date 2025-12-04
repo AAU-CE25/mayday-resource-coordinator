@@ -6,6 +6,7 @@ This directory contains the complete Infrastructure as Code (IaC) for deploying 
 
 The infrastructure is organized into modular components:
 
+- **ECR Module**: Container registries for Docker images
 - **Common Infrastructure**: Shared resources (VPC, subnets, ALB, ECS cluster, IAM roles)
 - **Database**: PostgreSQL database service
 - **API Service**: FastAPI backend service
@@ -22,6 +23,11 @@ terraform/
 ├── terraform.tfvars          # Variable values (gitignored)
 ├── README.md                  # This file
 └── modules/
+    ├── ecr/                   # Container registry module
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   ├── outputs.tf
+    │   └── README.md
     ├── common/                # Shared infrastructure module
     │   ├── main.tf
     │   ├── variables.tf
@@ -91,16 +97,17 @@ terraform apply
 ```
 
 This single command deploys:
-- VPC, subnets, internet gateway, route tables
+- ECR repositories for all container images
+- VPC, subnets, internet gateway, route tables, NAT gateway
 - Security group with required ports
-- Application Load Balancer with target group
+- Application Load Balancer with target groups for all services
 - ECS cluster
 - IAM roles for task execution
 - Service Discovery namespace
-- PostgreSQL database service
-- API service with ALB integration
-- Frontend service
-- SUV UI service
+- PostgreSQL database service (in private subnet)
+- API service with ALB integration and autoscaling
+- Frontend service with ALB integration and autoscaling
+- SUV UI service with ALB integration and autoscaling
 
 ### 3. Get Output Values
 
@@ -110,9 +117,11 @@ terraform output
 
 Key outputs:
 - `api_url`: Public URL for the API (via ALB)
-- `api_ecr_repository_url`: ECR repository for API images
-- `frontend_ecr_repository_url`: ECR repository for frontend images
-- `suv_ui_ecr_repository_url`: ECR repository for SUV UI images
+- `ecr_repository_urls`: Map of all ECR repository URLs
+- `ecr_api_repository_url`: ECR repository for API images
+- `ecr_frontend_repository_url`: ECR repository for frontend images
+- `ecr_suv_ui_repository_url`: ECR repository for SUV UI images
+- `ecr_database_repository_url`: ECR repository for database images
 
 ## Module Details
 
