@@ -82,15 +82,24 @@
         "elasticloadbalancing:DeleteLoadBalancer",
         "elasticloadbalancing:DescribeLoadBalancers",
         "elasticloadbalancing:ModifyLoadBalancerAttributes",
+        "elasticloadbalancing:DescribeLoadBalancerAttributes",
         "elasticloadbalancing:CreateTargetGroup",
         "elasticloadbalancing:DeleteTargetGroup",
         "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeTargetGroupAttributes",
         "elasticloadbalancing:ModifyTargetGroup",
+        "elasticloadbalancing:ModifyTargetGroupAttributes",
         "elasticloadbalancing:CreateListener",
         "elasticloadbalancing:DeleteListener",
         "elasticloadbalancing:DescribeListeners",
         "elasticloadbalancing:ModifyListener",
-        "elasticloadbalancing:AddTags"
+        "elasticloadbalancing:CreateRule",
+        "elasticloadbalancing:DeleteRule",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:ModifyRule",
+        "elasticloadbalancing:AddTags",
+        "elasticloadbalancing:RemoveTags",
+        "elasticloadbalancing:DescribeTags"
       ],
       "Resource": "*"
     },
@@ -100,7 +109,11 @@
       "Action": [
         "ecs:CreateCluster",
         "ecs:DeleteCluster",
-        "ecs:DescribeClusters"
+        "ecs:DescribeClusters",
+        "ecs:PutClusterCapacityProviders",
+        "ecs:TagResource",
+        "ecs:UntagResource",
+        "ecs:ListTagsForResource"
       ],
       "Resource": "*"
     },
@@ -110,9 +123,15 @@
       "Action": [
         "iam:CreateRole",
         "iam:GetRole",
+        "iam:DeleteRole",
         "iam:AttachRolePolicy",
         "iam:DetachRolePolicy",
-        "iam:PassRole"
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:PassRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:ListRoleTags"
       ],
       "Resource": [
         "arn:aws:iam::*:role/mayday-cluster-task-execution-role",
@@ -145,14 +164,16 @@
         "logs:CreateLogGroup",
         "logs:DeleteLogGroup",
         "logs:DescribeLogGroups",
-        "logs:PutRetentionPolicy"
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy",
+        "logs:TagLogGroup",
+        "logs:UntagLogGroup",
+        "logs:ListTagsLogGroup"
       ],
       "Resource": [
         "arn:aws:logs:*:*:log-group:/ecs/mayday-cluster/*",
-        "arn:aws:logs:*:*:log-group:/ecs/*-cluster/*",
-        "arn:aws:logs:eu-central-1:390299133544:log-group::log-stream:"
+        "arn:aws:logs:*:*:log-group:/ecs/*-cluster/*"
       ]
-
     },
     {
       "Sid": "ServiceDiscoveryManagement",
@@ -162,7 +183,10 @@
         "servicediscovery:DeleteNamespace",
         "servicediscovery:ListNamespaces",
         "servicediscovery:GetNamespace",
-        "servicediscovery:GetOperation"
+        "servicediscovery:GetOperation",
+        "servicediscovery:TagResource",
+        "servicediscovery:UntagResource",
+        "servicediscovery:ListTagsForResource"
       ],
       "Resource": "*"
     },
@@ -171,8 +195,36 @@
       "Effect": "Allow",
       "Action": [
         "route53:CreateHostedZone",
+        "route53:DeleteHostedZone",
         "route53:GetHostedZone",
-        "route53:ListHostedZonesByVPC"
+        "route53:ListHostedZones",
+        "route53:ListHostedZonesByVPC",
+        "route53:GetChange",
+        "route53:ChangeTagsForResource",
+        "route53:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EC2NetworkInterfaceManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DeleteNetworkInterface"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ApplicationAutoscaling",
+      "Effect": "Allow",
+      "Action": [
+        "application-autoscaling:RegisterScalableTarget",
+        "application-autoscaling:DeregisterScalableTarget",
+        "application-autoscaling:DescribeScalableTargets",
+        "application-autoscaling:PutScalingPolicy",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:DescribeScalingPolicies",
+        "application-autoscaling:DescribeScalingActivities"
       ],
       "Resource": "*"
     }

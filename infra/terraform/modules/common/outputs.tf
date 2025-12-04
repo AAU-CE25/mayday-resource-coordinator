@@ -4,8 +4,23 @@ output "vpc_id" {
 }
 
 output "subnet_ids" {
-  description = "IDs of the subnets"
+  description = "IDs of the public subnets"
   value       = aws_subnet.public[*].id
+}
+
+output "subnets" {
+  description = "Public subnet IDs for ECS services"
+  value       = aws_subnet.public[*].id
+}
+
+output "private_subnet_ids" {
+  description = "IDs of the private subnets"
+  value       = aws_subnet.private[*].id
+}
+
+output "private_subnets" {
+  description = "Private subnet IDs for database and internal services"
+  value       = aws_subnet.private[*].id
 }
 
 output "security_group_id" {
@@ -24,8 +39,18 @@ output "alb_dns_name" {
 }
 
 output "alb_target_group_arn" {
-  description = "ARN of the ALB target group"
+  description = "ARN of the API ALB target group"
   value       = aws_lb_target_group.api.arn
+}
+
+output "alb_frontend_target_group_arn" {
+  description = "ARN of the Frontend ALB target group"
+  value       = aws_lb_target_group.frontend.arn
+}
+
+output "alb_suv_ui_target_group_arn" {
+  description = "ARN of the SUV UI ALB target group"
+  value       = aws_lb_target_group.suv_ui.arn
 }
 
 output "ecs_cluster_id" {

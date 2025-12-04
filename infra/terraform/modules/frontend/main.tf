@@ -93,13 +93,19 @@ resource "aws_ecs_service" "frontend" {
   name            = "${var.cluster_name}-frontend-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = 1
+  desired_count   = 2  # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
     assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = var.alb_target_group_arn
+    container_name   = "frontend"
+    container_port   = 3000
   }
 
   service_registries {
@@ -109,4 +115,33 @@ resource "aws_ecs_service" "frontend" {
   tags = merge(var.tags, {
     Name = "${var.cluster_name}-frontend-service"
   })
+}
+
+# Autoscaling Target
+resource "aws_appautoscaling_target" "frontend" {
+  max_capacity       = 4
+  min_capacity       = 2
+  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.frontend.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.frontend]
+}
+
+# Autoscaling Policy - CPU
+resource "aws_appautoscaling_policy" "frontend_cpu" {
+  name               = "${var.cluster_name}-frontend-cpu-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.frontend.resource_id
+  scalable_dimension = aws_appautoscaling_target.frontend.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.frontend.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
 }

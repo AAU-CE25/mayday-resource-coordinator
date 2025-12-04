@@ -67,54 +67,110 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+# Private Subnets
+resource "aws_subnet" "private" {
+  count             = length(var.private_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_subnet_cidrs[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-private-subnet-${count.index + 1}"
+  })
+}
+
+# Elastic IP for NAT Gateway
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-nat-eip"
+  })
+
+  depends_on = [aws_internet_gateway.main]
+}
+
+# NAT Gateway (in first public subnet)
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-nat"
+  })
+
+  depends_on = [aws_internet_gateway.main]
+}
+
+# Private Route Table
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-private-rt"
+  })
+}
+
+# Private Route Table Associations
+resource "aws_route_table_association" "private" {
+  count          = length(aws_subnet.private)
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
+
 # Security Group
 resource "aws_security_group" "ecs" {
   name        = "${var.cluster_name}-sg"
   description = "Security group for ${var.cluster_name} ECS services"
   vpc_id      = aws_vpc.main.id
 
-  # ALB HTTP
+  # ALB HTTP - Public access
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    description = "ALB HTTP"
+    description = "ALB HTTP from internet"
   }
 
-  # API Service
+  # API Service - Internal only
   ingress {
     from_port   = 8000
     to_port     = 8000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "API Service"
+    self        = true
+    description = "API Service internal"
   }
 
-  # Frontend
+  # Frontend - Internal only
   ingress {
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Frontend"
+    self        = true
+    description = "Frontend internal"
   }
 
-  # SUV UI
+  # SUV UI - Internal only
   ingress {
     from_port   = 3030
     to_port     = 3030
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "SUV UI"
+    self        = true
+    description = "SUV UI internal"
   }
 
-  # PostgreSQL (internal only)
+  # PostgreSQL - Internal only
   ingress {
-    from_port = 5432
-    to_port   = 5432
-    protocol  = "tcp"
-    self      = true
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    self        = true
     description = "PostgreSQL internal"
   }
 
@@ -170,15 +226,102 @@ resource "aws_lb_target_group" "api" {
   })
 }
 
+# Target Group for Frontend
+resource "aws_lb_target_group" "frontend" {
+  name        = "${var.cluster_name}-frontend-tg"
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-frontend-tg"
+  })
+}
+
+# Target Group for SUV UI
+resource "aws_lb_target_group" "suv_ui" {
+  name        = "${var.cluster_name}-suv-ui-tg"
+  port        = 3030
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+  }
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-suv-ui-tg"
+  })
+}
+
 # ALB Listener
-resource "aws_lb_listener" "api" {
+resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.api.arn
   port              = "80"
   protocol          = "HTTP"
 
+  # Default action - forward to API
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.api.arn
+  }
+
+  tags = var.tags
+}
+
+# Listener Rule for Frontend (path-based routing)
+resource "aws_lb_listener_rule" "frontend" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/dashboard", "/dashboard/*"]
+    }
+  }
+
+  tags = var.tags
+}
+
+# Listener Rule for SUV UI (path-based routing)
+resource "aws_lb_listener_rule" "suv_ui" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 101
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.suv_ui.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/volunteer", "/volunteer/*"]
+    }
   }
 
   tags = var.tags

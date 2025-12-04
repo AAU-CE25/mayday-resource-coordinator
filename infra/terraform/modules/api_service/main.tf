@@ -120,7 +120,7 @@ resource "aws_ecs_service" "api" {
   name            = "${var.cluster_name}-api-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.api.arn
-  desired_count   = 1
+  desired_count   = 2  # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -144,4 +144,51 @@ resource "aws_ecs_service" "api" {
   tags = merge(var.tags, {
     Name = "${var.cluster_name}-api-service"
   })
+}
+
+# Autoscaling Target
+resource "aws_appautoscaling_target" "api" {
+  max_capacity       = 4
+  min_capacity       = 2
+  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.api.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.api]
+}
+
+# Autoscaling Policy - CPU
+resource "aws_appautoscaling_policy" "api_cpu" {
+  name               = "${var.cluster_name}-api-cpu-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.api.resource_id
+  scalable_dimension = aws_appautoscaling_target.api.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.api.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+# Autoscaling Policy - Memory
+resource "aws_appautoscaling_policy" "api_memory" {
+  name               = "${var.cluster_name}-api-memory-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.api.resource_id
+  scalable_dimension = aws_appautoscaling_target.api.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.api.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 80.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
 }

@@ -100,13 +100,19 @@ resource "aws_ecs_service" "suv_ui" {
   name            = "${var.cluster_name}-suv-ui-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.suv_ui.arn
-  desired_count   = 1
+  desired_count   = 2  # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
     assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = var.alb_target_group_arn
+    container_name   = "suv_ui"
+    container_port   = 3030
   }
 
   service_registries {
@@ -116,4 +122,33 @@ resource "aws_ecs_service" "suv_ui" {
   tags = merge(var.tags, {
     Name = "${var.cluster_name}-suv-ui-service"
   })
+}
+
+# Autoscaling Target
+resource "aws_appautoscaling_target" "suv_ui" {
+  max_capacity       = 4
+  min_capacity       = 2
+  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.suv_ui.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.suv_ui]
+}
+
+# Autoscaling Policy - CPU
+resource "aws_appautoscaling_policy" "suv_ui_cpu" {
+  name               = "${var.cluster_name}-suv-ui-cpu-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.suv_ui.resource_id
+  scalable_dimension = aws_appautoscaling_target.suv_ui.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.suv_ui.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
 }

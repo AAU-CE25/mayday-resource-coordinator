@@ -38,6 +38,11 @@ variable "service_discovery_namespace_id" {
   type        = string
 }
 
+variable "alb_target_group_arn" {
+  description = "ARN of the ALB target group for the SUV UI"
+  type        = string
+}
+
 variable "cpu" {
   description = "CPU units for the task"
   type        = string
