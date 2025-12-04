@@ -14,7 +14,7 @@ on:
 
 env:
   AWS_REGION: eu-central-1
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_KAJ }}
 
 jobs:
   detect-changes:
