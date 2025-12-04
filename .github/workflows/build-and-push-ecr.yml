@@ -4,12 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/YOUR_BRANCH_NAME
-    paths:
-      - 'api_service/**'
-      - 'frontend/**'
-      - 'suv_ui/**'
-      - '.github/workflows/build-and-push-ecr.yml'
+      - feature/MDAY-44-cloud-deployment
   workflow_dispatch:
     inputs:
       services:
@@ -22,8 +17,36 @@ env:
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      suv-ui: ${{ steps.filter.outputs.suv-ui }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api_service/**'
+              - 'domain/**'
+              - '.github/workflows/build-and-push-ecr.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/build-and-push-ecr.yml'
+            suv-ui:
+              - 'suv_ui/**'
+              - '.github/workflows/build-and-push-ecr.yml'
+
   build-and-push:
     name: Build and Push Docker Images
+    needs: detect-changes
     runs-on: ubuntu-latest
     
     strategy:
@@ -31,18 +54,21 @@ jobs:
         include:
           - service: api
             dockerfile: ./api_service/Dockerfile
-            context: ./api_service
-            ecr_repo: mayday-api
+            context: .
+            ecr_repo: api_service
+            changed: ${{ needs.detect-changes.outputs.api }}
             
           - service: frontend
             dockerfile: ./frontend/Dockerfile
             context: ./frontend
-            ecr_repo: mayday-frontend
+            ecr_repo: frontend
+            changed: ${{ needs.detect-changes.outputs.frontend }}
             
           - service: suv-ui
             dockerfile: ./suv_ui/Dockerfile
             context: ./suv_ui
-            ecr_repo: mayday-suv-ui
+            ecr_repo: suv_ui
+            changed: ${{ needs.detect-changes.outputs.suv-ui }}
 
     steps:
       - name: Checkout code
@@ -52,13 +78,32 @@ jobs:
         id: should_build
         run: |
           SERVICE="${{ matrix.service }}"
-          INPUT_SERVICES="${{ github.event.inputs.services || 'all' }}"
+          INPUT_SERVICES="${{ github.event.inputs.services || '' }}"
+          CHANGED="${{ matrix.changed }}"
           
-          if [[ "$INPUT_SERVICES" == "all" ]] || [[ "$INPUT_SERVICES" == *"$SERVICE"* ]]; then
+          # If manual trigger with specific services
+          if [[ -n "$INPUT_SERVICES" ]]; then
+            if [[ "$INPUT_SERVICES" == "all" ]] || [[ "$INPUT_SERVICES" == *"$SERVICE"* ]]; then
+              echo "build=true" >> $GITHUB_OUTPUT
+              echo "reason=Manual trigger" >> $GITHUB_OUTPUT
+            else
+              echo "build=false" >> $GITHUB_OUTPUT
+              echo "reason=Not in manual trigger list" >> $GITHUB_OUTPUT
+            fi
+          # If push event, check if files changed
+          elif [[ "$CHANGED" == "true" ]]; then
             echo "build=true" >> $GITHUB_OUTPUT
+            echo "reason=Files changed" >> $GITHUB_OUTPUT
           else
             echo "build=false" >> $GITHUB_OUTPUT
+            echo "reason=No changes detected" >> $GITHUB_OUTPUT
           fi
+          
+      - name: Log build decision
+        run: |
+          echo "Service: ${{ matrix.service }}"
+          echo "Should build: ${{ steps.should_build.outputs.build }}"
+          echo "Reason: ${{ steps.should_build.outputs.reason }}"
 
       - name: Configure AWS credentials
         if: steps.should_build.outputs.build == 'true'
@@ -98,6 +143,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -127,10 +173,4 @@ jobs:
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
           
-      # Optional: Uncomment to automatically trigger deployment
-      # - name: Repository Dispatch
-      #   uses: peter-evans/repository-dispatch@v2
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     event-type: deploy-to-ecs
-      #     client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+

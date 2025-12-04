@@ -33,24 +33,8 @@ provider "aws" {
   }
 }
 
-# ECR Module - Container Registry
-# Creates ECR repositories for all application images
-module "ecr" {
-  source = "./modules/ecr"
-
-  repository_names = [
-    "mayday-api",
-    "mayday-frontend",
-    "mayday-suv-ui",
-    "mayday-db"
-  ]
-
-  image_tag_mutability             = "MUTABLE"
-  scan_on_push                     = true
-  lifecycle_policy_max_image_count = 10
-
-  tags = var.tags
-}
+# Note: ECR repositories are managed separately in ../terraform-ecr/
+# This ensures container images persist when the application is destroyed/recreated
 
 # Common Infrastructure Module
 module "common" {
@@ -116,6 +100,7 @@ module "frontend" {
   alb_target_group_arn           = module.common.alb_frontend_target_group_arn
   aws_account_id                 = var.aws_account_id
   aws_region                     = var.aws_region
+  api_url                        = "http://${module.common.alb_dns_name}"
   tags                           = var.tags
 }
 
@@ -132,5 +117,6 @@ module "suv_ui" {
   alb_target_group_arn           = module.common.alb_suv_ui_target_group_arn
   aws_account_id                 = var.aws_account_id
   aws_region                     = var.aws_region
+  api_url                        = "http://${module.common.alb_dns_name}"
   tags                           = var.tags
 }

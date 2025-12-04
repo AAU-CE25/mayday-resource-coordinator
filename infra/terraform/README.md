@@ -6,12 +6,33 @@ This directory contains the complete Infrastructure as Code (IaC) for deploying 
 
 The infrastructure is organized into modular components:
 
-- **ECR Module**: Container registries for Docker images
+- **ECR Module**: Container registries for Docker images (**managed separately in `../terraform-ecr/`**)
 - **Common Infrastructure**: Shared resources (VPC, subnets, ALB, ECS cluster, IAM roles)
 - **Database**: PostgreSQL database service
 - **API Service**: FastAPI backend service
 - **Frontend**: Next.js admin dashboard
 - **SUV UI**: Next.js volunteer interface
+
+## Important: ECR Managed Separately
+
+⚠️ **ECR repositories are now managed separately** in `../terraform-ecr/` to ensure container images persist when the application infrastructure is destroyed/recreated.
+
+**First-time setup:**
+```bash
+# 1. Setup ECR repositories (one-time)
+cd ../terraform-ecr
+terraform init
+terraform apply
+
+# 2. Build and push images
+cd ../../
+./infra/scripts/push-to-ecr.sh
+
+# 3. Deploy application infrastructure
+cd infra/terraform
+terraform init
+terraform apply
+```
 
 ## Directory Structure
 

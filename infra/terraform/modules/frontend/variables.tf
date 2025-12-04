@@ -55,6 +55,11 @@ variable "memory" {
   default     = "1024"
 }
 
+variable "api_url" {
+  description = "URL of the API service (ALB URL with /api prefix)"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

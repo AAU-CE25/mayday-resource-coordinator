@@ -217,7 +217,7 @@ resource "aws_lb_target_group" "api" {
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/health"
+    path                = "/api/health"
     protocol            = "HTTP"
   }
 
@@ -289,7 +289,7 @@ resource "aws_lb_listener" "http" {
   tags = var.tags
 }
 
-# Listener Rule for Frontend (path-based routing)
+# Listener Rule for Dashboard/Frontend (path-based routing)
 resource "aws_lb_listener_rule" "frontend" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 100
@@ -320,7 +320,7 @@ resource "aws_lb_listener_rule" "suv_ui" {
 
   condition {
     path_pattern {
-      values = ["/volunteer", "/volunteer/*"]
+      values = ["/suv", "/suv/*"]
     }
   }
 
