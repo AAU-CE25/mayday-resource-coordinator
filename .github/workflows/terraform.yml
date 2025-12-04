@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - feature/YOUR_BRANCH_NAME
+      - feature/MADY-44-cloud-deployment
     paths:
       - 'infra/terraform/**'
       - '.github/workflows/terraform.yml'
@@ -22,7 +24,7 @@ on:
           - plan
           - apply
           - destroy
-        default: 'plan'
+        default: 'apply'
 
 env:
   AWS_REGION: eu-central-1
@@ -116,7 +118,7 @@ jobs:
         if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
         run: |
           terraform apply -auto-approve -input=false \
-            -var="aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+            -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
             -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}"
 
       - name: Terraform Destroy
@@ -124,7 +126,7 @@ jobs:
         run: |
           echo "⚠️ WARNING: This will destroy all infrastructure!"
           terraform destroy -auto-approve -input=false \
-            -var="aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+            -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
             -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}"
 
       - name: Terraform Output
