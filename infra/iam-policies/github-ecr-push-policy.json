@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ECRAuthenticationToken",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRRepositoryAccess",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:PutImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:DescribeRepositories",
+        "ecr:ListImages",
+        "ecr:DescribeImages"
+      ],
+      "Resource": [
+        "arn:aws:ecr:*:*:repository/mayday-api",
+        "arn:aws:ecr:*:*:repository/mayday-frontend",
+        "arn:aws:ecr:*:*:repository/mayday-suv-ui",
+        "arn:aws:ecr:*:*:repository/mayday-db"
+      ]
+    }
+  ]
+}

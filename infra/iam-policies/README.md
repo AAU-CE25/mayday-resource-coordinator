@@ -6,9 +6,29 @@ This folder contains IAM policies for each GitHub Actions workflow. These follow
 
 | Policy | Workflow | Description |
 |--------|----------|-------------|
-| `setup-infrastructure-policy.json` | `setup-infrastructure.yml` | Creates VPC, ALB, ECS cluster, etc. |
-| `deploy-to-ecr-policy.json` | `deploy-to-ecr.yml` | Builds and pushes Docker images |
-| `deploy-to-ecs-policy.json` | `deploy-to-ecs.yml` | Deploys services to ECS |
+| `github-terraform-networking-policy.json` | `terraform.yml` | Terraform - VPC, subnets, NAT, security groups, ALB |
+| `github-terraform-services-policy.json` | `terraform.yml` | Terraform - ECS, ECR, IAM, CloudWatch, autoscaling |
+| `github-ecr-push-policy.json` | `build-and-push-ecr.yml` | Build and push Docker images to ECR |
+| `github-ecs-deploy-policy.json` | `deploy-to-ecs.yml` | Deploy services to ECS Fargate |
+
+> **Note:** The Terraform policy is split into two parts (networking + services) to stay within AWS's 6KB policy size limit.
+
+## Automated Setup
+
+Use the provided script to create/update all policies:
+
+```bash
+# Create new policies
+./infra/scripts/setup-iam-policies.sh
+
+# Update existing policies
+./infra/scripts/setup-iam-policies.sh --update
+```
+
+The script will:
+- Validate JSON syntax
+- Create policies with `MDAY-` prefix
+- Provide next steps for IAM user setup
 
 ## Policy Details
 
