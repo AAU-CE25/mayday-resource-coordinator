@@ -56,7 +56,7 @@ variable "memory" {
 }
 
 variable "api_url" {
-  description = "URL of the API service (ALB URL with /api prefix)"
+  description = "URL of the API service (ALB URL)"
   type        = string
 }
 
