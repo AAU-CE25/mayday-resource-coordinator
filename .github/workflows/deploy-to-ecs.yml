@@ -15,9 +15,6 @@ on:
         description: 'Services to deploy (comma-separated: api,frontend,suv-ui,database,all)'
         required: true
         default: 'all'
-  # Optionally trigger after ECR push
-  # repository_dispatch:
-  #   types: [deploy-to-ecs]
 
 env:
   AWS_REGION: eu-central-1
