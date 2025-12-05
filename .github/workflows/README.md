@@ -105,6 +105,97 @@ Runs automated tests for backend and frontend.
 
 ---
 
+## When Do Workflows Run?
+
+Understanding when each workflow triggers is crucial for efficient CI/CD operations.
+
+### Automatic Triggers
+
+| Workflow | Trigger Event | Condition | What Happens |
+|----------|--------------|-----------|--------------|
+| **terraform.yml** | Push to `main` | Terraform files changed (`infra/terraform/**`) | Runs `terraform plan` only |
+| **terraform.yml** | Pull Request | Any PR with Terraform changes | Runs `terraform plan` and comments on PR |
+| **build-and-push-ecr.yml** | Push to `main` or `feature/MDAY-44-cloud-deployment` | Service files changed | Builds and pushes affected service images |
+| **test.yaml** | Push to `main` or `develop` | Any code changes | Runs backend tests |
+| **test.yaml** | Pull Request to `main` or `develop` | Any code changes | Runs backend tests |
+
+### Change Detection for build-and-push-ecr.yml
+
+The build workflow uses path filters to detect which services need rebuilding:
+
+```yaml
+# Triggers build only if these files change:
+api:
+  - 'api_service/**'
+  - 'domain/**'
+  - '.github/workflows/build-and-push-ecr.yml'
+
+frontend:
+  - 'frontend/**'
+  - '.github/workflows/build-and-push-ecr.yml'
+
+suv-ui:
+  - 'suv_ui/**'
+  - '.github/workflows/build-and-push-ecr.yml'
+```
+
+**Examples:**
+- ✅ Change `api_service/app/main.py` → Builds only API image
+- ✅ Change `frontend/components/dashboard.tsx` → Builds only Frontend image
+- ✅ Change `suv_ui/app/page.tsx` → Builds only SUV UI image
+- ✅ Change multiple service files → Builds all affected images in parallel
+- ❌ Change `README.md` → No builds triggered
+
+### Manual Triggers
+
+All workflows can be triggered manually via GitHub Actions UI:
+
+| Workflow | Manual Options | Use Case |
+|----------|---------------|----------|
+| **build-and-push-ecr.yml** | Select services: `api`, `frontend`, `suv-ui`, or `all` | Force rebuild without code changes |
+| **deploy-to-ecs.yml** | Select environment + services | Deploy after manual testing |
+| **terraform.yml** | Select action: `plan`, `apply`, or `destroy` | Infrastructure changes |
+| **test.yaml** | No options (runs all tests) | Verify tests after fixes |
+
+### Workflow Execution Order
+
+**Typical deployment flow:**
+
+1. **Developer pushes code** → `test.yaml` runs automatically
+2. **If tests pass** → `build-and-push-ecr.yml` runs (if service files changed)
+3. **Images built and pushed** → Manual trigger of `deploy-to-ecs.yml`
+4. **Services updated** → New containers running with latest images
+
+**Infrastructure changes flow:**
+
+1. **Developer pushes Terraform changes** → `terraform.yml` runs `plan`
+2. **Review plan output** → If approved, manually trigger `apply`
+3. **Infrastructure updated** → Services restart if needed
+
+### Important Notes
+
+⚠️ **deploy-to-ecs.yml** is **MANUAL ONLY** by design:
+- Prevents accidental production deployments
+- Allows review of built images before deployment
+- Enables deployment during maintenance windows
+
+⚠️ **terraform.yml** applies are **MANUAL ONLY**:
+- `plan` runs automatically on push/PR
+- `apply` must be manually triggered
+- Prevents accidental infrastructure destruction
+
+### Quick Reference: Common Scenarios
+
+| What You Want | What Runs Automatically | What You Need to Trigger Manually |
+|---------------|-------------------------|-----------------------------------|
+| Deploy code change to API | `test.yaml`, `build-and-push-ecr.yml` (API only) | `deploy-to-ecs.yml` (select API) |
+| Deploy all services | `test.yaml`, `build-and-push-ecr.yml` (all changed) | `deploy-to-ecs.yml` (select all) |
+| Change infrastructure | `terraform.yml` (plan only) | `terraform.yml` (apply) |
+| Rebuild without code change | Nothing | `build-and-push-ecr.yml` (select services) |
+| Update single service | Nothing if no code changed | `build-and-push-ecr.yml` → `deploy-to-ecs.yml` |
+
+---
+
 ## Setup Instructions
 
 ### 1. Configure GitHub Secrets and Variables
