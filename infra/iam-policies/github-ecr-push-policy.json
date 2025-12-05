@@ -25,10 +25,10 @@
         "ecr:DescribeImages"
       ],
       "Resource": [
-        "arn:aws:ecr:*:*:repository/mayday-api",
-        "arn:aws:ecr:*:*:repository/mayday-frontend",
-        "arn:aws:ecr:*:*:repository/mayday-suv-ui",
-        "arn:aws:ecr:*:*:repository/mayday-db"
+        "arn:aws:ecr:eu-central-1:390299133544:repository/api_service",
+        "arn:aws:ecr:eu-central-1:390299133544:repository/frontend",
+        "arn:aws:ecr:eu-central-1:390299133544:repository/suv_ui",
+        "arn:aws:ecr:eu-central-1:390299133544:repository/mayday-db"
       ]
     }
   ]
