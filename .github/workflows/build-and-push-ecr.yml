@@ -109,9 +109,10 @@ jobs:
         if: steps.should_build.outputs.build == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_KAJ }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_KAJ }}
           aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
 
       - name: Login to Amazon ECR
         if: steps.should_build.outputs.build == 'true'
