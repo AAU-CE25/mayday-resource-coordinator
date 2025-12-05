@@ -51,6 +51,8 @@ services:
     image: frontend:latest
     build:
       context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api_service:8000}
     container_name: frontend_container
     ports:
       - "3000:3000"
@@ -66,7 +68,7 @@ services:
     build:
       context: ./suv_ui
       args:
-        NEXT_PUBLIC_API_URL: http://api_service:8000
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api_service:8000}
     container_name: suv_ui_container
     ports:
       - "3030:3030"

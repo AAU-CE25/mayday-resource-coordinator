@@ -137,6 +137,17 @@ jobs:
         if: steps.should_build.outputs.build == 'true'
         uses: docker/setup-buildx-action@v3
 
+      - name: Validate API_URL is set
+        if: steps.should_build.outputs.build == 'true'
+        run: |
+          if [[ "${{ matrix.service }}" == "frontend" ]] || [[ "${{ matrix.service }}" == "suv-ui" ]]; then
+            if [[ -z "${{ vars.API_URL }}" ]]; then
+              echo "ERROR: API_URL variable is not set in GitHub repository variables"
+              echo "Please set it in: Settings -> Secrets and variables -> Actions -> Variables"
+              exit 1
+            fi
+          fi
+
       - name: Set build args
         if: steps.should_build.outputs.build == 'true'
         id: build_args
@@ -144,12 +155,11 @@ jobs:
           # Set API URL for frontend builds
           if [[ "${{ matrix.service }}" == "frontend" ]] || [[ "${{ matrix.service }}" == "suv-ui" ]]; then
             API_URL="${{ vars.API_URL }}"
-            if [[ -z "$API_URL" ]]; then
-              # Fallback: construct from ALB DNS if API_URL variable not set
-              API_URL="http://mayday-cluster-api-alb-1073692263.eu-central-1.elb.amazonaws.com/"
-            fi
+            # Remove trailing slash if present
+            API_URL="${API_URL%/}"
             echo "api_url=$API_URL" >> $GITHUB_OUTPUT
             echo "has_api_url=true" >> $GITHUB_OUTPUT
+            echo "DEBUG: Using API_URL=$API_URL"
           else
             echo "has_api_url=false" >> $GITHUB_OUTPUT
           fi
