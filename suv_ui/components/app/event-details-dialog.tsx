@@ -233,10 +233,10 @@ export function EventDetailsDialog({
                   >
                     <div>
                       <p className="font-medium text-gray-900 text-sm">
-                        {volunteer.name}
+                        {volunteer.user?.name ?? `Volunteer #${volunteer.id}`}
                       </p>
                       <p className="text-gray-600 text-xs">
-                        {volunteer.user?.email || volunteer.phonenumber}
+                        {volunteer.user?.email ?? ""}
                       </p>
                     </div>
                     <span className="text-green-600 text-xs font-medium">

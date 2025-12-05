@@ -7,6 +7,7 @@ export interface UserCreate {
   phonenumber: string
   password: string
   role?: string  // "SUV" | "VC" | "AUTHORITY"
+  status?: string | null  // "available" | "assigned" | "unavailable"
 }
 
 export interface UserUpdate {

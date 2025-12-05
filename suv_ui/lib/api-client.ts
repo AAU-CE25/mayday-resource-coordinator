@@ -150,25 +150,11 @@ export async function login(credentials: LoginCredentials): Promise<AuthTokenRes
 }
 
 /**
- * Register a new user and automatically create their volunteer profile
+ * Register a new user
  */
 export async function register(data: RegisterData): Promise<User> {
-  // Create user account
+  // Create user account 
   const user = await post<User>('/auth/register', data)
-  
-  // Create volunteer profile linked to the user
-  try {
-    await post<Volunteer>('/volunteers/', {
-      name: data.name,
-      phonenumber: data.phonenumber,
-      user_id: user.id,
-      status: "active"
-    })
-  } catch (error) {
-    console.error('Failed to create volunteer profile:', error)
-    // Don't throw - user account is created successfully
-  }
-  
   return user
 }
 
@@ -317,6 +303,33 @@ export async function fetchAllVolunteers(): Promise<Volunteer[]> {
     return await get<Volunteer[]>('/volunteers/')
   } catch (error) {
     console.error('Failed to fetch volunteers:', error)
+    return []
+  }
+}
+
+// ============= User-based endpoints (for dispatcher UI) =============
+
+/**
+ * Fetch active users for a specific event. Note: backend should support
+ * filtering users by `event_id` and `status=active` for this to work.
+ */
+export async function fetchActiveUsers(eventId: number): Promise<User[]> {
+  try {
+    return await get<User[]>(`/users/?event_id=${eventId}&status=active`)
+  } catch (error) {
+    console.error('Failed to fetch users for event:', error)
+    return []
+  }
+}
+
+/**
+ * Fetch all users (used where the UI previously listed volunteers)
+ */
+export async function fetchAllUsers(): Promise<User[]> {
+  try {
+    return await get<User[]>('/users/')
+  } catch (error) {
+    console.error('Failed to fetch users:', error)
     return []
   }
 }

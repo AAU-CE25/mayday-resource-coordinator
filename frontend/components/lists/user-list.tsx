@@ -34,13 +34,19 @@ export function UserList() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const filteredUsers = users?.filter((user: any) => {
-    const nameMatch = user.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const phoneMatch = user.phonenumber?.toLowerCase().includes(searchQuery.toLowerCase());
+    const nameMatch = user.name
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const phoneMatch = user.phonenumber
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const matchesSearch = nameMatch || phoneMatch;
 
-    // Determine actual status
+    // Determine actual status using the canonical `user.status` when available.
+    // Fall back to legacy `event_id` check only if `status` is missing.
     const isAssigned =
-      user.event_id !== null && user.event_id !== undefined;
+      user.status === "assigned" ||
+      (user.status === undefined && user.event_id != null);
 
     // Check user.status field for unavailable
     let actualStatus: string;
@@ -60,9 +66,7 @@ export function UserList() {
 
   if (isLoading) {
     return (
-      <div className="text-center text-muted-foreground">
-        Loading users...
-      </div>
+      <div className="text-center text-muted-foreground">Loading users...</div>
     );
   }
 
@@ -111,9 +115,10 @@ export function UserList() {
       ) : (
         <div className="space-y-3">
           {filteredUsers.map((user: any) => {
-            // Determine status based on user.status and event_id
+            // Determine status based on canonical user.status (fall back to event_id)
             const isAssigned =
-              user.event_id !== null && user.event_id !== undefined;
+              user.status === "assigned" ||
+              (user.status === undefined && user.event_id != null);
             const isUnavailable = user.status === "unavailable";
 
             // Determine colors based on status
@@ -229,6 +234,17 @@ export function UserList() {
                       </Button>
                     )}
 
+                    {isAssigned && !isUnavailable && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 w-full bg-transparent"
+                        onClick={() => handleAssign(user)}
+                      >
+                        Unassign from Event
+                      </Button>
+                    )}
+
                     {isUnavailable && (
                       <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-center">
                         <p className="text-xs text-red-600 font-medium">
@@ -244,10 +260,7 @@ export function UserList() {
         </div>
       )}
 
-      <AddUserDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-      />
+      <AddUserDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
       <AssignVolunteerDialog
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}

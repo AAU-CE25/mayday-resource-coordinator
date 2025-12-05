@@ -21,7 +21,8 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Auto-login after registration
+      // Create account, then login and initialize session
+      await apiRegister({ name, email, phonenumber, password });
       await apiLogin({ email, password });
       await login();
     } catch (err) {

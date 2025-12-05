@@ -57,26 +57,32 @@ export function AssignToEventDialog({
       const selectedUser = users?.find(
         (u: any) => String(u.id) === selectedUserId
       );
-      const isVolunteerForThisEvent =
-        selectedUser &&
-        (selectedUser.event_id === event.id ||
-          selectedUser.assigned_event === event.id);
 
-      if (isVolunteerForThisEvent) {
-        // Unassign: Remove user as volunteer from this event
-        await api.put(`/users/${selectedUserId}`, {
-          id: parseInt(selectedUserId),
-          event_id: null,
-        });
+      // Check if there's an active volunteer record for this user/event
+      const volunteerQuery = await api.get(
+        `/volunteers?user_id=${selectedUserId}&event_id=${event.id}&status=active`
+      );
+      const existingVolunteers = Array.isArray(volunteerQuery)
+        ? volunteerQuery
+        : [];
+
+      if (existingVolunteers.length > 0) {
+        // Unassign: mark volunteer as completed for this user/event
+        for (const vol of existingVolunteers) {
+          await api.put(`/volunteers/${vol.id}`, {
+            id: vol.id,
+            status: "completed",
+          });
+        }
 
         toast({
           title: "User removed from event",
           description: `User is no longer volunteering for ${event.description}`,
         });
       } else {
-        // Assign: Make user a volunteer for this event
-        await api.put(`/users/${selectedUserId}`, {
-          id: parseInt(selectedUserId),
+        // Assign: create a volunteer record linking this user to the event
+        await api.post(`/volunteers`, {
+          user_id: parseInt(selectedUserId),
           event_id: event.id,
         });
 
@@ -154,7 +160,10 @@ export function AssignToEventDialog({
                         user.event_id === event.id ||
                         user.assigned_event === event.id;
                       const isVolunteerElsewhere =
-                        !isVolunteerHere && (user.event_id || user.assigned_event);
+                        !isVolunteerHere &&
+                        (user.event_id ||
+                          user.assigned_event ||
+                          user.status === "assigned");
                       return (
                         <SelectItem key={user.id} value={String(user.id)}>
                           <div className="flex items-center gap-2">
@@ -171,8 +180,11 @@ export function AssignToEventDialog({
                             )}
                             {isVolunteerElsewhere && (
                               <Badge variant="secondary" className="text-xs">
-                                Volunteering Event #
-                                {user.event_id || user.assigned_event}
+                                {user.event_id || user.assigned_event
+                                  ? `Volunteering Event #${
+                                      user.event_id || user.assigned_event
+                                    }`
+                                  : `Volunteering (assigned)`}
                               </Badge>
                             )}
                           </div>
@@ -193,18 +205,13 @@ export function AssignToEventDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || !selectedUserId}
-            >
+            <Button type="submit" disabled={isSubmitting || !selectedUserId}>
               {isSubmitting
                 ? "Updating..."
-                : allUsers.find(
-                    (u: any) =>
-                      String(u.id) === selectedUserId &&
-                      (u.event_id === event.id || u.assigned_event === event.id)
-                  )
-                ? "Remove from Event"
+                : selectedUserId &&
+                  users?.find((u: any) => String(u.id) === selectedUserId)
+                    ?.status === "assigned"
+                ? "Unassign from Event"
                 : "Assign as Volunteer"}
             </Button>
           </DialogFooter>

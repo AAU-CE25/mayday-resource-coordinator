@@ -294,8 +294,8 @@ if __name__ == "__main__":
     # - Create 3 available resources from volunteers
     
     seed_test_data(
-        num_events=1,
+        num_events=3,
         num_users=5,
-        num_volunteers=8,
+        num_volunteers=0,
         num_resources=3
     )

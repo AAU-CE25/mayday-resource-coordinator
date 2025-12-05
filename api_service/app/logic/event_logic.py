@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from domain import EventCreate, EventResponse, EventUpdate, LocationResponse
-from api_service.app.data_access import EventDAO
+from api_service.app.data_access import EventDAO, VolunteerDAO
 from .location_logic import LocationLogic
 from .volunteer_logic import VolunteerLogic
 from ..models import Event
@@ -79,6 +79,15 @@ class EventLogic:
         updated_event: Event = EventDAO.update_event(event_id, _event)
         if not updated_event:
             return None
+        # If the event is being closed (status changed from active), mark all
+        # volunteers for this event as completed.
+        if event_update.status and event_update.status.lower() != "active":
+            try:
+                VolunteerDAO.complete_volunteers_for_event(updated_event.id)
+            except Exception:
+                # Don't fail the whole update if marking volunteers fails
+                pass
+
         volunteers_count = len(VolunteerLogic.get_volunteers(event_id=updated_event.id))
         return EventResponse.model_validate({
             **updated_event.model_dump(),

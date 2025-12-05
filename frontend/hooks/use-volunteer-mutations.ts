@@ -16,6 +16,8 @@ export function useCreateVolunteer(options?: { onSuccess?: () => void }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['volunteers'] })
+      // Ensure user list reflects changed assignment status immediately
+      queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats })
       
       toast({
@@ -45,6 +47,7 @@ export function useDeleteVolunteer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['volunteers'] })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats })
       
       toast({
@@ -72,6 +75,7 @@ export function useUpdateVolunteer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['volunteers'] })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats })
       
       toast({
