@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   basePath: '/suv',
   // Enable asset prefix to load static files correctly
   assetPrefix: '/suv',
+  // Output standalone for optimal Docker deployment
+  output: 'standalone',
 };
 
 export default nextConfig;

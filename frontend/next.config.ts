@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   basePath: '/dashboard',
   // Enable asset prefix to load static files correctly
   assetPrefix: '/dashboard',
+  // Output standalone for optimal Docker deployment
+  output: 'standalone',
 };
 
 export default nextConfig;
