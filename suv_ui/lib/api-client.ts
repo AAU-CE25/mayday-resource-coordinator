@@ -19,6 +19,7 @@ function getApiBaseUrl(): string {
   // Remove trailing slash to prevent double slashes
   return apiUrl.replace(/\/+$/, '')
 }
+console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
 
 /**
  * Get auth token from sessionStorage (expires when browser closes - more secure)

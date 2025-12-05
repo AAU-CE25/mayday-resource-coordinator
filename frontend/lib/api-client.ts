@@ -14,6 +14,7 @@ function getApiBaseUrl(): string {
 }
 
 const API_BASE = getApiBaseUrl()
+console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
 
 export const api = {
   get: async (endpoint: string) => {
