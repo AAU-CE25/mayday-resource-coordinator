@@ -189,21 +189,6 @@ jobs:
           echo "Image pushed with tags:"
           echo "${{ steps.meta.outputs.tags }}"
 
-  deploy-trigger:
-    name: Trigger ECS Deployment
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Trigger ECS deployment workflow
-        run: |
-          echo "Image build complete. ECS deployment can be triggered manually or automatically."
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
 
           
 
