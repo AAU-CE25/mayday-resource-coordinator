@@ -9,14 +9,17 @@ function getApiBaseUrl(): string {
     )
   }
   
-  return apiUrl
+  // Remove trailing slash to prevent double slashes
+  return apiUrl.replace(/\/+$/, '')
 }
 
 const API_BASE = getApiBaseUrl()
 
 export const api = {
   get: async (endpoint: string) => {
-    const response = await fetch(`${API_BASE}${endpoint}`)
+    // Ensure endpoint starts with /
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    const response = await fetch(`${API_BASE}${path}`)
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`)
     }
@@ -24,7 +27,9 @@ export const api = {
   },
   
   post: async (endpoint: string, data: any) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    // Ensure endpoint starts with /
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    const response = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)

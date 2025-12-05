@@ -16,7 +16,8 @@ function getApiBaseUrl(): string {
     )
   }
   
-  return apiUrl
+  // Remove trailing slash to prevent double slashes
+  return apiUrl.replace(/\/+$/, '')
 }
 
 /**
@@ -51,7 +52,9 @@ export function clearAuthToken() {
  * Generic fetch wrapper with error handling and auto-logout on 401
  */
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${getApiBaseUrl()}${endpoint}`
+  // Ensure endpoint starts with /
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${getApiBaseUrl()}${path}`
   const token = getAuthToken()
   
   try {
