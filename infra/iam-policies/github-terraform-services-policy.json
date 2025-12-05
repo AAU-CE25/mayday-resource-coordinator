@@ -70,8 +70,6 @@
       "Action": [
         "logs:CreateLogGroup",
         "logs:DeleteLogGroup",
-        "logs:DescribeLogGroups",
-        "logs:ListLogGroups",
         "logs:PutRetentionPolicy",
         "logs:DeleteRetentionPolicy",
         "logs:TagLogGroup",
@@ -82,6 +80,15 @@
         "arn:aws:logs:*:*:log-group:/ecs/mayday-cluster/*",
         "arn:aws:logs:*:*:log-group:/ecs/*-cluster/*"
       ]
+    },
+    {
+      "Sid": "CloudWatchLogsRead",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:ListLogGroups"
+      ],
+      "Resource": "*"
     },
     {
       "Sid": "ServiceDiscoveryManagement",

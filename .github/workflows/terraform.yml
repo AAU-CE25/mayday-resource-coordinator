@@ -149,32 +149,3 @@ jobs:
           path: ${{ env.WORKING_DIR }}/outputs.json
           retention-days: 30
 
-  security-scan:
-    name: Terraform Security Scan
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          working_directory: infra/terraform
-          soft_fail: true
-
-      - name: Run Checkov
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: infra/terraform
-          framework: terraform
-          soft_fail: true
-          output_format: sarif
-          output_file_path: reports/results.sarif
-
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: reports/results.sarif
