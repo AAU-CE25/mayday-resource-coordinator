@@ -86,7 +86,8 @@
       "Effect": "Allow",
       "Action": [
         "logs:DescribeLogGroups",
-        "logs:ListLogGroups"
+        "logs:ListLogGroups",
+        "logs:ListTagsForResource"
       ],
       "Resource": "*"
     },
