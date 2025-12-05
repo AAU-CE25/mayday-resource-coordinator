@@ -41,7 +41,7 @@ module "ecr" {
 
   image_tag_mutability             = "MUTABLE"
   scan_on_push                     = true
-  lifecycle_policy_max_image_count = 10
+  lifecycle_policy_max_image_count = 3
 
   tags = var.tags
 }
