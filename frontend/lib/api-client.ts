@@ -9,12 +9,21 @@ function getApiBaseUrl(): string {
     )
   }
   
+  // Validate that URL includes protocol
+  if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+    throw new Error(
+      `NEXT_PUBLIC_API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
+    )
+  }
+  
   // Remove trailing slash to prevent double slashes
-  return apiUrl.replace(/\/+$/, '')
+  const cleanUrl = apiUrl.replace(/\/+$/, '')
+  
+  console.log('API Base URL:', cleanUrl)
+  return cleanUrl
 }
 
 const API_BASE = getApiBaseUrl()
-console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
 
 export const api = {
   get: async (endpoint: string) => {
