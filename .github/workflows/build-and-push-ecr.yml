@@ -164,8 +164,7 @@ jobs:
           platforms: linux/amd64
           tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.ecr_repo }}:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             NEXT_PUBLIC_API_URL=${{ steps.build_args.outputs.api_url }}
@@ -180,8 +179,7 @@ jobs:
           platforms: linux/amd64
           tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.ecr_repo }}:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
 
