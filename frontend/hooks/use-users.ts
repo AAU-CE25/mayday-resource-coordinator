@@ -3,10 +3,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
 
-export function useStats() {
+export function useUsers() {
   return useQuery({
-    queryKey: ['stats'],
-    queryFn: () => api.get('/stats/'),
+    queryKey: ['users'],
+    queryFn: () => api.get('/users/'),
     refetchInterval: 5000
   })
 }

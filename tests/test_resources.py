@@ -5,22 +5,36 @@ from api_service.app.main import app
 
 @pytest.fixture
 def sample_volunteer_id(client):
+    # Create a user first
     unique_email = f"volunteer_{uuid.uuid4().hex[:8]}@test.com"
-    volunteer_data = {
-        "user": {
-            "name": "Test Volunteer",
-            "email": unique_email,
-            "password": "password123",
-            "role": "SUV"
-        },
-        "phonenumber": "+4512345678",
-        "availability": "available",
-        "location_id": None
+    user_payload = {
+        "name": "Test Volunteer",
+        "email": unique_email,
+        "phonenumber": "+4500000002",
+        "password": "password123",
+        "role": "SUV"
     }
-    response = client.post("/volunteers/", json=volunteer_data)
+    resp = client.post("/auth/register", json=user_payload)
+    assert resp.status_code in (200, 201)
+    user = resp.json()
+
+    # Create an event with a minimal location
+    event_payload = {
+        "description": "Volunteer Event",
+        "priority": 1,
+        "status": "active",
+        "location": {"latitude": 0.0, "longitude": 0.0}
+    }
+    resp2 = client.post("/events/", json=event_payload)
+    assert resp2.status_code == 201
+    event = resp2.json()
+
+    # Create the volunteer using IDs
+    volunteer_payload = {"user_id": user["id"], "event_id": event["id"], "status": "active"}
+    response = client.post("/volunteers/", json=volunteer_payload)
     assert response.status_code == 201
     volunteer = response.json()
-    return volunteer["id"]  # This should now work
+    return volunteer["id"]
 
 @pytest.fixture
 def sample_resource(sample_volunteer_id):

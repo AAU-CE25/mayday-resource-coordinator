@@ -3,7 +3,7 @@
  * Base URL: http://localhost:8000 (browser) or http://api_service:8000 (SSR in Docker)
  */
 
-import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData } from "./types"
+import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData, ResourceAvailable } from "./types"
 
 // Determine API URL based on execution context
 // - Client-side (browser): always use localhost (accessible from user's machine)
@@ -153,7 +153,9 @@ export async function login(credentials: LoginCredentials): Promise<AuthTokenRes
  * Register a new user
  */
 export async function register(data: RegisterData): Promise<User> {
-  return post<User>('/auth/register', data)
+  // Create user account 
+  const user = await post<User>('/auth/register', data)
+  return user
 }
 
 /**
@@ -253,4 +255,120 @@ export async function completeVolunteer(volunteerId: number): Promise<Volunteer>
     id: volunteerId,
     status: "completed",
   })
+}
+
+/**
+ * Update volunteer availability status (available/unavailable)
+ */
+export async function updateVolunteerStatus(volunteerId: number, status: string): Promise<Volunteer> {
+  return put<Volunteer>(`/volunteers/${volunteerId}`, {
+    id: volunteerId,
+    status: status,
+  })
+}
+
+/**
+ * Get volunteer profile for a specific user
+ */
+export async function getUserVolunteerProfile(userId: number): Promise<Volunteer | null> {
+  try {
+    const volunteers = await get<Volunteer[]>(`/volunteers/?user_id=${userId}&limit=1`)
+    return volunteers && volunteers.length > 0 ? volunteers[0] : null
+  } catch (error) {
+    console.error('Failed to fetch volunteer profile:', error)
+    return null
+  }
+}
+
+// ============= Resources API Functions =============
+
+/**
+ * Fetch all available resources for a specific volunteer
+ */
+export async function fetchVolunteerResources(volunteerId: number): Promise<ResourceAvailable[]> {
+  try {
+    const allResources = await get<ResourceAvailable[]>('/resources/available/')
+    return allResources.filter(r => r.volunteer_id === volunteerId)
+  } catch (error) {
+    console.error('Failed to fetch resources:', error)
+    return []
+  }
+}
+
+/**
+ * Fetch all volunteers
+ */
+export async function fetchAllVolunteers(): Promise<Volunteer[]> {
+  try {
+    return await get<Volunteer[]>('/volunteers/')
+  } catch (error) {
+    console.error('Failed to fetch volunteers:', error)
+    return []
+  }
+}
+
+// ============= User-based endpoints (for dispatcher UI) =============
+
+/**
+ * Fetch active users for a specific event. Note: backend should support
+ * filtering users by `event_id` and `status=active` for this to work.
+ */
+export async function fetchActiveUsers(eventId: number): Promise<User[]> {
+  try {
+    return await get<User[]>(`/users/?event_id=${eventId}&status=active`)
+  } catch (error) {
+    console.error('Failed to fetch users for event:', error)
+    return []
+  }
+}
+
+/**
+ * Fetch all users (used where the UI previously listed volunteers)
+ */
+export async function fetchAllUsers(): Promise<User[]> {
+  try {
+    return await get<User[]>('/users/')
+  } catch (error) {
+    console.error('Failed to fetch users:', error)
+    return []
+  }
+}
+
+/**
+ * Create a new available resource
+ */
+export async function createResource(data: {
+  name: string
+  resource_type: string
+  quantity: number
+  description: string
+  status: string
+  volunteer_id: number
+}): Promise<ResourceAvailable> {
+  return post<ResourceAvailable>('/resources/available/', {
+    ...data,
+    is_allocated: false
+  })
+}
+
+/**
+ * Update an existing resource
+ */
+export async function updateResource(resourceId: number, data: Partial<{
+  name: string
+  resource_type: string
+  quantity: number
+  description: string
+  status: string
+  event_id: number | null
+  volunteer_id: number
+}>): Promise<ResourceAvailable> {
+  return put<ResourceAvailable>(`/resources/available/${resourceId}`, data)
+}
+
+/**
+ * Delete a resource
+ */
+export async function deleteResource(resourceId: number): Promise<void> {
+  return del<void>(`/resources/available/${resourceId}`)
 }

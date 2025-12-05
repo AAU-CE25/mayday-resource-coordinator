@@ -7,6 +7,6 @@ export function useResourcesAvailable() {
   return useQuery({
     queryKey: ['resources/available'],
     queryFn: () => api.get('/resources/available/'),
-    refetchInterval: 3000
+    refetchInterval: 5000
   })
 }

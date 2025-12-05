@@ -1,7 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .db import create_db_and_tables, check_database_health
-from .routes import auth_router, user_router, event_router, location_router, resource_router, volunteer_router, stats_router
+from .routes import (
+    auth_router,
+    user_router,
+    event_router,
+    location_router,
+    resource_needed_router,
+    resource_available_router,
+    volunteer_router,
+    stats_router,
+)
 
 # Initialize database
 create_db_and_tables()
@@ -31,7 +40,8 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(event_router)
 app.include_router(location_router)
-app.include_router(resource_router)
+app.include_router(resource_needed_router)
+app.include_router(resource_available_router)
 app.include_router(volunteer_router)
 app.include_router(stats_router)
 

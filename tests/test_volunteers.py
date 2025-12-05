@@ -31,17 +31,16 @@ class TestVolunteers:
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
-def test_get_volunteer_not_found():
-    response = client.get("/volunteers/999999")
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Volunteer not found"
+    def test_get_volunteer_not_found(self, client):
+        response = client.get("/volunteers/999999")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Volunteer not found"
 
-def test_create_volunteer():
-    payload = {
-        "user_id": 1,
-        "event_id": 1,
-        "status": "active"
-    }
-    response = client.post("/volunteers/", json=payload)
-    assert response.status_code in (200, 201, 422)
-
+    def test_create_volunteer(self, client):
+        payload = {
+            "user_id": 1,
+            "event_id": 1,
+            "status": "active"
+        }
+        response = client.post("/volunteers/", json=payload)
+        assert response.status_code in (200, 201, 422)
