@@ -51,7 +51,7 @@ class EventLogic:
             return None
         
         # Compute volunteers count for the event
-        volunteers_count = len(VolunteerLogic.get_volunteers(event_id=event_id))
+        volunteers_count = len(VolunteerLogic.get_volunteers(event_id=event_id, status="active"))
 
         # Validate the event including nested location
         return EventResponse.model_validate({
@@ -88,7 +88,7 @@ class EventLogic:
                 # Don't fail the whole update if marking volunteers fails
                 pass
 
-        volunteers_count = len(VolunteerLogic.get_volunteers(event_id=updated_event.id))
+        volunteers_count = len(VolunteerLogic.get_volunteers(event_id=updated_event.id, status="active"))
         return EventResponse.model_validate({
             **updated_event.model_dump(),
             "location": LocationLogic.get_location(updated_event.location_id).model_dump(),
