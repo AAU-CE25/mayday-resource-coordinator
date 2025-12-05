@@ -131,6 +131,7 @@
         "elasticloadbalancing:CreateListener",
         "elasticloadbalancing:DeleteListener",
         "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeListenerAttributes",
         "elasticloadbalancing:ModifyListener",
         "elasticloadbalancing:CreateRule",
         "elasticloadbalancing:DeleteRule",

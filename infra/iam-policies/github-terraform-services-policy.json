@@ -71,6 +71,7 @@
         "logs:CreateLogGroup",
         "logs:DeleteLogGroup",
         "logs:DescribeLogGroups",
+        "logs:ListLogGroups",
         "logs:PutRetentionPolicy",
         "logs:DeleteRetentionPolicy",
         "logs:TagLogGroup",
