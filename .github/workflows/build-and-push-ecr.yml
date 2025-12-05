@@ -146,7 +146,7 @@ jobs:
             API_URL="${{ vars.API_URL }}"
             if [[ -z "$API_URL" ]]; then
               # Fallback: construct from ALB DNS if API_URL variable not set
-              API_URL="http://mayday-cluster-api-alb-308186494.eu-central-1.elb.amazonaws.com"
+              API_URL="http://mayday-cluster-api-alb-1073692263.eu-central-1.elb.amazonaws.com/"
             fi
             echo "api_url=$API_URL" >> $GITHUB_OUTPUT
             echo "has_api_url=true" >> $GITHUB_OUTPUT
