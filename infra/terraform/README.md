@@ -183,6 +183,8 @@ Deploys Next.js admin dashboard:
 
 **Note**: Requires `NEXT_PUBLIC_API_URL` at build time.
 
+**Configuration**: Requires `basePath: '/dashboard'` in `next.config.ts`
+
 ### SUV UI Module
 
 Deploys Next.js volunteer interface:
@@ -190,8 +192,11 @@ Deploys Next.js volunteer interface:
 - ECS task definition and service
 - Service discovery: `suv-ui.mayday-cluster.local:3030`
 - CloudWatch log group
+- Environment variable: `PORT=3030` (set in task definition)
 
-**Note**: Requires `NEXT_PUBLIC_API_URL` at build time.
+**Note**: Requires `NEXT_PUBLIC_API_URL` at build time (must include protocol).
+
+**Configuration**: Requires `basePath: '/suv'` in `next.config.ts`
 
 ## CI/CD Integration
 
@@ -201,12 +206,20 @@ The infrastructure integrates with GitHub Actions workflows:
 2. **deploy-to-ecr.yml**: Builds and pushes Docker images
 3. **deploy-to-ecs.yml**: Updates ECS services with new images
 
-### Required GitHub Secrets
+### Required GitHub Secrets and Variables
 
+**Secrets:**
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION`: `eu-central-1`
+- `AWS_ACCESS_KEY_ID_KAJ`
+- `AWS_SECRET_ACCESS_KEY_KAJ`
+- `POSTGRES_PASSWORD`
+
+**Variables:**
 - `AWS_ACCOUNT_ID`: `390299133544`
+- `AWS_ACCOUNT_ID_KAJ`: `390299133544`
+- `AWS_REGION`: `eu-central-1`
+- `API_URL`: Full URL with protocol (e.g., `http://your-alb.amazonaws.com`)
 
 ## Accessing Services
 
@@ -218,12 +231,12 @@ The infrastructure integrates with GitHub Actions workflows:
 - **Internal only**: `db.mayday-cluster.local:5432`
 
 ### Frontend
+- **Public**: `http://<alb-dns-name>/dashboard` (via ALB path routing)
 - **Internal**: `http://frontend.mayday-cluster.local:3000`
-- **Public IP**: Extract from ECS task (see GitHub Actions workflow)
 
 ### SUV UI
+- **Public**: `http://<alb-dns-name>/suv` (via ALB path routing)
 - **Internal**: `http://suv-ui.mayday-cluster.local:3030`
-- **Public IP**: Extract from ECS task (see GitHub Actions workflow)
 
 ## Network Architecture
 

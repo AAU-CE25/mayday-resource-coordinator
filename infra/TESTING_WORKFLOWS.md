@@ -183,7 +183,7 @@ cd infra/scripts
 terraform output alb_dns_name
 curl http://<alb-dns>/health
 curl http://<alb-dns>/dashboard
-curl http://<alb-dns>/volunteer
+curl http://<alb-dns>/suv
 ```
 
 ---
@@ -284,8 +284,9 @@ terraform state list
 ✅ **Application:**
 - API responds at `/health`
 - Frontend accessible at `/dashboard`
-- SUV UI accessible at `/volunteer`
+- SUV UI accessible at `/suv`
 - All services show 2/2 running tasks
+- Static assets load correctly (no 404 errors for JS/CSS)
 
 ---
 

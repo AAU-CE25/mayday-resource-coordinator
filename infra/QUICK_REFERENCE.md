@@ -26,7 +26,7 @@ After deployment, all services accessible via ALB:
 ```
 http://<alb-dns-name>/          → API Service
 http://<alb-dns-name>/dashboard → Frontend Dashboard
-http://<alb-dns-name>/volunteer → Volunteer UI
+http://<alb-dns-name>/suv       → Volunteer UI (SUV Portal)
 ```
 
 Get ALB DNS: `terraform output alb_dns_name`
@@ -174,7 +174,7 @@ curl http://$ALB_DNS/health
 curl http://$ALB_DNS/dashboard
 
 # Test SUV UI (should see HTML)
-curl http://$ALB_DNS/volunteer
+curl http://$ALB_DNS/suv
 
 # Check service health
 aws elbv2 describe-target-health \
@@ -202,9 +202,11 @@ aws elbv2 describe-target-health \
 
 ## ⚠️ Important Notes
 
-1. **Path Routing**: Frontend and SUV UI now use path prefixes
-   - Update `basePath` in Next.js config if needed
-   - Update any hardcoded URLs in your apps
+2. **Path Routing**: Frontend and SUV UI use path prefixes
+   - Frontend: `basePath: '/dashboard'` in `next.config.ts`
+   - SUV UI: `basePath: '/suv'` in `next.config.ts`
+   - These must match the ALB path routing rules
+   - Rebuild Docker images after changing basePath
 
 2. **Database Access**: Database is in private subnet
    - Access via other ECS services using: `db.mayday-cluster.local:5432`
@@ -216,7 +218,12 @@ aws elbv2 describe-target-health \
    - State locked during operations
    - Safe for team collaboration
 
-4. **Cost**: Monthly cost increased for production-ready setup
+4. **Environment Variables**:
+   - `NEXT_PUBLIC_API_URL`: Must include protocol (`http://` or `https://`)
+   - `PORT`: Set to `3030` for SUV UI to match container port mapping
+   - Both are set in Terraform task definitions
+
+5. **Cost**: Monthly cost increased for production-ready setup
    - Can reduce to `desired_count = 1` for dev environment
    - Can remove autoscaling for dev environment
 

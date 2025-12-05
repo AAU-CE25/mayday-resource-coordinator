@@ -110,7 +110,7 @@ Internet → IGW → Public Subnets (10.0.1.0/24, 10.0.2.0/24)
 - Created ALB target group for SUV UI (port 3030)
 - Added path-based routing:
   - `/dashboard` and `/dashboard/*` → Frontend
-  - `/volunteer` and `/volunteer/*` → SUV UI
+  - `/suv` and `/suv/*` → SUV UI
   - Default → API Service
 - Connected frontend and SUV UI services to their respective target groups
 
@@ -118,10 +118,57 @@ Internet → IGW → Public Subnets (10.0.1.0/24, 10.0.2.0/24)
 ```
 http://<alb-dns-name>/          → API Service (port 8000)
 http://<alb-dns-name>/dashboard → Frontend (port 3000)
-http://<alb-dns-name>/volunteer → SUV UI (port 3030)
+http://<alb-dns-name>/suv       → SUV UI (port 3030)
 ```
 
 **Impact**: All services now accessible through single ALB endpoint with path-based routing.
+
+---
+
+### 7. **Fixed Next.js Configuration for Path-Based Routing**
+**Files**:
+- `frontend/next.config.ts`
+- `suv_ui/next.config.ts`
+
+**Changes**:
+- Added `basePath: '/dashboard'` to frontend configuration
+- Added `basePath: '/suv'` to SUV UI configuration
+- Added `trailingSlash: false` for consistent URL handling
+
+**Impact**: Static assets and navigation now work correctly with ALB path-based routing.
+
+---
+
+### 8. **Fixed API URL Configuration**
+**Files**:
+- `frontend/lib/api-client.ts`
+- `suv_ui/lib/api-client.ts`
+- `.github/workflows/build-and-push-ecr.yml`
+
+**Changes**:
+- Added validation to ensure `NEXT_PUBLIC_API_URL` includes protocol (`http://` or `https://`)
+- Added automatic trailing slash removal
+- Added debug logging for API base URL
+- Updated GitHub Actions workflow to validate `API_URL` variable is set
+- Removed fallback URL to force proper configuration
+
+**Impact**: 
+- Build fails early with clear error if API URL is misconfigured
+- Prevents double-domain issues from missing protocol
+- Ensures consistent API URL formatting
+
+---
+
+### 9. **Fixed SUV UI Port Configuration**
+**File**: `infra/terraform/modules/suv_ui/main.tf`
+
+**Changes**:
+- Added `PORT=3030` environment variable to SUV UI task definition
+
+**Impact**: 
+- Next.js standalone server now listens on port 3030 (matching container port mapping)
+- Health checks pass correctly
+- Fixes 502 Bad Gateway errors
 
 ---
 
@@ -215,8 +262,10 @@ Before deploying to production:
 - [ ] Test `terraform apply` creates all resources
 - [ ] Verify services register with ALB target groups
 - [ ] Test API endpoint: `http://<alb-dns>/health`
-- [ ] Test Frontend routing: `http://<alb-dns>/dashboard`
-- [ ] Test SUV UI routing: `http://<alb-dns>/volunteer`
+- Test Frontend routing: `http://<alb-dns>/dashboard`
+- [ ] Test SUV UI routing: `http://<alb-dns>/suv`
+- [ ] Verify static assets load (no 404 for JS/CSS files)
+- [ ] Verify API calls work from frontend/SUV UI
 - [ ] Verify database connectivity from API service
 - [ ] Monitor autoscaling triggers (simulate load)
 - [ ] Test `terraform destroy` works (in dev environment)
@@ -247,16 +296,28 @@ Before deploying to production:
 ## ⚠️ Breaking Changes
 
 1. **Path-based routing**: Frontend and SUV UI now accessible via paths instead of root URL
-   - Update any hardcoded URLs in applications
-   - May need to configure base paths in Next.js apps
+   - Frontend: `/dashboard` with `basePath: '/dashboard'` in next.config.ts
+   - SUV UI: `/suv` with `basePath: '/suv'` in next.config.ts
+   - **Docker images must be rebuilt** after changing basePath
 
-2. **Private subnets**: Database no longer has public IP
+2. **API URL Configuration**: `NEXT_PUBLIC_API_URL` must include protocol
+   - Set GitHub variable `API_URL` to full URL: `http://your-alb-dns.amazonaws.com`
+   - Build will fail with clear error if protocol is missing
+
+3. **Private subnets**: Database no longer has public IP
    - Bastion host or VPN required for direct database access
    - Use service discovery (`db.mayday-cluster.local`) from other services
 
 3. **Increased task count**: Costs will increase due to more running tasks
 
 ---
+
+## ✅ Recently Fixed Issues
+
+1. **SUV UI 502 Bad Gateway** - Fixed by adding `PORT=3030` environment variable
+2. **Frontend static asset 404s** - Fixed by adding `basePath` configuration
+3. **API URL duplication** - Fixed by enforcing protocol in `NEXT_PUBLIC_API_URL`
+4. **Routing not working** - Fixed by adding basePath to Next.js configs
 
 ## 🎯 Remaining Recommendations
 
@@ -267,6 +328,7 @@ For future improvements:
 4. Set up CloudWatch alarms
 5. Implement proper backup strategy
 6. Use specific Docker image tags instead of `:latest`
+7. Add health check endpoints to frontend/SUV UI
 
 ---
 

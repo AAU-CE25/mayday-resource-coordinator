@@ -25,9 +25,12 @@ Builds Docker images and pushes them to Amazon ECR repositories.
 ```
 
 **Required Secrets:**
-- `AWS_ACCESS_KEY_ID` - AWS access key with ECR push permissions
-- `AWS_SECRET_ACCESS_KEY` - AWS secret key
-- `AWS_ACCOUNT_ID` - Your AWS account ID (390299133544)
+- `AWS_ACCESS_KEY_ID_KAJ` - AWS access key with ECR push permissions
+- `AWS_SECRET_ACCESS_KEY_KAJ` - AWS secret key
+
+**Required Variables:**
+- `AWS_ACCOUNT_ID_KAJ` - Your AWS account ID (390299133544)
+- `API_URL` - API URL with protocol (e.g., `http://mayday-cluster-api-alb-xxx.eu-central-1.elb.amazonaws.com`)
 
 ---
 
@@ -104,16 +107,30 @@ Runs automated tests for backend and frontend.
 
 ## Setup Instructions
 
-### 1. Configure GitHub Secrets
+### 1. Configure GitHub Secrets and Variables
 
 Go to **Settings → Secrets and variables → Actions** and add:
 
+**Secrets:**
 ```
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
-AWS_ACCOUNT_ID=390299133544
+AWS_ACCESS_KEY_ID_KAJ=AKIA...
+AWS_SECRET_ACCESS_KEY_KAJ=...
 POSTGRES_PASSWORD=your-secure-password
 ```
+
+**Variables:**
+```
+AWS_ACCOUNT_ID=390299133544
+AWS_ACCOUNT_ID_KAJ=390299133544
+API_URL=http://your-alb-dns-name.eu-central-1.elb.amazonaws.com
+```
+
+**⚠️ Important Notes:**
+- `API_URL` **must** include the protocol (`http://` or `https://`)
+- `API_URL` should **not** have a trailing slash
+- Frontend and SUV UI builds will fail if `API_URL` is not set correctly
 
 ### 2. IAM Permissions
 
@@ -224,7 +241,7 @@ aws logs tail /ecs/mayday-cluster/api_service \
 After deployment completes:
 - API: `http://<alb-dns>/`
 - Frontend: `http://<alb-dns>/dashboard`
-- SUV UI: `http://<alb-dns>/volunteer`
+- SUV UI: `http://<alb-dns>/suv`
 
 Get ALB DNS from Terraform outputs:
 ```bash
@@ -297,8 +314,10 @@ aws ecs describe-services \
 
 Common issues:
 - Image pull errors: Check ECR repository exists and image was pushed
-- Health check failures: Check `/health` endpoint
+- Health check failures: Check `/health` endpoint and container port configuration
 - Port conflicts: Verify security group rules
+- API URL errors: Ensure `API_URL` variable includes protocol (`http://` or `https://`)
+- SUV UI port mismatch: Verify `PORT=3030` environment variable is set in task definition
 
 ### Terraform State Locked
 
