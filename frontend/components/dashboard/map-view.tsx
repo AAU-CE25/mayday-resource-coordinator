@@ -8,7 +8,7 @@ interface MapViewProps {
   onEventSelect: (eventId: string | null) => void;
   searchQuery: string;
   priorityFilter: string;
-  statusFilter: string;
+  statusFilter: string[];
 }
 
 const getMarkerColor = (status: string): string => {
@@ -83,8 +83,8 @@ export default function MapView({
           (e: any) => e.priority === parseInt(priorityFilter)
         );
       }
-      if (statusFilter !== "all") {
-        filtered = filtered.filter((e: any) => e.status === statusFilter);
+      if (statusFilter.length > 0) {
+        filtered = filtered.filter((e: any) => statusFilter.includes(e.status));
       }
       if (searchQuery.trim() !== "") {
         filtered = filtered.filter((e: any) =>

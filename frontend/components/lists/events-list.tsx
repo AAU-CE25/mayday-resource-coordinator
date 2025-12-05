@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useEvents } from "@/hooks/use-events";
-import { useVolunteers } from "@/hooks/use-volunteers";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatAddress } from "@/lib/utils";
+import {
+  DEFAULT_STATUS_SELECTION,
+  StatusMultiSelect,
+} from "@/components/filters/status-multi-select";
 
 interface EventsListProps {
   selectedEvent: string | null;
@@ -26,10 +29,11 @@ interface EventsListProps {
 
 export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
   const { data: events, isLoading } = useEvents();
-  const { data: volunteers } = useVolunteers();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilters, setStatusFilters] = useState<string[]>([
+    ...DEFAULT_STATUS_SELECTION,
+  ]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assignEvent, setAssignEvent] = useState<any | null>(null);
@@ -42,10 +46,14 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
     const matchesPriority =
       priorityFilter === "all" || event.priority.toString() === priorityFilter;
     const matchesStatus =
-      statusFilter === "all" || event.status === statusFilter;
+      statusFilters.length === 0 || statusFilters.includes(event.status);
 
     return matchesSearch && matchesPriority && matchesStatus;
   });
+
+  const isDefaultStatusFilter =
+    statusFilters.length === DEFAULT_STATUS_SELECTION.length &&
+    DEFAULT_STATUS_SELECTION.every((status) => statusFilters.includes(status));
 
   // listen for popup requests from map markers
   useEffect(() => {
@@ -92,37 +100,33 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
           </Button> */}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="h-8 w-[120px]">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priority</SelectItem>
-              <SelectItem value="1">Priority 1</SelectItem>
-              <SelectItem value="2">Priority 2</SelectItem>
-              <SelectItem value="3">Priority 3</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 w-[120px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="space-y-2 rounded-lg border border-border p-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="h-8 w-[140px]">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priority</SelectItem>
+                <SelectItem value="1">Priority 1</SelectItem>
+                <SelectItem value="2">Priority 2</SelectItem>
+                <SelectItem value="3">Priority 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <StatusMultiSelect
+            value={statusFilters}
+            onChange={setStatusFilters}
+            size="sm"
+            className="w-full"
+          />
         </div>
       </div>
 
       {!filteredEvents || filteredEvents.length === 0 ? (
         <div className="text-center text-muted-foreground">
-          {searchQuery || priorityFilter !== "all" || statusFilter !== "all"
+          {searchQuery || priorityFilter !== "all" || !isDefaultStatusFilter
             ? "No events match your filters"
             : "No active events"}
         </div>
@@ -188,11 +192,8 @@ export function EventsList({ selectedEvent, onEventSelect }: EventsListProps) {
                       {event.status}
                     </Badge>
                     <Badge variant="outline">
-                      {volunteers
-                        ? volunteers.filter(
-                            (v: any) =>
-                              (v.event_id ?? v.assigned_event) === event.id
-                          ).length
+                      {typeof event.volunteers_count === "number"
+                        ? event.volunteers_count
                         : 0}{" "}
                       Volunteers
                     </Badge>
