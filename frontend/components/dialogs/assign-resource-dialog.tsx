@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +38,7 @@ export function AssignResourceDialog({
 }: AssignResourceDialogProps) {
   const { toast } = useToast();
   const { data: events } = useEvents();
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<"event" | "volunteer">("event");
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [selectedVolunteerId, setSelectedVolunteerId] = useState<string>("");
@@ -56,14 +58,8 @@ export function AssignResourceDialog({
   useEffect(() => {
     const loadVolunteers = async () => {
       try {
-        const data = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-          }/volunteers/`
-        );
-        if (!data.ok) throw new Error("Failed to fetch volunteers");
-        const json = await data.json();
-        setVolunteers(Array.isArray(json) ? json : []);
+        const data = await api.get("/volunteers/");
+        setVolunteers(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to load volunteers", err);
       }
@@ -81,32 +77,35 @@ export function AssignResourceDialog({
     if (!resource) return;
     setIsSubmitting(true);
     try {
+      const endpoint = `/resources/available/${resource.id}`;
       if (mode === "event") {
-        const response = await fetch("/api/resources/allocate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            resource_id: resource.id,
-            event_id: selectedEventId,
-            quantity: Number.parseInt(quantity),
-          }),
+        await api.put(endpoint, {
+          event_id: Number.parseInt(selectedEventId, 10),
+          is_allocated: true,
+          status: "in_use",
+          // Quantity UI currently captures desired allocation size but the backend
+          // treats quantity as a total, so we deliberately avoid mutating it here
+          // until partial allocations are supported server-side.
         });
-        if (!response.ok) throw new Error("Failed to allocate resource");
         toast({
           title: "Resource allocated",
           description: `${resource.name} allocated to event.`,
         });
       } else {
-        const endpoint = `/resources/available/${resource.id}`;
-        const payload: any = {
-          volunteer_id: Number.parseInt(selectedVolunteerId),
-        };
-        await api.put(endpoint, payload);
+        await api.put(endpoint, {
+          volunteer_id: Number.parseInt(selectedVolunteerId, 10),
+          event_id: null,
+          is_allocated: false,
+        });
         toast({
           title: "Resource assigned",
           description: `${resource.name} assigned to volunteer.`,
         });
       }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["resources/available"] }),
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+      ]);
       onOpenChange(false);
     } catch (err) {
       console.error(err);
