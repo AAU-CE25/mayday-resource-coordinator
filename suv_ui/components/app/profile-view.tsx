@@ -8,8 +8,10 @@ import {
   fetchEvents,
   getUserVolunteerProfile,
   updateUser,
+  fetchVolunteerResources,
+  updateResource,
 } from "@/lib/api-client";
-import type { Event, Volunteer } from "@/lib/types";
+import type { Event, ResourceAvailable, Volunteer } from "@/lib/types";
 import { ResourcesManager } from "./resources-manager";
 
 /**
@@ -35,6 +37,9 @@ export function ProfileView() {
   const availabilityStatus =
     user?.status === "unavailable" ? "unavailable" : "available";
   const isUserAvailable = availabilityStatus === "available";
+  const [allocatedResources, setAllocatedResources] = useState<ResourceAvailable[]>([]);
+  const [allocatedResourcesLoading, setAllocatedResourcesLoading] = useState(false);
+  const [resourcesRefreshKey, setResourcesRefreshKey] = useState(0);
 
   // Fetch events for mapping descriptions
   useEffect(() => {
@@ -59,11 +64,35 @@ export function ProfileView() {
       if (user?.id) {
         const profile = await getUserVolunteerProfile(user.id);
         setVolunteerProfile(profile);
+      } else {
+        setVolunteerProfile(null);
       }
     };
 
     loadVolunteerProfile();
   }, [user]);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      if (!volunteerProfile) {
+        setAllocatedResources([]);
+        return;
+      }
+      setAllocatedResourcesLoading(true);
+      try {
+        const resources = await fetchVolunteerResources(volunteerProfile.id);
+        setAllocatedResources(resources.filter((r) => r.event_id));
+      } catch (error) {
+        console.error("Failed to load allocated resources:", error);
+        setAllocatedResources([]);
+      } finally {
+        setAllocatedResourcesLoading(false);
+      }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    fetchResources();
+  }, [volunteerProfile, resourcesRefreshKey]);
 
   // Helper to get event description
   const getEventDescription = (eventId: number): string => {
@@ -91,6 +120,24 @@ export function ProfileView() {
       alert("Failed to update status. Please try again.");
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const handleRemoveResource = async (resource: ResourceAvailable) => {
+    if (!volunteerProfile) return;
+    if (
+      !confirm(
+        `Remove "${resource.name}" from ${getEventDescription(resource.event_id!)}?`
+      )
+    )
+      return;
+
+    try {
+      await updateResource(resource.id, { event_id: null, status: "available" });
+      setResourcesRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to remove resource from event:", error);
+      alert("Failed to remove resource. Please try again.");
     }
   };
 
@@ -385,9 +432,53 @@ export function ProfileView() {
         </div>
       )}
 
+      {/* Allocated Resources */}
+      {volunteerProfile && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">Allocated Resources</h3>
+            <span className="text-xs text-gray-500">
+              {allocatedResources.length} active
+            </span>
+          </div>
+          {allocatedResourcesLoading ? (
+            <p className="text-sm text-gray-500">Loading allocated resources...</p>
+          ) : allocatedResources.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              You have no resources assigned to events right now.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {allocatedResources.map((resource) => (
+                <div
+                  key={resource.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{resource.name}</p>
+                    <p className="text-xs text-gray-500">
+                      Assigned to {getEventDescription(resource.event_id!)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveResource(resource)}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Resources Manager */}
       {volunteerProfile && (
-        <ResourcesManager volunteerId={volunteerProfile.id} />
+        <ResourcesManager
+          key={resourcesRefreshKey}
+          volunteerId={volunteerProfile.id}
+        />
       )}
 
       {/* Account Actions */}

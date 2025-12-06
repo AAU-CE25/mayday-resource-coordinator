@@ -245,32 +245,6 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
                         Quantity: {resource.quantity}
                       </p>
 
-                      {/* Allocated To Section
-                      {allocatedVolunteer && (
-                        <div className="mb-2 flex items-center gap-1.5 text-xs text-gray-600">
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          <span className="font-medium">Allocated to:</span>{" "}
-                          {allocatedVolunteer.name}
-                          {allocatedVolunteer.phonenumber && (
-                            <span className="text-gray-400">
-                              ({allocatedVolunteer.phonenumber})
-                            </span>
-                          )}
-                        </div>
-                      )} */}
-
                       {assignedEvent ? (
                         <div className="flex items-center gap-2 mt-2">
                           <div className="flex-1 bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
