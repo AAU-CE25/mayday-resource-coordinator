@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api-client";
 import { formatAddress } from "@/lib/utils";
@@ -43,7 +42,6 @@ export function AssignResourceDialog({
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [selectedVolunteerId, setSelectedVolunteerId] = useState<string>("");
   const [volunteers, setVolunteers] = useState<any[]>([]);
-  const [quantity, setQuantity] = useState<string>("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -51,7 +49,6 @@ export function AssignResourceDialog({
       setMode("event");
       setSelectedEventId("");
       setSelectedVolunteerId("");
-      setQuantity("1");
     }
   }, [open]);
 
@@ -83,9 +80,6 @@ export function AssignResourceDialog({
           event_id: Number.parseInt(selectedEventId, 10),
           is_allocated: true,
           status: "in_use",
-          // Quantity UI currently captures desired allocation size but the backend
-          // treats quantity as a total, so we deliberately avoid mutating it here
-          // until partial allocations are supported server-side.
         });
         toast({
           title: "Resource allocated",
@@ -188,19 +182,9 @@ export function AssignResourceDialog({
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantity to Allocate</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    max={resource.quantity}
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    required
-                  />
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Full resource allocation only. Partial allocations are not yet supported.
+                </p>
               </div>
             ) : (
               <div className="space-y-3">

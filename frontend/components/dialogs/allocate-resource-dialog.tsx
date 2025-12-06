@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
@@ -33,13 +32,6 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
   const queryClient = useQueryClient()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState("")
-  const [quantity, setQuantity] = useState("1")
-
-  useEffect(() => {
-    if (resource) {
-      setQuantity("1")
-    }
-  }, [resource])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,18 +109,9 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity to Allocate</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                max={resource.quantity}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
-              />
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Full resource allocation only. Partial allocations will be enabled in a future update.
+            </p>
           </div>
 
           <DialogFooter>
