@@ -1,22 +1,35 @@
 /**
  * API client for fetching data from backend
- * Base URL: http://localhost:8000 (browser) or http://api_service:8000 (SSR in Docker)
+ * Base URL must be configured via NEXT_PUBLIC_API_URL environment variable
  */
 
 import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData, ResourceAvailable } from "./types"
 
-// Determine API URL based on execution context
-// - Client-side (browser): always use localhost (accessible from user's machine)
-// - Server-side (SSR): use build-time env var (api_service for Docker, localhost for dev)
+// Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
-  // Client-side (browser): always use localhost:8000
-  if (typeof window !== 'undefined') {
-    return 'http://localhost:8000'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+  
+  if (!apiUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in your .env file or build arguments.'
+    )
   }
   
-  // Server-side: use Docker internal network in production
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  // Validate that URL includes protocol
+  if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+    throw new Error(
+      `NEXT_PUBLIC_API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
+    )
+  }
+  
+  // Remove trailing slash to prevent double slashes
+  const cleanUrl = apiUrl.replace(/\/+$/, '')
+  
+  console.log('API Base URL:', cleanUrl)
+  return cleanUrl
 }
+console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
 
 /**
  * Get auth token from sessionStorage (expires when browser closes - more secure)
@@ -50,7 +63,9 @@ export function clearAuthToken() {
  * Generic fetch wrapper with error handling and auto-logout on 401
  */
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${getApiBaseUrl()}${endpoint}`
+  // Ensure endpoint starts with /
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${getApiBaseUrl()}${path}`
   const token = getAuthToken()
   
   try {

@@ -1,11 +1,37 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Get API URL from environment variable - throws if not configured
+function getApiBaseUrl(): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+  
+  if (!apiUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in your .env file or build arguments.'
+    )
+  }
+  
+  // Validate that URL includes protocol
+  if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+    throw new Error(
+      `NEXT_PUBLIC_API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
+    )
+  }
+  
+  // Remove trailing slash to prevent double slashes
+  const cleanUrl = apiUrl.replace(/\/+$/, '')
+  
+  console.log('API Base URL:', cleanUrl)
+  return cleanUrl
+}
+
+const API_BASE = getApiBaseUrl()
 
 console.log('API_BASE configured as:', API_BASE)
 
 export const api = {
   get: async (endpoint: string) => {
-    console.log('API GET:', `${API_BASE}${endpoint}`)
-    const response = await fetch(`${API_BASE}${endpoint}`)
+    // Ensure endpoint starts with /
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    const response = await fetch(`${API_BASE}${path}`)
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`)
     }
@@ -15,8 +41,9 @@ export const api = {
   },
   
   post: async (endpoint: string, data: any) => {
-    console.log('API POST:', `${API_BASE}${endpoint}`, data)
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    // Ensure endpoint starts with /
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    const response = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
