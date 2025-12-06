@@ -6,7 +6,7 @@ from faker import Faker
 fake = Faker()
 
 # ------------------ CONFIG ------------------
-API_BASE = "http://localhost:8000"  # <-- change if needed
+API_BASE = "http://mayday-cluster-api-alb-1073692263.eu-central-1.elb.amazonaws.com"  # <-- change if needed
 COPENHAGEN_COORDS = {"lat": 55.6761, "lon": 12.5683}
 
 # ------------------ STATIC DATA ------------------
@@ -294,8 +294,8 @@ if __name__ == "__main__":
     # - Create 3 available resources from volunteers
     
     seed_test_data(
-        num_events=10,
+        num_events=3,
         num_users=5,
-        num_volunteers=8,
+        num_volunteers=0,
         num_resources=3
     )

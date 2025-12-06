@@ -22,13 +22,17 @@ export interface User {
   name: string
   email: string
   phonenumber?: string | null
+  status: string
   role?: string
 }
 
 export interface Volunteer {
   id: number
-  user: User
-  event_id: number
+  name: string
+  phonenumber: string
+  user?: User | null
+  event_id: number | null
+  user_id: number | null
   status: string
   create_time: string
   completion_time?: string | null
@@ -43,6 +47,18 @@ export interface Event {
   modified_time: string
   location: Location
   activeVolunteers?: number  // Count of active volunteers
+}
+
+export interface ResourceAvailable {
+  id: number
+  name: string
+  resource_type: string
+  quantity: number
+  description: string
+  status: string
+  volunteer_id: number
+  event_id: number | null
+  is_allocated: boolean
 }
 
 export type TabType = "events" | "my-event" | "profile"

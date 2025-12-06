@@ -34,17 +34,17 @@ class EventDAO:
             return session.exec(query.offset(skip).limit(limit)).all()
 
     @staticmethod
-    def update_event(event_update : Event) -> Event | None:
+    def update_event(event_id: int, event_update : Event) -> Event | None:
         """Update an event by ID."""
         with Session(engine) as session:
             # Fetch the existing record first
-            existing = session.get(Event, event_update.id)
+            existing = session.get(Event, event_id)
             if not existing:
                 return None # Don't insert new row
             for key, value in event_update.model_dump().items():
                 if key != "id" and value is not None:
                     setattr(existing, key, value)
-        
+            
             session.add(existing)
             session.commit()
             session.refresh(existing)

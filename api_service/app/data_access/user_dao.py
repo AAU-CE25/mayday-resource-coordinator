@@ -28,19 +28,21 @@ class UserDAO:
             return session.get(User, user_id)
 
     @staticmethod
-    def get_users(skip, limit) -> list[User]:
-        """Retrieve all users."""
+    def get_users(skip, limit, status: str | None = None) -> list[User]:
+        """Retrieve all users, optionally filtered by status."""
         query = select(User)
+        if status:
+            query = query.where(User.status == status)
 
         with Session(engine) as session:
             return session.exec(query.offset(skip).limit(limit)).all()
 
     @staticmethod
-    def update_user(user_update: User) -> User | None:
+    def update_user(user_id: int, user_update: User) -> User | None:
         """Update a user by ID."""
         with Session(engine) as session:
            # Fetch the existing record first
-            existing = session.get(User, user_update.id)
+            existing = session.get(User, user_id)
             if not existing:
                 return None  # Don't insert new row
 

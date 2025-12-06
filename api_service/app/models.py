@@ -28,15 +28,17 @@ class ResourceAvailable(SQLModel, table=True):
     description: str
     status: str
     volunteer_id: int = Field(foreign_key="volunteer.id")
+    event_id: Optional[int] = Field(default=None, foreign_key="event.id")  # Optional - resource can be assigned to event
     is_allocated: bool
 
 class Volunteer(SQLModel, table=True):
     id: int = Field(primary_key=True) 
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")  # Optional - volunteer can be unassigned      
+    event_id: int = Field(default=None, foreign_key="event.id")  # Optional - volunteer can be unassigned
     create_time: datetime = Field(default=None)
     completion_time: Optional[datetime] = Field(default=None)
     status: str = Field(default="active")
-    event_id: int = Field(foreign_key="event.id")  # Required - volunteer must be associated with an event
-    user_id: int = Field(foreign_key="user.id")  # Required - volunteer must be associated with a user  
+    
 
 class Location(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -54,4 +56,5 @@ class User(SQLModel, table=True):
     email: str
     phonenumber: str
     password: str
+    status: str = Field(default="available")  # available | assigned | unavailable
     role: str = Field(default="SUV")  # SUV | VC | AUTHORITY

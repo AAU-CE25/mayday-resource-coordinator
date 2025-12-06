@@ -7,6 +7,6 @@ export function useStats() {
   return useQuery({
     queryKey: ['stats'],
     queryFn: () => api.get('/stats/'),
-    refetchInterval: 3000
+    refetchInterval: 5000
   })
 }
