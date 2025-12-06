@@ -61,6 +61,16 @@ export interface ResourceAvailable {
   is_allocated: boolean
 }
 
+export interface ResourceNeeded {
+  id: number
+  name: string
+  resource_type: string
+  description: string
+  quantity: number
+  is_fulfilled: boolean
+  event_id: number
+}
+
 export type TabType = "events" | "my-event" | "profile"
 
 // ============= Auth Types =============

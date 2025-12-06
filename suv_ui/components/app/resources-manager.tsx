@@ -150,6 +150,7 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
     try {
       await updateResource(assigningResource.id, {
         event_id: selectedEventId,
+        status: selectedEventId ? "in_use" : assigningResource.status,
       });
       await loadResources();
       setIsAssignDialogOpen(false);
@@ -165,7 +166,7 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
     if (!confirm("Remove this resource from the event?")) return;
 
     try {
-      await updateResource(resourceId, { event_id: null });
+      await updateResource(resourceId, { event_id: null, status: "available" });
       await loadResources();
     } catch (error) {
       console.error("Failed to unassign resource:", error);
