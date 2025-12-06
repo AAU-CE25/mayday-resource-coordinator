@@ -40,7 +40,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/resources", {
+      const response = await fetch("/api/resources/available/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -55,7 +55,7 @@ export function AddResourceDialog({ open, onOpenChange }: AddResourceDialogProps
           description: "The resource has been successfully added to inventory.",
         })
 
-        mutate("/api/resources")
+        mutate("/api/resources/available/")
 
         setFormData({
           name: "",

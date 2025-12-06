@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from domain import EventCreate, EventResponse, EventUpdate, LocationResponse
-from api_service.app.data_access import EventDAO
+from api_service.app.data_access import EventDAO, VolunteerDAO
 from .location_logic import LocationLogic
+from .volunteer_logic import VolunteerLogic
 from ..models import Event
 
 
@@ -30,13 +31,15 @@ class EventLogic:
         # 5️⃣ Construct EventResponse including nested location
         validated_event = EventResponse.model_validate({
             **response_event.model_dump(),  # event fields
-            "location": validated_location  # nested LocationResponse
+            "location": validated_location,  # nested LocationResponse
+            "volunteers_count": 0  # New event has zero volunteers
+
         })
 
         return validated_event
 
     def get_event(event_id: int) -> EventResponse | None:
-        response_event = EventDAO.get_event(event_id)
+        response_event : Event= EventDAO.get_event(event_id)
         if not response_event:
             return None
         
@@ -46,10 +49,15 @@ class EventLogic:
             location = LocationLogic.get_location(response_event.location_id) 
         if not location:
             return None
+        
+        # Compute volunteers count for the event
+        volunteers_count = len(VolunteerLogic.get_volunteers(event_id=event_id, status="active"))
+
         # Validate the event including nested location
         return EventResponse.model_validate({
             **response_event.model_dump(),  # Event fields
-            "location": location.model_dump()
+            "location": location.model_dump(),
+            "volunteers_count": volunteers_count
         })
 
     def get_events(skip: int, limit: int, priority: int | None = None, status: str | None = None) -> list[EventResponse]:
@@ -60,14 +68,32 @@ class EventLogic:
 
         return result
 
-    def update_event(event_update: EventUpdate) -> EventResponse | None:
+    def update_event(event_id, event_update: EventUpdate) -> EventResponse | None:
         _event = Event(**event_update.model_dump())
         if event_update.location:
             # Update the location if location data is provided
             updated_location = LocationLogic.create_location(event_update.location)
             _event.location_id = updated_location.id
         
-        return EventDAO.update_event(_event)
+        _event.modified_time = datetime.now(timezone.utc)
+        updated_event: Event = EventDAO.update_event(event_id, _event)
+        if not updated_event:
+            return None
+        # If the event is being closed (status changed from active), mark all
+        # volunteers for this event as completed.
+        if event_update.status and event_update.status.lower() != "active":
+            try:
+                VolunteerDAO.complete_volunteers_for_event(updated_event.id)
+            except Exception:
+                # Don't fail the whole update if marking volunteers fails
+                pass
+
+        volunteers_count = len(VolunteerLogic.get_volunteers(event_id=updated_event.id, status="active"))
+        return EventResponse.model_validate({
+            **updated_event.model_dump(),
+            "location": LocationLogic.get_location(updated_event.location_id).model_dump(),
+            "volunteers_count": volunteers_count
+        })
 
     def delete_event(event_id: int):
         return EventDAO.delete_event(event_id)

@@ -1,10 +1,7 @@
 "use client"
 
 import { Activity, AlertTriangle, Bell } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { NotificationsPopover } from "./notifications-popover"
-import { useNotifications } from "@/hooks/use-notifications"
+
 
 export function Header() {
   // const { data: notifications } = useNotifications()

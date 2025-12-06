@@ -1,18 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import MapView from "./map-view"
-import { SidePanel } from "./side-panel"
-import { Header } from "./dashboard-header"
-import { MonitoringStats } from "./monitoring-stats"
-import { MapFilterPane } from "./map-filter-pane"
+import MapView from "@/components/dashboard/map-view"
+import { SidePanel } from "@/components/dashboard/side-panel"
+import { Header } from "@/components/dashboard/dashboard-header"
+import { MonitoringStats } from "@/components/dashboard/monitoring-stats"
+import { MapFilterPane } from "@/components/dashboard/map-filter-pane"
+import { DEFAULT_STATUS_SELECTION } from "@/components/filters/status-multi-select"
 
 export function EmergencyDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"events" | "volunteers" | "resources">("events")
   const [mapSearchQuery, setMapSearchQuery] = useState("")
   const [mapPriorityFilter, setMapPriorityFilter] = useState<string>("all")
-  const [mapStatusFilter, setMapStatusFilter] = useState<string>("all")
+  const [mapStatusFilter, setMapStatusFilter] = useState<string[]>([...DEFAULT_STATUS_SELECTION])
 
   return (
     <div className="flex h-screen flex-col bg-background">

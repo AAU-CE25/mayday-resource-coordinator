@@ -1,9 +1,9 @@
 "use client"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { EventsList } from "./events-list"
-import { VolunteersList } from "./volunteers-list"
-import { ResourcesList } from "./resources-list"
+import { EventsList } from "@/components/lists/events-list"
+import { UserList } from "@/components/lists/user-list"
+import { ResourcesList } from "@/components/lists/resources-list"
 
 interface SidePanelProps {
   activeTab: "events" | "volunteers" | "resources"
@@ -33,7 +33,7 @@ export function SidePanel({ activeTab, onTabChange, selectedEvent, onEventSelect
         </TabsContent>
 
         <TabsContent value="volunteers" className="h-[calc(100%-3rem)] overflow-y-auto p-4">
-          <VolunteersList />
+          <UserList />
         </TabsContent>
 
         <TabsContent value="resources" className="h-[calc(100%-3rem)] overflow-y-auto p-4">

@@ -25,6 +25,8 @@ function getApiBaseUrl(): string {
 
 const API_BASE = getApiBaseUrl()
 
+console.log('API_BASE configured as:', API_BASE)
+
 export const api = {
   get: async (endpoint: string) => {
     // Ensure endpoint starts with /
@@ -33,7 +35,9 @@ export const api = {
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`)
     }
-    return response.json()
+    const data = await response.json()
+    console.log('API GET response:', endpoint, 'returned', Array.isArray(data) ? `${data.length} items` : 'data')
+    return data
   },
   
   post: async (endpoint: string, data: any) => {
@@ -41,6 +45,30 @@ export const api = {
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
     const response = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`)
+    }
+    return response.json()
+  },
+
+  delete: async (endpoint: string) => {
+    console.log('API DELETE:', `${API_BASE}${endpoint}`)
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`)
+    }
+    return response.json()
+  },
+
+  put: async (endpoint: string, data: any) => {
+    console.log('API PUT:', `${API_BASE}${endpoint}`, data)
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })

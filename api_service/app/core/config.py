@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Application settings
     SECRET_KEY: str = Field(default=DEFAULT_DEV_SECRET)
     DEBUG: bool = False
+    DB_LOGGING_ENABLED: bool = False
     ENVIRONMENT: Environment = Environment.LOCAL
     APP_NAME: str = "disaster-response-api"
     APP_VERSION: str = "1.0.0"

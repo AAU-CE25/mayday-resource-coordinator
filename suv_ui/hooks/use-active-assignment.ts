@@ -52,7 +52,7 @@ export function useActiveAssignment(user: User | null): UseActiveAssignmentRetur
         try {
           const volunteers = await fetchActiveVolunteers(event.id)
           const myVolunteer = volunteers.find(
-            (v: Volunteer) => v.user.id === user.id && v.status === "active"
+            (v: Volunteer) => v.user?.id === user.id && v.status === "active"
           )
 
           if (myVolunteer) {

@@ -1,19 +1,24 @@
 from domain.schemas import VolunteerCreate, VolunteerResponse, VolunteerUpdate, UserResponse
 from ..models import Volunteer
 from .user_logic import UserLogic
-from api_service.app.data_access import VolunteerDAO
+from api_service.app.data_access import VolunteerDAO, EventDAO
 
 class VolunteerLogic:
     def create_volunteer(volunteerCreate: VolunteerCreate) -> VolunteerResponse:
+        # Validate existence of the event and user before creation
+        event = EventDAO.get_event(volunteerCreate.event_id)
+        if not event:
+            raise ValueError(f"Event with id {volunteerCreate.event_id} not found")
+
         # Create the volunteer with the provided user_id
         new_volunteer = Volunteer(**volunteerCreate.model_dump())
         volunteer = VolunteerDAO.create_volunteer(new_volunteer)
-        
-        # Fetch the user for the response
-        user = UserLogic.get_user(volunteer.user_id)
+
+        # Fetch the up-to-date user for the response (after commit so status is current)
+        user = UserLogic.get_user(volunteer.user_id) if volunteer.user_id else None
         if not user:
-            raise ValueError(f"User with id {volunteer.user_id} not found")
-        
+            raise ValueError(f"User with id {volunteerCreate.user_id} not found")
+
         return VolunteerResponse.model_validate({
             **volunteer.model_dump(),
             "user": user
@@ -24,18 +29,18 @@ class VolunteerLogic:
         if not response_volunteer:
             return None
         
-        user : UserResponse= None
         # Load the associated user if it exists
+        user : UserResponse= None
         if response_volunteer.user_id:
             user = UserLogic.get_user(response_volunteer.user_id) 
         if not user:
             return None
+        
         # Validate the volunteer including nested user
         return VolunteerResponse.model_validate({
             **response_volunteer.model_dump(),  # Volunteer fields
-            "user": user.model_dump()
+            "user": user
         })
-        return response_volunteer
 
 
     def get_volunteers(event_id: int = None, user_id: int = None, status: str = None, skip: int = 0, limit: int = 100) -> list[VolunteerResponse]:

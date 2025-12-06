@@ -11,10 +11,10 @@ router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 def create_volunteer(volunteer: VolunteerCreate):
     try:
         return VolunteerLogic.create_volunteer(volunteer)
-    except UserExistsException:
+    except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists with this email"
+            detail=str(ve)
         )
 
 @router.get("/", response_model=list[VolunteerResponse])
@@ -44,15 +44,10 @@ def read_volunteer(volunteer_id: int):
     return volunteer
 
 @router.put("/{volunteer_id}", response_model=VolunteerResponse)
-def update_volunteer(volunteer: VolunteerUpdate):
-    db_volunteer = VolunteerLogic.get_volunteer(volunteer.id)
+def update_volunteer(volunteer_id: int, volunteer: VolunteerUpdate):
+    """Update a volunteer record (e.g., mark as completed)."""
+    volunteer.id = volunteer_id
+    db_volunteer = VolunteerLogic.get_volunteer(volunteer_id)
     if not db_volunteer:
         raise HTTPException(status_code=404, detail="Volunteer not found")
-    return VolunteerLogic.update_volunteer(volunteer)    
-
-@router.delete("/{volunteer_id}")
-def delete_volunteer(volunteer_id: int):
-    volunteer = VolunteerLogic.get_volunteer(volunteer_id)
-    if not volunteer:
-        raise HTTPException(status_code=404, detail="Volunteer not found")
-    return VolunteerLogic.delete_volunteer(volunteer_id)
+    return VolunteerLogic.update_volunteer(volunteer)

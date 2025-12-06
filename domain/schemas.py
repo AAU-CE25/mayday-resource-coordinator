@@ -11,16 +11,18 @@ class UserCreate(BaseModel):
     role: str | None = "SUV"
 
 class UserUpdate(BaseModel):
-    id: int
     name: str | None = None
     email: str | None = None
     phonenumber: str | None = None
+    status: str | None = None
 
 class UserResponse(BaseModel):
     id: int
     name: str
     email: str
     phonenumber: str | None = None
+    status: str = "available"  # available | unavailable
+    role: str | None = None
     model_config = {
         "from_attributes": True
     }
@@ -67,7 +69,6 @@ class EventCreate(BaseModel):
     location: LocationCreate
 
 class EventUpdate(BaseModel):
-    id: int
     description: str | None = None
     priority: int | None = None
     status: str | None = None
@@ -81,6 +82,7 @@ class EventResponse(BaseModel):
     create_time: dt
     modified_time: dt
     location: LocationResponse
+    volunteers_count: int = 0
     model_config = {
         "from_attributes": True
     }
@@ -124,6 +126,7 @@ class ResourceAvailableCreate(BaseModel):
     description: str
     status: str
     volunteer_id: int
+    event_id: int | None = None
     is_allocated: bool = False
 
 class ResourceAvailableUpdate(BaseModel):
@@ -133,6 +136,7 @@ class ResourceAvailableUpdate(BaseModel):
     description: str | None = None
     status: str | None = None
     volunteer_id: int | None = None
+    event_id: int | None = None
     is_allocated: bool | None = None
 
 class ResourceAvailableResponse(BaseModel):
@@ -143,6 +147,7 @@ class ResourceAvailableResponse(BaseModel):
     description: str
     status: str
     volunteer_id: int
+    event_id: int | None = None
     is_allocated: bool
     model_config = {
         "from_attributes": True
@@ -151,20 +156,20 @@ class ResourceAvailableResponse(BaseModel):
 
 # ------------------ Volunteer ------------------
 class VolunteerCreate(BaseModel):
-    user_id: int
-    event_id: int
+    event_id: int | None = None
+    user_id: int | None = None  # Optional - link to user account if they have one
     status: str = "active"  # active | completed
 
 class VolunteerUpdate(BaseModel):
-    id: int 
+    id: int
     user_id: int | None = None
     event_id: int | None = None
     status: str | None = None
 
 class VolunteerResponse(BaseModel):
     id: int
-    user: UserResponse
-    event_id: int
+    user: UserResponse | None = None  # Optional - only if linked to a user account
+    event_id: int | None = None
     status: str
     create_time: dt
     completion_time: dt | None = None
