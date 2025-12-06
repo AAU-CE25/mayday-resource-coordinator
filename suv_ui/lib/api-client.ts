@@ -370,6 +370,18 @@ export async function fetchAllUsers(): Promise<User[]> {
 }
 
 /**
+ * Update a user record (e.g., availability status)
+ */
+export async function updateUser(userId: number, data: Partial<{
+  name: string
+  email: string
+  phonenumber: string
+  status: string
+}>): Promise<User> {
+  return put<User>(`/users/${userId}`, data)
+}
+
+/**
  * Create a new available resource
  */
 export async function createResource(data: {

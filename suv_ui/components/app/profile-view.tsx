@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import {
   fetchEvents,
   getUserVolunteerProfile,
-  updateVolunteerStatus,
+  updateUser,
 } from "@/lib/api-client";
 import type { Event, Volunteer } from "@/lib/types";
 import { ResourcesManager } from "./resources-manager";
@@ -17,7 +17,7 @@ import { ResourcesManager } from "./resources-manager";
  * Displays authenticated user information and volunteer statistics
  */
 export function ProfileView() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, refreshUser } = useAuth();
   const router = useRouter();
   const {
     stats,
@@ -32,6 +32,9 @@ export function ProfileView() {
     null
   );
   const [statusLoading, setStatusLoading] = useState(false);
+  const availabilityStatus =
+    user?.status === "unavailable" ? "unavailable" : "available";
+  const isUserAvailable = availabilityStatus === "available";
 
   // Fetch events for mapping descriptions
   useEffect(() => {
@@ -74,28 +77,15 @@ export function ProfileView() {
   };
 
   const handleStatusToggle = async () => {
-    if (!volunteerProfile) return;
+    if (!user) return;
 
     setStatusLoading(true);
     try {
-      // Toggle between available and unavailable (preserve active/completed for event assignments)
-      const currentStatus = volunteerProfile.status;
-      let newStatus: string;
+      const currentStatus = user.status === "unavailable" ? "unavailable" : "available";
+      const newStatus = currentStatus === "unavailable" ? "available" : "unavailable";
 
-      if (currentStatus === "unavailable") {
-        newStatus = "available";
-      } else if (currentStatus === "available") {
-        newStatus = "unavailable";
-      } else {
-        // If currently active or completed, default to available
-        newStatus = "available";
-      }
-
-      const updated = await updateVolunteerStatus(
-        volunteerProfile.id,
-        newStatus
-      );
-      setVolunteerProfile(updated);
+      await updateUser(user.id, { status: newStatus });
+      await refreshUser();
     } catch (error) {
       console.error("Failed to update status:", error);
       alert("Failed to update status. Please try again.");
@@ -165,7 +155,7 @@ export function ProfileView() {
           </div>
 
           {/* Availability Status Toggle */}
-          {volunteerProfile && (
+          {user && (
             <div className="flex flex-col items-end gap-2">
               <div className="text-right">
                 <p className="text-xs font-medium text-gray-700">
@@ -179,43 +169,33 @@ export function ProfileView() {
                 onClick={handleStatusToggle}
                 disabled={statusLoading}
                 className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  volunteerProfile.status === "available"
-                    ? "bg-green-500"
-                    : "bg-gray-300"
+                  isUserAvailable ? "bg-green-500" : "bg-gray-300"
                 }`}
               >
                 <span
                   className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    volunteerProfile.status === "available"
-                      ? "translate-x-6"
-                      : "translate-x-0"
+                    isUserAvailable ? "translate-x-6" : "translate-x-0"
                   }`}
                 />
               </button>
               <div
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
-                  volunteerProfile.status === "available"
+                  isUserAvailable
                     ? "bg-green-50 border border-green-200"
                     : "bg-gray-50 border border-gray-200"
                 }`}
               >
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    volunteerProfile.status === "available"
-                      ? "bg-green-500"
-                      : "bg-gray-400"
+                    isUserAvailable ? "bg-green-500" : "bg-gray-400"
                   }`}
                 />
                 <span
                   className={`text-xs font-medium ${
-                    volunteerProfile.status === "available"
-                      ? "text-green-700"
-                      : "text-gray-600"
+                    isUserAvailable ? "text-green-700" : "text-gray-600"
                   }`}
                 >
-                  {volunteerProfile.status === "available"
-                    ? "Available"
-                    : "Unavailable"}
+                  {isUserAvailable ? "Available" : "Unavailable"}
                 </span>
               </div>
             </div>
