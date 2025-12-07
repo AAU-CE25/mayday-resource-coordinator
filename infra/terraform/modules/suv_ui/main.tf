@@ -86,7 +86,7 @@ resource "aws_ecs_service" "suv_ui" {
   name            = "${var.cluster_name}-suv-ui-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.suv_ui.arn
-  desired_count   = 2 # Increased for high availability
+  desired_count   = 1 # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -112,8 +112,8 @@ resource "aws_ecs_service" "suv_ui" {
 
 # Autoscaling Target
 resource "aws_appautoscaling_target" "suv_ui" {
-  max_capacity       = 4
-  min_capacity       = 2
+  max_capacity       = 3
+  min_capacity       = 1
   resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.suv_ui.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"

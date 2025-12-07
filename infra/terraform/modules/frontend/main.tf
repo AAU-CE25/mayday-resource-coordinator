@@ -82,7 +82,7 @@ resource "aws_ecs_service" "frontend" {
   name            = "${var.cluster_name}-frontend-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = 2 # Increased for high availability
+  desired_count   = 1 # Increased for high availability
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -108,8 +108,8 @@ resource "aws_ecs_service" "frontend" {
 
 # Autoscaling Target
 resource "aws_appautoscaling_target" "frontend" {
-  max_capacity       = 4
-  min_capacity       = 2
+  max_capacity       = 3
+  min_capacity       = 1
   resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.frontend.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
