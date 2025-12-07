@@ -10,11 +10,13 @@ terraform {
 
   # S3 backend for remote state storage (separate from main app state)
   backend "s3" {
-    bucket         = "mayday-terraform-state-390299133544"
-    key            = "mayday/ecr.tfstate"
-    region         = "eu-central-1"
-    encrypt        = true
+    bucket = "mayday-terraform-state-390299133544"
+    key    = "mayday/ecr.tfstate"
+    region = "eu-central-1"
+
+    # State locking via DynamoDB
     dynamodb_table = "mayday-terraform-locks"
+    encrypt        = true
   }
 }
 
