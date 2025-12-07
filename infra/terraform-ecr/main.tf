@@ -15,7 +15,7 @@ terraform {
     region = "eu-central-1"
 
     # State locking via DynamoDB
-    dynamodb_table = "mayday-terraform-locks"
+    dynamodb_table = "mayday-terraform-ecr-locks"
     encrypt        = true
   }
 }
