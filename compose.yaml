@@ -52,18 +52,17 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api_service:8000}
+        # Build-time variable - must include protocol for validation
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     container_name: frontend_container
     ports:
       - "3000:3000"
     depends_on:
       - api_service
     restart: always
-    env_file:
-      - .env
     environment:
+      # Runtime variable for browser (uses localhost since it's accessed from host machine)
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - API_URL_INTERNAL=http://api_service:8000
     networks:
       - default
   suv_ui:
@@ -71,7 +70,8 @@ services:
     build:
       context: ./suv_ui
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api_service:8000}
+        # Build-time variable - must include protocol for validation
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     container_name: suv_ui_container
     ports:
       - "3030:3030"
@@ -79,6 +79,8 @@ services:
       - api_service
     restart: always
     environment:
+      # Runtime variable for SUV UI
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
       - PORT=3030
     networks:
       - default
