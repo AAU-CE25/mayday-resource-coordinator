@@ -1,8 +1,3 @@
-output "ecr_repository_url" {
-  description = "URL of the ECR repository"
-  value       = aws_ecr_repository.api.repository_url
-}
-
 output "service_name" {
   description = "Name of the ECS service"
   value       = aws_ecs_service.api.name
