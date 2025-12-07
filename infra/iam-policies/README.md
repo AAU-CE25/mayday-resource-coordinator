@@ -8,10 +8,11 @@ This folder contains IAM policies for each GitHub Actions workflow. These follow
 |--------|----------|-------------|
 | `github-terraform-networking-policy.json` | `terraform.yml` | Terraform - VPC, subnets, NAT, security groups, ALB |
 | `github-terraform-services-policy.json` | `terraform.yml` | Terraform - ECS, ECR, IAM, CloudWatch, autoscaling |
+| `github-terraform-ecr-policy.json` | `terraform-ecr.yml` | Terraform - ECR repositories only (standalone stack) |
 | `github-ecr-push-policy.json` | `build-and-push-ecr.yml` | Build and push Docker images to ECR |
 | `github-ecs-deploy-policy.json` | `deploy-to-ecs.yml` | Deploy services to ECS Fargate |
 
-> **Note:** The Terraform policy is split into two parts (networking + services) to stay within AWS's 6KB policy size limit.
+> **Note:** The main Terraform policy is split into two parts (networking + services) to stay within AWS's 6KB policy size limit. The ECR policy is separate for the standalone ECR stack.
 
 ## Automated Setup
 

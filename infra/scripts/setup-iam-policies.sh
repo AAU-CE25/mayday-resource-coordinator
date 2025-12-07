@@ -167,6 +167,7 @@ main() {
         "github-terraform-services-policy.json"
         "github-ecr-push-policy.json"
         "github-ecs-deploy-policy.json"
+        "github-terraform-ecr-policy.json"
     )
     
     declare -a POLICY_DESCRIPTIONS=(
@@ -174,6 +175,7 @@ main() {
         "GitHub Actions Terraform workflow - manages ECS, ECR, IAM, autoscaling services"
         "GitHub Actions ECR workflow - builds and pushes Docker images"
         "GitHub Actions ECS workflow - deploys services to ECS Fargate"
+        "GitHub Actions Terraform workflow - manages ECR repositories and lifecycle policies"
     )
     
     # Process each policy
