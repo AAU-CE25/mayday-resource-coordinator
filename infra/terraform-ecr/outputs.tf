@@ -26,8 +26,3 @@ output "suv_ui_repository_url" {
   description = "ECR repository URL for SUV UI service"
   value       = aws_ecr_repository.repositories["suv_ui"].repository_url
 }
-
-output "database_repository_url" {
-  description = "ECR repository URL for Database service"
-  value       = aws_ecr_repository.repositories["database"].repository_url
-}

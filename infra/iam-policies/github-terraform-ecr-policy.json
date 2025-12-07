@@ -21,7 +21,8 @@
       "Resource": [
         "arn:aws:s3:::mayday-terraform-state-*",
         "arn:aws:s3:::mayday-terraform-state-*/*",
-        "arn:aws:dynamodb:*:*:table/mayday-terraform-locks"
+        "arn:aws:dynamodb:*:*:table/mayday-terraform-locks",
+        "arn:aws:dynamodb:*:*:table/mayday-terraform-ecr-locks"
       ]
     },
     {
