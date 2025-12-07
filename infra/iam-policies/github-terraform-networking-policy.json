@@ -33,6 +33,7 @@
         "ec2:DescribeAvailabilityZones",
         "ec2:DescribeNetworkInterfaces",
         "ec2:DeleteNetworkInterface",
+        "ec2:DescribeAddresses",
         "ec2:CreateTags"
       ],
       "Resource": "*"

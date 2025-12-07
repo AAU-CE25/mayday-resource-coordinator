@@ -3,7 +3,7 @@
  * Base URL must be configured via NEXT_PUBLIC_API_URL environment variable
  */
 
-import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData, ResourceAvailable } from "./types"
+import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData, ResourceAvailable, ResourceNeeded } from "./types"
 
 // Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
@@ -306,6 +306,26 @@ export async function fetchVolunteerResources(volunteerId: number): Promise<Reso
     return allResources.filter(r => r.volunteer_id === volunteerId)
   } catch (error) {
     console.error('Failed to fetch resources:', error)
+    return []
+  }
+}
+
+export async function fetchResourcesNeededForEvent(eventId: number): Promise<ResourceNeeded[]> {
+  try {
+    const resources = await get<ResourceNeeded[]>('/resources/needed/')
+    return resources.filter((resource) => resource.event_id === eventId)
+  } catch (error) {
+    console.error('Failed to fetch needed resources:', error)
+    return []
+  }
+}
+
+export async function fetchResourcesAvailableForEvent(eventId: number): Promise<ResourceAvailable[]> {
+  try {
+    const resources = await get<ResourceAvailable[]>('/resources/available/')
+    return resources.filter((resource) => resource.event_id === eventId)
+  } catch (error) {
+    console.error('Failed to fetch available resources:', error)
     return []
   }
 }

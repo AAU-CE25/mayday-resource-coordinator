@@ -1,0 +1,72 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TerraformStateBackend",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketVersioning",
+        "s3:GetBucketLogging",
+        "s3:GetBucketTagging",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem"
+      ],
+      "Resource": [
+        "arn:aws:s3:::mayday-terraform-state-*",
+        "arn:aws:s3:::mayday-terraform-state-*/*",
+        "arn:aws:dynamodb:*:*:table/mayday-terraform-locks",
+        "arn:aws:dynamodb:*:*:table/mayday-terraform-ecr-locks"
+      ]
+    },
+    {
+      "Sid": "ECRRepositoryManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:DescribeRepositories",
+        "ecr:ListTagsForResource",
+        "ecr:TagResource",
+        "ecr:UntagResource",
+        "ecr:PutImageTagMutability",
+        "ecr:PutImageScanningConfiguration",
+        "ecr:GetRepositoryPolicy",
+        "ecr:SetRepositoryPolicy",
+        "ecr:DeleteRepositoryPolicy"
+      ],
+      "Resource": "arn:aws:ecr:*:*:repository/*"
+    },
+    {
+      "Sid": "ECRLifecyclePolicy",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:PutLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:GetLifecyclePolicyPreview",
+        "ecr:StartLifecyclePolicyPreview"
+      ],
+      "Resource": "arn:aws:ecr:*:*:repository/*"
+    },
+    {
+      "Sid": "ECRRead",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:DescribeRegistry",
+        "ecr:GetRegistryPolicy",
+        "ecr:GetRegistryScanningConfiguration",
+        "ecr:DescribeImageScanFindings",
+        "ecr:ListImages",
+        "ecr:DescribeImages"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

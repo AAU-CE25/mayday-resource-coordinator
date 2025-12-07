@@ -8,24 +8,6 @@ terraform {
   }
 }
 
-# ECR Repository
-resource "aws_ecr_repository" "frontend" {
-  name                 = "frontend"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  encryption_configuration {
-    encryption_type = "AES256"
-  }
-
-  tags = merge(var.tags, {
-    Name = "frontend"
-  })
-}
-
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "frontend" {
   name              = "/ecs/${var.cluster_name}/frontend"

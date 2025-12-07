@@ -8,24 +8,6 @@ terraform {
   }
 }
 
-# ECR Repository
-resource "aws_ecr_repository" "api" {
-  name                 = "api_service"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  encryption_configuration {
-    encryption_type = "AES256"
-  }
-
-  tags = merge(var.tags, {
-    Name = "api_service"
-  })
-}
-
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "api" {
   name              = "/ecs/${var.cluster_name}/api_service"

@@ -8,24 +8,6 @@ terraform {
   }
 }
 
-# ECR Repository
-resource "aws_ecr_repository" "suv_ui" {
-  name                 = "suv_ui"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  encryption_configuration {
-    encryption_type = "AES256"
-  }
-
-  tags = merge(var.tags, {
-    Name = "suv_ui"
-  })
-}
-
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "suv_ui" {
   name              = "/ecs/${var.cluster_name}/suv_ui"

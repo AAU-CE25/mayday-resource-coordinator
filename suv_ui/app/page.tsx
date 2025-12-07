@@ -78,8 +78,8 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {currentTab === "events" && <EventsFeed onVolunteerJoined={handleVolunteerJoined} />}
-        {currentTab === "my-event" && activeEvent && (
-          <MyEventView event={activeEvent} onLeaveEvent={handleLeaveEvent} />
+        {currentTab === "my-event" && activeEvent && volunteerId && (
+          <MyEventView event={activeEvent} volunteerId={volunteerId} onLeaveEvent={handleLeaveEvent} />
         )}
         {currentTab === "profile" && <ProfileView />}
       </main>

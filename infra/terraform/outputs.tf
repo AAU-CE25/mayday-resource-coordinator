@@ -65,21 +65,12 @@ output "api_service_name" {
   value       = module.api_service.service_name
 }
 
-output "api_ecr_repository_url" {
-  description = "URL of the API ECR repository"
-  value       = module.api_service.ecr_repository_url
-}
-
 # Frontend outputs
 output "frontend_service_name" {
   description = "Name of the frontend ECS service"
   value       = module.frontend.service_name
 }
 
-output "frontend_ecr_repository_url" {
-  description = "URL of the frontend ECR repository"
-  value       = module.frontend.ecr_repository_url
-}
 
 # SUV UI outputs
 output "suv_ui_service_name" {
@@ -87,9 +78,5 @@ output "suv_ui_service_name" {
   value       = module.suv_ui.service_name
 }
 
-output "suv_ui_ecr_repository_url" {
-  description = "URL of the SUV UI ECR repository"
-  value       = module.suv_ui.ecr_repository_url
-}
 
 # Note: ECR repository outputs are now in ../terraform-ecr/outputs.tf

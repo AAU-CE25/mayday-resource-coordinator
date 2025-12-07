@@ -110,7 +110,15 @@ export function ResourcesList() {
                 : "No resources available"}
             </div>
           ) : (
-            filteredAvailable.map((resource: any) => (
+            filteredAvailable.map((resource: any) => {
+              const assignedEvent = resource.event_id
+                ? events?.find((e: any) => e.id === resource.event_id)
+                : null
+              const allocatedUser = !assignedEvent && resource.volunteer_id
+                ? users?.find((u: any) => u.id === resource.volunteer_id)
+                : null
+
+              return (
               <Card key={resource.id} className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-chart-2/20">
@@ -129,45 +137,27 @@ export function ResourcesList() {
                       {resource.description}
                     </p>
 
-                    {(() => {
-                      if (resource.event_id) {
-                        const allocatedEvent = events?.find(
-                          (e: any) => e.id === resource.event_id
-                        );
-                        return allocatedEvent ? (
-                          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4 flex-shrink-0" />
-                            <span className="truncate">
-                              <span className="mr-1">Allocated to Event:</span>
-                              <span className="font-medium text-foreground">
-                                {allocatedEvent.description}
-                              </span>
-                            </span>
-                          </div>
-                        ) : null;
-                      } else if (resource.volunteer_id) {
-                        const allocatedUser = users?.find(
-                          (u: any) => u.id === resource.volunteer_id
-                        );
-                        return allocatedUser ? (
-                          <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4 flex-shrink-0" />
-                            <span className="truncate">
-                              <span className="mr-1">Allocated to:</span>
-                              <span className="font-medium text-foreground">
-                                {allocatedUser.name}
-                              </span>
-                              {allocatedUser.phonenumber && (
-                                <span className="ml-1 text-muted-foreground">
-                                  ({allocatedUser.phonenumber})
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                        ) : null;
-                      }
-                      return null;
-                    })()}
+                    {assignedEvent ? (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">
+                          <span className="mr-1">Allocated to Event:</span>
+                          <span className="font-medium text-foreground">
+                            {assignedEvent.description}
+                          </span>
+                        </span>
+                      </div>
+                    ) : allocatedUser ? (
+                      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">
+                          <span className="mr-1">Allocated to:</span>
+                          <span className="font-medium text-foreground">
+                            {allocatedUser.name}
+                          </span>
+                        </span>
+                      </div>
+                    ) : null}
 
                     <div className="mt-2 flex flex-wrap items-center gap-1">
                       <Badge
@@ -196,14 +186,15 @@ export function ResourcesList() {
                         variant="outline"
                         className="w-full"
                         onClick={() => handleAssign(resource)}
+                        disabled={Boolean(assignedEvent)}
                       >
-                        Assign
+                        {assignedEvent ? "Already assigned" : "Assign"}
                       </Button>
                     </div>
                   </div>
                 </div>
               </Card>
-            ))
+            )})
           )}
         </TabsContent>
 

@@ -36,6 +36,7 @@
         "iam:ListAttachedRolePolicies",
         "iam:ListRolePolicies",
         "iam:PassRole",
+        "iam:ListInstanceProfilesForRole",
         "iam:TagRole",
         "iam:UntagRole",
         "iam:ListRoleTags"
