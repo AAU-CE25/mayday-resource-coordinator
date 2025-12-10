@@ -135,7 +135,7 @@ def lambda_handler(event, context):
                         'body': json.dumps({
                             'token': token,
                             'username': username,
-                            'clusterName': user.get('clusterName', '')
+                            'clusterName': user.get('cluster_name', '')
                         })
                     }
                 else:
