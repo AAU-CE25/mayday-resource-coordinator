@@ -35,17 +35,6 @@ services:
       - "8000:8000"
     networks:
       - default
-  
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
-    networks:
-      -  default
-    depends_on:
-      db:
-        condition: service_healthy
 
   frontend:
     image: frontend:latest

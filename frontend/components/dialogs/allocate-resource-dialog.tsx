@@ -56,7 +56,6 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
       ])
 
       setSelectedEventId("")
-      setQuantity("1")
       onOpenChange(false)
     } catch (error) {
       toast({
