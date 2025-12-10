@@ -141,15 +141,17 @@ resource "aws_apigatewayv2_api" "ecs_control" {
   description   = "API Gateway for ECS Control Lambda"
 
   cors_configuration {
+    allow_methods = ["POST", "OPTIONS"]
     allow_origins = var.cors_allow_origins
-    allow_methods = ["GET", "POST", "OPTIONS"]
-    allow_headers = ["*"]
-    max_age       = 86400
+    allow_headers = ["content-type", "authorization"]
   }
 
   tags = var.tags
 }
 
+##########################
+# API Gateway Stage
+##########################
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.ecs_control.id
   name        = "$default"
@@ -172,6 +174,9 @@ resource "aws_apigatewayv2_stage" "default" {
   tags = var.tags
 }
 
+##########################
+# Lambda Integration
+##########################
 resource "aws_apigatewayv2_integration" "lambda" {
   api_id                 = aws_apigatewayv2_api.ecs_control.id
   integration_type       = "AWS_PROXY"
@@ -179,18 +184,18 @@ resource "aws_apigatewayv2_integration" "lambda" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "default" {
-  api_id    = aws_apigatewayv2_api.ecs_control.id
-  route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-}
-
+##########################
+# POST Route Only (NO DEFAULT)
+##########################
 resource "aws_apigatewayv2_route" "post" {
   api_id    = aws_apigatewayv2_api.ecs_control.id
   route_key = "POST /"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+##########################
+# Lambda Permission
+##########################
 resource "aws_lambda_permission" "api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
