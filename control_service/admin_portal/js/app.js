@@ -182,13 +182,21 @@ function updateDashboard(data) {
     // Update frontend service
     if (frontendService) {
         updateServiceCard('frontend', frontendService);
-        updateServiceLink('frontendLink', data.load_balancer.dns_name, '/dashboard');
+        if (frontendService.desired_count > 0) {
+            updateServiceLink('frontendLink', data.load_balancer.dns_name, '/dashboard');
+        } else {
+            document.getElementById('frontendLink').style.display = 'none';
+        }
     }
     
     // Update SUV service
     if (suvService) {
         updateServiceCard('suv', suvService);
-        updateServiceLink('suvLink', data.load_balancer.dns_name, '/suv');
+        if (suvService.desired_count > 0) {
+            updateServiceLink('suvLink', data.load_balancer.dns_name, '/suv');
+        } else {
+            document.getElementById('suvLink').style.display = 'none';
+        }
     }
     
     // Update API service
@@ -218,7 +226,10 @@ function updateServiceCard(serviceId, serviceData) {
     document.getElementById(`${serviceId}Desired`).textContent = serviceData.desired_count;
     
     const statusBadge = document.getElementById(`${serviceId}Status`);
-    if (serviceData.status === 'ACTIVE' && serviceData.running_count === serviceData.desired_count) {
+    if (serviceData.desired_count === 0) {
+        statusBadge.textContent = 'Turned Off';
+        statusBadge.className = 'status-badge inactive';
+    } else if (serviceData.status === 'ACTIVE' && serviceData.running_count === serviceData.desired_count) {
         statusBadge.textContent = 'Active';
         statusBadge.className = 'status-badge active';
     } else {
