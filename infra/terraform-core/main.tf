@@ -65,10 +65,10 @@ module "control_service" {
     tags                = var.tags
 }
 
-module "static_website" {
-  source = "./modules/static-website"
+module "admin_portal" {
+  source = "./modules/admin-portal"
 
   bucket_name     = "${var.lambda_function_name}-website"
-  index_html_path = "../../control_service/static/index.html"
+  index_html_path = "../../control_service/admin_portal/index.html"
   tags            = var.tags
 }

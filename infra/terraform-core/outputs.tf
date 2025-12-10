@@ -69,10 +69,10 @@ output "api_gateway_invoke_url" {
 # Static Website Outputs
 output "website_url" {
   description = "URL of the control panel website"
-  value       = module.static_website.website_endpoint
+  value       = module.admin_portal.website_endpoint
 }
 
 output "website_bucket" {
   description = "Name of the website S3 bucket"
-  value       = module.static_website.bucket_name
+  value       = module.admin_portal.bucket_name
 }
