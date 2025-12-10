@@ -1,14 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  fetchVolunteerResources,
-  createResource,
-  updateResource,
-  deleteResource,
-  fetchEvents,
-  fetchAllVolunteers,
-} from "@/lib/api-client";
+import { useEffect, useState, useCallback } from "react";
+import { useResources, useEvents, useVolunteers } from "@/hooks";
 import type { ResourceAvailable, Event, Volunteer } from "@/lib/types";
 
 interface ResourcesManagerProps {
@@ -16,6 +9,10 @@ interface ResourcesManagerProps {
 }
 
 export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
+  const { fetchVolunteerResources, createResource, updateResource, deleteResource } = useResources();
+  const { fetchEvents } = useEvents();
+  const { fetchAllVolunteers } = useVolunteers();
+  
   const [resources, setResources] = useState<ResourceAvailable[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -32,13 +29,7 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadResources();
-    loadEvents();
-    loadVolunteers();
-  }, [volunteerId]);
-
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchVolunteerResources(volunteerId);
@@ -48,27 +39,33 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [volunteerId, fetchVolunteerResources]);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const data = await fetchEvents();
       setEvents(
-        data.filter((e) => e.status === "active" || e.status === "pending")
+        data.filter((e: Event) => e.status === "active" || e.status === "pending")
       );
     } catch (error) {
       console.error("Failed to load events:", error);
     }
-  };
+  }, [fetchEvents]);
 
-  const loadVolunteers = async () => {
+  const loadVolunteers = useCallback(async () => {
     try {
       const data = await fetchAllVolunteers();
       setVolunteers(data);
     } catch (error) {
       console.error("Failed to load volunteers:", error);
     }
-  };
+  }, [fetchAllVolunteers]);
+
+  useEffect(() => {
+    loadResources();
+    loadEvents();
+    loadVolunteers();
+  }, [loadResources, loadEvents, loadVolunteers]);
 
   const handleOpenAddDialog = () => {
     setFormData({

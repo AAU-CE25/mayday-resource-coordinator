@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import type { Event, Volunteer } from "@/lib/types"
-import { fetchEvents, fetchActiveVolunteers } from "@/lib/api-client"
+import { useEvents, useVolunteers } from "@/hooks"
 import { useAuth } from "@/lib/auth-context"
 import { useActiveAssignment } from "@/hooks/use-active-assignment"
 import { EventCard } from "./event-card"
@@ -18,7 +18,9 @@ interface EventsFeedProps {
 
 export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
   const { user } = useAuth()
-  const { activeEvent, volunteerId } = useActiveAssignment(user)
+  const { activeEvent, volunteer } = useActiveAssignment(user)
+  const { fetchEvents } = useEvents()
+  const { fetchActiveVolunteers } = useVolunteers()
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +28,7 @@ export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
   const [selectedEventVolunteers, setSelectedEventVolunteers] = useState<Volunteer[]>([])
   const [loadingVolunteers, setLoadingVolunteers] = useState(false)
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -34,12 +36,12 @@ export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
       
       // Filter only active events and sort by priority (1 = highest)
       const activeEvents = data
-        .filter(event => event.status.toLowerCase() === 'active')
-        .sort((a, b) => a.priority - b.priority)
+        .filter((event: Event) => event.status.toLowerCase() === 'active')
+        .sort((a: Event, b: Event) => a.priority - b.priority)
       
       // Fetch volunteer counts for each event
       const eventsWithVolunteers = await Promise.all(
-        activeEvents.map(async (event) => {
+        activeEvents.map(async (event: Event) => {
           try {
             const volunteers = await fetchActiveVolunteers(event.id)
             return { ...event, activeVolunteers: volunteers.length }
@@ -57,7 +59,7 @@ export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [fetchEvents, fetchActiveVolunteers])
 
   useEffect(() => {
     loadEvents()
@@ -65,7 +67,7 @@ export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
     // Refresh events every 30 seconds
     const interval = setInterval(loadEvents, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [loadEvents])
 
   const handleEventClick = async (event: Event) => {
     setSelectedEvent(event)
@@ -187,7 +189,7 @@ export function EventsFeed({ onVolunteerJoined }: EventsFeedProps = {}) {
           volunteers={selectedEventVolunteers}
           onClose={handleCloseDialog}
           onVolunteerJoined={handleVolunteerJoined}
-          userHasActiveEvent={!!activeEvent && !!volunteerId}
+          userHasActiveEvent={!!activeEvent && !!volunteer}
           activeEventDescription={activeEvent?.description || ""}
         />
       )}

@@ -2,12 +2,14 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import type { User } from './types'
-import { getCurrentUser, logout as apiLogout, getAuthToken } from './api-client'
+import type { User, LoginCredentials, RegisterData, AuthTokenResponse } from './types'
+import { getCurrentUser, logout as apiLogout, getAuthToken, login as apiLogin, register as apiRegister } from './api-client'
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
+  loginWithCredentials: (credentials: LoginCredentials) => Promise<AuthTokenResponse>
+  registerUser: (data: RegisterData) => Promise<User>
   login: () => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -57,6 +59,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser()
   }, [pathname, router])
 
+  const loginWithCredentials = async (credentials: LoginCredentials): Promise<AuthTokenResponse> => {
+    try {
+      const response = await apiLogin(credentials)
+      const userData = await getCurrentUser()
+      setUser(userData)
+      router.push('/')
+      return response
+    } catch (error) {
+      console.error('Failed to login:', error)
+      throw error
+    }
+  }
+
+  const registerUser = async (data: RegisterData): Promise<User> => {
+    try {
+      const user = await apiRegister(data)
+      // After registration, log in automatically
+      await apiLogin({ email: data.email, password: data.password })
+      const userData = await getCurrentUser()
+      setUser(userData)
+      router.push('/')
+      return user
+    } catch (error) {
+      console.error('Failed to register:', error)
+      throw error
+    }
+  }
+
   const login = async () => {
     try {
       const userData = await getCurrentUser()
@@ -89,6 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isLoading,
+        loginWithCredentials,
+        registerUser,
         login,
         logout,
         refreshUser,

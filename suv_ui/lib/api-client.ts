@@ -1,9 +1,17 @@
 /**
  * API client for fetching data from backend
  * Base URL must be configured via NEXT_PUBLIC_API_URL environment variable
+ * 
+ * This file contains ONLY core HTTP functions and authentication API calls.
+ * Domain-specific functions are in their respective hooks:
+ * - useAuth() for current user and authentication
+ * - useUsers() for user management
+ * - useEvents() for events
+ * - useVolunteers() for volunteer assignments
+ * - useResources() for resource management
  */
 
-import type { Volunteer, User, AuthTokenResponse, LoginCredentials, RegisterData, ResourceAvailable, ResourceNeeded } from "./types"
+import type { User, AuthTokenResponse, LoginCredentials, RegisterData } from "./types"
 
 // Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
@@ -187,235 +195,10 @@ export function logout() {
   clearAuthToken()
 }
 
-/**
- * Fetch all events from backend
- */
-export async function fetchEvents() {
-  return get<Array<{
-    id: number
-    description: string
-    priority: number
-    status: string
-    create_time: string
-    modified_time: string
-    location: {
-      id: number
-      address?: {
-        street?: string | null
-        city?: string | null
-        postcode?: string | null
-        country?: string | null
-      } | null
-      latitude?: number | null
-      longitude?: number | null
-    }
-  }>>("/events")
-}
-
-/**
- * Fetch active volunteers for a specific event
- */
-export async function fetchActiveVolunteers(eventId: number): Promise<Volunteer[]> {
-  return get<Volunteer[]>(`/volunteers/?event_id=${eventId}&status=active`)
-}
-
-/**
- * Fetch active volunteers for a specific user
- */
-export async function fetchUserVolunteers(userId: number): Promise<Volunteer[]> {
-  return get<Volunteer[]>(`/volunteers/?user_id=${userId}&status=active`)
-}
-
-/**
- * Fetch all volunteers (active and completed) for a specific user
- * Uses backend filtering for better performance
- */
-export async function fetchAllUserVolunteers(userId: number, status?: string): Promise<Volunteer[]> {
-  const params = new URLSearchParams({
-    user_id: userId.toString(),
-    skip: '0',
-    limit: '1000'
-  })
-  
-  if (status) {
-    params.append('status', status)
-  }
-  
-  return get<Volunteer[]>(`/volunteers/?${params.toString()}`)
-}
-
-/**
- * Fetch active volunteers by user and event
- */
-export async function fetchUserEventVolunteers(userId: number, eventId: number): Promise<Volunteer[]> {
-  return get<Volunteer[]>(`/volunteers/?user_id=${userId}&event_id=${eventId}&status=active`)
-}
-
-/**
- * Create a new volunteer assignment (user joining an event)
- */
-export async function createVolunteer(userId: number, eventId: number): Promise<Volunteer> {
-  return post<Volunteer>("/volunteers/", {
-    user_id: userId,
-    event_id: eventId,
-    status: "active",
-  })
-}
-
-/**
- * Mark volunteer as completed (user leaving an event)
- */
-export async function completeVolunteer(volunteerId: number): Promise<Volunteer> {
-  return put<Volunteer>(`/volunteers/${volunteerId}`, {
-    id: volunteerId,
-    status: "completed",
-  })
-}
-
-/**
- * Update volunteer availability status (available/unavailable)
- */
-export async function updateVolunteerStatus(volunteerId: number, status: string): Promise<Volunteer> {
-  return put<Volunteer>(`/volunteers/${volunteerId}`, {
-    id: volunteerId,
-    status: status,
-  })
-}
-
-/**
- * Get volunteer profile for a specific user
- */
-export async function getUserVolunteerProfile(userId: number): Promise<Volunteer | null> {
-  try {
-    const volunteers = await get<Volunteer[]>(`/volunteers/?user_id=${userId}&limit=1`)
-    return volunteers && volunteers.length > 0 ? volunteers[0] : null
-  } catch (error) {
-    console.error('Failed to fetch volunteer profile:', error)
-    return null
-  }
-}
-
-// ============= Resources API Functions =============
-
-/**
- * Fetch all available resources for a specific volunteer
- */
-export async function fetchVolunteerResources(volunteerId: number): Promise<ResourceAvailable[]> {
-  try {
-    const allResources = await get<ResourceAvailable[]>('/resources/available/')
-    return allResources.filter(r => r.volunteer_id === volunteerId)
-  } catch (error) {
-    console.error('Failed to fetch resources:', error)
-    return []
-  }
-}
-
-export async function fetchResourcesNeededForEvent(eventId: number): Promise<ResourceNeeded[]> {
-  try {
-    const resources = await get<ResourceNeeded[]>('/resources/needed/')
-    return resources.filter((resource) => resource.event_id === eventId)
-  } catch (error) {
-    console.error('Failed to fetch needed resources:', error)
-    return []
-  }
-}
-
-export async function fetchResourcesAvailableForEvent(eventId: number): Promise<ResourceAvailable[]> {
-  try {
-    const resources = await get<ResourceAvailable[]>('/resources/available/')
-    return resources.filter((resource) => resource.event_id === eventId)
-  } catch (error) {
-    console.error('Failed to fetch available resources:', error)
-    return []
-  }
-}
-
-/**
- * Fetch all volunteers
- */
-export async function fetchAllVolunteers(): Promise<Volunteer[]> {
-  try {
-    return await get<Volunteer[]>('/volunteers/')
-  } catch (error) {
-    console.error('Failed to fetch volunteers:', error)
-    return []
-  }
-}
-
-// ============= User-based endpoints (for dispatcher UI) =============
-
-/**
- * Fetch active users for a specific event. Note: backend should support
- * filtering users by `event_id` and `status=active` for this to work.
- */
-export async function fetchActiveUsers(eventId: number): Promise<User[]> {
-  try {
-    return await get<User[]>(`/users/?event_id=${eventId}&status=active`)
-  } catch (error) {
-    console.error('Failed to fetch users for event:', error)
-    return []
-  }
-}
-
-/**
- * Fetch all users (used where the UI previously listed volunteers)
- */
-export async function fetchAllUsers(): Promise<User[]> {
-  try {
-    return await get<User[]>('/users/')
-  } catch (error) {
-    console.error('Failed to fetch users:', error)
-    return []
-  }
-}
-
-/**
- * Update a user record (e.g., availability status)
- */
-export async function updateUser(userId: number, data: Partial<{
-  name: string
-  email: string
-  phonenumber: string
-  status: string
-}>): Promise<User> {
-  return put<User>(`/users/${userId}`, data)
-}
-
-/**
- * Create a new available resource
- */
-export async function createResource(data: {
-  name: string
-  resource_type: string
-  quantity: number
-  description: string
-  status: string
-  volunteer_id: number
-}): Promise<ResourceAvailable> {
-  return post<ResourceAvailable>('/resources/available/', {
-    ...data,
-    is_allocated: false
-  })
-}
-
-/**
- * Update an existing resource
- */
-export async function updateResource(resourceId: number, data: Partial<{
-  name: string
-  resource_type: string
-  quantity: number
-  description: string
-  status: string
-  event_id: number | null
-  volunteer_id: number
-}>): Promise<ResourceAvailable> {
-  return put<ResourceAvailable>(`/resources/available/${resourceId}`, data)
-}
-
-/**
- * Delete a resource
- */
-export async function deleteResource(resourceId: number): Promise<void> {
-  return del<void>(`/resources/available/${resourceId}`)
-}
+// ============= Domain-Specific Functions Moved to Hooks =============
+// All domain-specific functions have been moved to their respective hooks:
+// - useAuth() for authentication and current user
+// - useUsers() for user management  
+// - useEvents() for event operations
+// - useVolunteers() for volunteer assignments
+// - useResources() for resource management

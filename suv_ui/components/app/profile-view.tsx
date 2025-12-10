@@ -4,13 +4,10 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useVolunteerStats } from "@/hooks/use-volunteer-stats";
 import { useEffect, useState } from "react";
-import {
-  fetchEvents,
-  getUserVolunteerProfile,
-  updateUser,
-  fetchVolunteerResources,
-  updateResource,
-} from "@/lib/api-client";
+import { useEvents } from "@/hooks/use-events";
+import { useVolunteers } from "@/hooks/use-volunteers";
+import { useUsers } from "@/hooks/use-users";
+import { useResources } from "@/hooks/use-resources";
 import type { Event, ResourceAvailable, Volunteer } from "@/lib/types";
 import { ResourcesManager } from "./resources-manager";
 
@@ -26,6 +23,13 @@ export function ProfileView() {
     isLoading: statsLoading,
     error: statsError,
   } = useVolunteerStats(user?.id);
+  
+  // Hook instances
+  const { fetchEvents } = useEvents();
+  const { getUserVolunteerProfile } = useVolunteers();
+  const { updateUser } = useUsers();
+  const { fetchVolunteerResources, updateResource } = useResources();
+  
   // Ensure we have a safe default for stats to avoid runtime/TS errors
   const safeStats = stats ?? { totalEvents: 0, totalHours: 0, volunteers: [] };
   const [events, setEvents] = useState<Event[]>([]);
@@ -56,7 +60,7 @@ export function ProfileView() {
     };
 
     loadEvents();
-  }, []);
+  }, [fetchEvents]);
 
   // Fetch volunteer profile
   useEffect(() => {
@@ -70,7 +74,7 @@ export function ProfileView() {
     };
 
     loadVolunteerProfile();
-  }, [user]);
+  }, [user, getUserVolunteerProfile]);
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -81,7 +85,7 @@ export function ProfileView() {
       setAllocatedResourcesLoading(true);
       try {
         const resources = await fetchVolunteerResources(volunteerProfile.id);
-        setAllocatedResources(resources.filter((r) => r.event_id));
+        setAllocatedResources(resources.filter((r: ResourceAvailable) => r.event_id));
       } catch (error) {
         console.error("Failed to load allocated resources:", error);
         setAllocatedResources([]);
@@ -90,9 +94,8 @@ export function ProfileView() {
       }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fetchResources();
-  }, [volunteerProfile, resourcesRefreshKey]);
+    void fetchResources();
+  }, [volunteerProfile, resourcesRefreshKey, fetchVolunteerResources]);
 
   // Helper to get event description
   const getEventDescription = (eventId: number): string => {
