@@ -85,6 +85,8 @@ resource "aws_ecs_service" "frontend" {
   desired_count   = 1 # Increased for high availability
   launch_type     = "FARGATE"
 
+  health_check_grace_period_seconds = 60
+
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
@@ -109,7 +111,7 @@ resource "aws_ecs_service" "frontend" {
 # Autoscaling Target
 resource "aws_appautoscaling_target" "frontend" {
   max_capacity       = 3
-  min_capacity       = 1
+  min_capacity       = 0
   resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.frontend.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"

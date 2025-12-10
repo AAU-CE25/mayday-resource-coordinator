@@ -1,0 +1,78 @@
+# ECR Repository Outputs
+output "ecr_repository_urls" {
+  description = "Map of ECR repository URLs"
+  value       = module.ecr.repository_urls
+}
+
+output "ecr_repository_arns" {
+  description = "Map of ECR repository ARNs"
+  value       = module.ecr.repository_arns
+}
+
+output "api_service_repository_url" {
+  description = "URL of the API service ECR repository"
+  value       = module.ecr.repository_urls["api_service"]
+}
+
+output "frontend_repository_url" {
+  description = "URL of the frontend ECR repository"
+  value       = module.ecr.repository_urls["frontend"]
+}
+
+output "suv_ui_repository_url" {
+  description = "URL of the SUV UI ECR repository"
+  value       = module.ecr.repository_urls["suv_ui"]
+}
+
+# Lambda Outputs
+output "lambda_function_arn" {
+  description = "ARN of the ECS control Lambda function"
+  value       = module.control_service.lambda_function_arn
+}
+
+output "lambda_function_name" {
+  description = "Name of the ECS control Lambda function"
+  value       = module.control_service.lambda_function_name
+}
+
+output "lambda_role_arn" {
+  description = "ARN of the Lambda execution role"
+  value       = module.control_service.lambda_role_arn
+}
+
+output "lambda_log_group" {
+  description = "CloudWatch Log Group for Lambda"
+  value       = module.control_service.lambda_log_group
+}
+
+# API Gateway Outputs
+output "api_gateway_id" {
+  description = "ID of the API Gateway"
+  value       = module.control_service.api_gateway_id
+}
+
+output "api_gateway_endpoint" {
+  description = "URL of the API Gateway endpoint"
+  value       = module.control_service.api_gateway_endpoint
+}
+
+output "api_gateway_stage" {
+  description = "Name of the API Gateway stage"
+  value       = module.control_service.api_gateway_stage
+}
+
+output "api_gateway_invoke_url" {
+  description = "Full invoke URL for the API Gateway"
+  value       = module.control_service.api_gateway_invoke_url
+}
+
+# Static Website Outputs
+output "website_url" {
+  description = "URL of the control panel website"
+  value       = module.static_website.website_endpoint
+}
+
+output "website_bucket" {
+  description = "Name of the website S3 bucket"
+  value       = module.static_website.bucket_name
+}

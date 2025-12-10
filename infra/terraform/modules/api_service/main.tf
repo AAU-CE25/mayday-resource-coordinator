@@ -102,8 +102,10 @@ resource "aws_ecs_service" "api" {
   name            = "${var.cluster_name}-api-service"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.api.arn
-  desired_count   = 1 # Increased for high availability
+  desired_count   = 1 # Increased from 1 for high availability
   launch_type     = "FARGATE"
+
+  health_check_grace_period_seconds = 60
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -131,7 +133,7 @@ resource "aws_ecs_service" "api" {
 # Autoscaling Target
 resource "aws_appautoscaling_target" "api" {
   max_capacity       = 3
-  min_capacity       = 1
+  min_capacity       = 0
   resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.api.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
