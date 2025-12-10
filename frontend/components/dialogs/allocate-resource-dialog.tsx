@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -12,12 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useEvents } from "@/hooks/use-events"
-import { mutate } from "swr"
+import { api } from "@/lib/api-client"
 import { formatAddress } from "@/lib/utils"
 
 interface AllocateResourceDialogProps {
@@ -29,46 +29,35 @@ interface AllocateResourceDialogProps {
 export function AllocateResourceDialog({ open, onOpenChange, resource }: AllocateResourceDialogProps) {
   const { toast } = useToast()
   const { data: events } = useEvents()
+  const queryClient = useQueryClient()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState("")
-  const [quantity, setQuantity] = useState("1")
-
-  useEffect(() => {
-    if (resource) {
-      setQuantity("1")
-    }
-  }, [resource])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!resource) return
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/resources/allocate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resource_id: resource.id,
-          event_id: selectedEventId,
-          quantity: Number.parseInt(quantity),
-        }),
+      await api.put(`/resources/available/${resource.id}`, {
+        event_id: Number.parseInt(selectedEventId, 10),
+        is_allocated: true,
+        status: "in_use",
       })
 
-      if (response.ok) {
-        toast({
-          title: "Resource allocated",
-          description: `${resource.name} has been allocated to the event.`,
-        })
+      toast({
+        title: "Resource allocated",
+        description: `${resource.name} has been allocated to the event.`,
+      })
 
-        mutate("resources")
-        mutate("events")
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["resources/available"] }),
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+      ])
 
-        setSelectedEventId("")
-        setQuantity("1")
-        onOpenChange(false)
-      } else {
-        throw new Error("Failed to allocate resource")
-      }
+      setSelectedEventId("")
+      setQuantity("1")
+      onOpenChange(false)
     } catch (error) {
       toast({
         title: "Error",
@@ -111,7 +100,7 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
                     <div className="p-2 text-sm text-muted-foreground">No active events</div>
                   ) : (
                     activeEvents.map((event: any) => (
-                      <SelectItem key={event.id} value={event.id}>
+                      <SelectItem key={event.id} value={String(event.id)}>
                         {event.description} - {formatAddress(event.location)}
                       </SelectItem>
                     ))
@@ -120,18 +109,9 @@ export function AllocateResourceDialog({ open, onOpenChange, resource }: Allocat
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity to Allocate</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                max={resource.quantity}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
-              />
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Full resource allocation only. Partial allocations will be enabled in a future update.
+            </p>
           </div>
 
           <DialogFooter>

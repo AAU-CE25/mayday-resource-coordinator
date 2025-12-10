@@ -5,15 +5,17 @@
 
 import { useState, useEffect, useCallback } from "react"
 import type { Event, Volunteer, User } from "@/lib/types"
-import { fetchEvents, fetchActiveVolunteers, completeVolunteer } from "@/lib/api-client"
+import { useEvents } from "./use-events"
+import { useVolunteers } from "./use-volunteers"
 
 interface ActiveAssignment {
   event: Event | null
-  volunteerId: number | null
+  volunteer: Volunteer | null
 }
 
 interface UseActiveAssignmentReturn {
   activeEvent: Event | null
+  volunteer: Volunteer | null
   volunteerId: number | null
   loading: boolean
   error: Error | null
@@ -28,14 +30,17 @@ interface UseActiveAssignmentReturn {
 export function useActiveAssignment(user: User | null): UseActiveAssignmentReturn {
   const [assignment, setAssignment] = useState<ActiveAssignment>({
     event: null,
-    volunteerId: null,
+    volunteer: null,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  
+  const { fetchEvents } = useEvents()
+  const { fetchActiveVolunteers, completeVolunteer } = useVolunteers()
 
   const checkActiveAssignment = useCallback(async () => {
     if (!user) {
-      setAssignment({ event: null, volunteerId: null })
+      setAssignment({ event: null, volunteer: null })
       setLoading(false)
       return
     }
@@ -58,7 +63,7 @@ export function useActiveAssignment(user: User | null): UseActiveAssignmentRetur
           if (myVolunteer) {
             setAssignment({
               event,
-              volunteerId: myVolunteer.id,
+              volunteer: myVolunteer,
             })
             return
           }
@@ -69,7 +74,7 @@ export function useActiveAssignment(user: User | null): UseActiveAssignmentRetur
       }
 
       // No active event found
-      setAssignment({ event: null, volunteerId: null })
+      setAssignment({ event: null, volunteer: null })
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Failed to check active assignment")
       setError(error)
@@ -77,22 +82,22 @@ export function useActiveAssignment(user: User | null): UseActiveAssignmentRetur
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, fetchEvents, fetchActiveVolunteers])
 
   const leaveEvent = useCallback(async () => {
-    if (!assignment.volunteerId) {
+    if (!assignment.volunteer?.id) {
       throw new Error("No active volunteer assignment to leave")
     }
 
     try {
-      await completeVolunteer(assignment.volunteerId)
-      setAssignment({ event: null, volunteerId: null })
+      await completeVolunteer(assignment.volunteer.id)
+      setAssignment({ event: null, volunteer: null })
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Failed to leave event")
       setError(error)
       throw error
     }
-  }, [assignment.volunteerId])
+  }, [assignment.volunteer?.id, completeVolunteer])
 
   // Check assignment when user changes
   useEffect(() => {
@@ -101,7 +106,8 @@ export function useActiveAssignment(user: User | null): UseActiveAssignmentRetur
 
   return {
     activeEvent: assignment.event,
-    volunteerId: assignment.volunteerId,
+    volunteer: assignment.volunteer,
+    volunteerId: assignment.volunteer?.id ?? null,
     loading,
     error,
     refresh: checkActiveAssignment,

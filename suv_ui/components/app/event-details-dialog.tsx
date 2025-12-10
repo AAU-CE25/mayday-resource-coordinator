@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Event, Volunteer } from "@/lib/types";
-import { createVolunteer } from "@/lib/api-client";
+import { useVolunteers } from "@/hooks";
 import { useAuth } from "@/lib/auth-context";
 
 interface EventDetailsDialogProps {
@@ -27,6 +27,7 @@ export function EventDetailsDialog({
   activeEventDescription = "",
 }: EventDetailsDialogProps) {
   const { user } = useAuth();
+  const { createVolunteer } = useVolunteers();
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
