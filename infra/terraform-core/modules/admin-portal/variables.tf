@@ -3,8 +3,8 @@ variable "bucket_name" {
   type        = string
 }
 
-variable "index_html_path" {
-  description = "Path to the index.html file"
+variable "website_root_path" {
+  description = "Path to the admin portal directory"
   type        = string
 }
 

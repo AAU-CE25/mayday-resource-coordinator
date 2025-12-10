@@ -48,9 +48,25 @@ resource "aws_s3_bucket_policy" "website" {
 resource "aws_s3_object" "index" {
   bucket       = aws_s3_bucket.website.id
   key          = "index.html"
-  source       = var.index_html_path
+  source       = "${var.website_root_path}/index.html"
   content_type = "text/html"
-  etag         = filemd5(var.index_html_path)
+  etag         = filemd5("${var.website_root_path}/index.html")
+}
+
+resource "aws_s3_object" "css" {
+  bucket       = aws_s3_bucket.website.id
+  key          = "css/styles.css"
+  source       = "${var.website_root_path}/css/styles.css"
+  content_type = "text/css"
+  etag         = filemd5("${var.website_root_path}/css/styles.css")
+}
+
+resource "aws_s3_object" "js" {
+  bucket       = aws_s3_bucket.website.id
+  key          = "js/app.js"
+  source       = "${var.website_root_path}/js/app.js"
+  content_type = "application/javascript"
+  etag         = filemd5("${var.website_root_path}/js/app.js")
 }
 
 # ============================================

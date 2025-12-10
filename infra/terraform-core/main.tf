@@ -59,10 +59,10 @@ module "ecr" {
 module "admin_portal" {
   source = "./modules/admin-portal"
 
-  bucket_name     = "${var.lambda_function_name}-website"
-  index_html_path = "../../control_service/admin_portal/index.html"
-  table_name      = "${var.lambda_function_name}-admin-users"
-  tags            = var.tags
+  bucket_name       = "${var.lambda_function_name}-website"
+  website_root_path = "../../control_service/admin_portal"
+  table_name        = "${var.lambda_function_name}-admin-users"
+  tags              = var.tags
 }
 
 module "mayday_control_api" {

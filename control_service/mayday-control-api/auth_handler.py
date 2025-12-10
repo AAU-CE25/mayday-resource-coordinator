@@ -23,15 +23,17 @@ def verify_credentials(username, password):
         response = table.get_item(Key={'username': username})
         
         if 'Item' not in response:
-            return False
+            return None
         
         user = response['Item']
         password_hash = hash_password(password)
         
-        return user.get('password_hash') == password_hash
+        if user.get('password_hash') == password_hash:
+            return user
+        return None
     except Exception as e:
         print(f"Error verifying credentials: {str(e)}")
-        return False
+        return None
 
 def store_token(username, token):
     """Store auth token in DynamoDB with expiration"""
@@ -122,7 +124,8 @@ def lambda_handler(event, context):
                     'body': json.dumps({'error': 'Username and password required'})
                 }
             
-            if verify_credentials(username, password):
+            user = verify_credentials(username, password)
+            if user:
                 token = generate_token()
                 
                 if store_token(username, token):
@@ -131,7 +134,8 @@ def lambda_handler(event, context):
                         'headers': {'Content-Type': 'application/json'},
                         'body': json.dumps({
                             'token': token,
-                            'username': username
+                            'username': username,
+                            'clusterName': user.get('clusterName', '')
                         })
                     }
                 else:

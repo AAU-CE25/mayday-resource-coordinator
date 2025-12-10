@@ -26,6 +26,7 @@ def add_user(username, password, table_name='mayday-control-api-admin-users'):
             Item={
                 'username': username,
                 'password_hash': password_hash,
+                'cluster_name': cluster_name,
                 'created_at': str(boto3.dynamodb.conditions.Attr),
             }
         )
@@ -37,12 +38,13 @@ def add_user(username, password, table_name='mayday-control-api-admin-users'):
         return False
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("Usage: python add_admin_user.py <username> <password>")
+    if len(sys.argv) != 4:
+        print("Usage: python add_admin_user.py <username> <password> <cluster_name>")
         sys.exit(1)
     
     username = sys.argv[1]
     password = sys.argv[2]
+    cluster_name = sys.argv[3]
     
     if len(password) < 8:
         print("❌ Password must be at least 8 characters long")
