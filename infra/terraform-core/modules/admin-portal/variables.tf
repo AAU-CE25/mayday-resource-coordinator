@@ -13,3 +13,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "table_name" {
+  description = "Name of the DynamoDB table for admin users"
+  type        = string
+  default     = "mayday-admin-users"
+}

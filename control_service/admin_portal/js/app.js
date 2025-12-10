@@ -1,8 +1,93 @@
 // Configuration
 const CONFIG = {
-    API_ENDPOINT: 'https://jp3emi1qi8.execute-api.eu-central-1.amazonaws.com/',
+    API_ENDPOINT: 'https://jp3emi1qi8.execute-api.eu-central-1.amazonaws.com',
     DEFAULT_CLUSTER: 'mayday-cluster'
 };
+
+// Session management
+const SESSION_KEY = 'mayday_admin_token';
+
+function getAuthToken() {
+    return sessionStorage.getItem(SESSION_KEY);
+}
+
+function setAuthToken(token) {
+    sessionStorage.setItem(SESSION_KEY, token);
+}
+
+function clearAuthToken() {
+    sessionStorage.removeItem(SESSION_KEY);
+}
+
+function isAuthenticated() {
+    return !!getAuthToken();
+}
+
+// Login function
+async function login(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('loginError');
+    const loginBtn = document.getElementById('loginBtn');
+    
+    errorDiv.style.display = 'none';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
+    
+    try {
+        const response = await fetch(`${CONFIG.API_ENDPOINT}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Invalid credentials');
+        }
+        
+        const data = await response.json();
+        
+        if (data.token) {
+            setAuthToken(data.token);
+            showServiceControl();
+        } else {
+            throw new Error('Invalid response from server');
+        }
+    } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.style.display = 'block';
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+    }
+}
+
+// Logout function
+function logout() {
+    clearAuthToken();
+    showLogin();
+}
+
+// UI control functions
+function showLogin() {
+    document.getElementById('loginContainer').style.display = 'block';
+    document.getElementById('serviceContainer').style.display = 'none';
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('loginError').style.display = 'none';
+}
+
+function showServiceControl() {
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('serviceContainer').style.display = 'block';
+}
 
 // Service management functions
 async function toggleService(desiredCount) {
@@ -17,6 +102,13 @@ async function toggleService(desiredCount) {
         return;
     }
 
+    const token = getAuthToken();
+    if (!token) {
+        showError('Not authenticated. Please login again.');
+        logout();
+        return;
+    }
+
     // Show loading state
     loadingDiv.style.display = 'block';
     resultDiv.style.display = 'none';
@@ -26,17 +118,18 @@ async function toggleService(desiredCount) {
     buttons.forEach(btn => btn.disabled = true);
 
     try {
-        console.log('Sending request to:', CONFIG.API_ENDPOINT);
+        console.log('Sending request to:', `${CONFIG.API_ENDPOINT}/scale`);
         console.log('Request body:', {
             cluster_name: clusterName,
             service_name: serviceName,
             desired_count: desiredCount
         });
 
-        const response = await fetch(CONFIG.API_ENDPOINT, {
+        const response = await fetch(`${CONFIG.API_ENDPOINT}/scale`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 cluster_name: clusterName,
@@ -47,6 +140,12 @@ async function toggleService(desiredCount) {
 
         console.log('Response status:', response.status);
         console.log('Response headers:', [...response.headers.entries()]);
+
+        if (response.status === 401 || response.status === 403) {
+            showError('Session expired. Please login again.');
+            logout();
+            return;
+        }
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -132,4 +231,17 @@ function showError(message) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('MayDay Admin Portal loaded');
     console.log('API Endpoint:', CONFIG.API_ENDPOINT);
+    
+    // Check if already authenticated
+    if (isAuthenticated()) {
+        showServiceControl();
+    } else {
+        showLogin();
+    }
+    
+    // Setup login form handler
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', login);
+    }
 });

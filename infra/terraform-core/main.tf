@@ -56,19 +56,22 @@ module "ecr" {
   tags                             = var.tags
 }
 
-module "control_service" {
-    source = "./modules/control-service"
-
-    lambda_function_name = var.lambda_function_name
-    lambda_source_path   = var.lambda_source_path
-    aws_region          = var.aws_region
-    tags                = var.tags
-}
-
 module "admin_portal" {
   source = "./modules/admin-portal"
 
   bucket_name     = "${var.lambda_function_name}-website"
   index_html_path = "../../control_service/admin_portal/index.html"
+  table_name      = "${var.lambda_function_name}-admin-users"
   tags            = var.tags
+}
+
+module "mayday_control_api" {
+  source = "./modules/mayday-control-api"
+
+  lambda_function_name = var.lambda_function_name
+  lambda_source_path   = var.lambda_source_path
+  aws_region           = var.aws_region
+  dynamodb_table_name  = module.admin_portal.table_name
+  dynamodb_table_arn   = module.admin_portal.table_arn
+  tags                 = var.tags
 }

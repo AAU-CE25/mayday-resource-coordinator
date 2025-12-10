@@ -37,6 +37,16 @@ variable "aws_region" {
   type        = string
 }
 
+variable "dynamodb_table_name" {
+  description = "Name of the DynamoDB table for admin users"
+  type        = string
+}
+
+variable "dynamodb_table_arn" {
+  description = "ARN of the DynamoDB table for admin users"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

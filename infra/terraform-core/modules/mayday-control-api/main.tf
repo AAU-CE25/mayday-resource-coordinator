@@ -63,11 +63,21 @@ resource "aws_iam_role_policy" "lambda_policy" {
       {
         Effect = "Allow"
         Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Scan"
+        ]
+        Resource = var.dynamodb_table_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${var.lambda_function_name}:*"
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${var.lambda_function_name}*:*"
       },
       {
         Effect = "Allow"
@@ -89,8 +99,15 @@ resource "aws_iam_role_policy" "lambda_policy" {
 # CloudWatch Logs
 # ============================================
 
-resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/${var.lambda_function_name}"
+resource "aws_cloudwatch_log_group" "lambda_logs_ecs" {
+  name              = "/aws/lambda/${var.lambda_function_name}-ecs-scaling-handler"
+  retention_in_days = var.log_retention_days
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "lambda_logs_auth" {
+  name              = "/aws/lambda/${var.lambda_function_name}-auth-handler"
   retention_in_days = var.log_retention_days
 
   tags = var.tags
@@ -104,7 +121,7 @@ resource "aws_cloudwatch_log_group" "api_gateway_logs" {
 }
 
 # ============================================
-# Lambda Function
+# Lambda Functions
 # ============================================
 
 data "archive_file" "lambda_zip" {
@@ -113,11 +130,12 @@ data "archive_file" "lambda_zip" {
   output_path = "${path.module}/lambda_function.zip"
 }
 
+# ECS Scaling Lambda
 resource "aws_lambda_function" "ecs_control" {
   filename         = data.archive_file.lambda_zip.output_path
-  function_name    = var.lambda_function_name
+  function_name    = "${var.lambda_function_name}-ecs-scaling-handler"
   role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
+  handler         = "ecs_scaling_handler.lambda_handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime         = "python3.11"
   timeout         = var.lambda_timeout
@@ -126,7 +144,32 @@ resource "aws_lambda_function" "ecs_control" {
   tags = var.tags
 
   depends_on = [
-    aws_cloudwatch_log_group.lambda_logs,
+    aws_cloudwatch_log_group.lambda_logs_ecs,
+    aws_iam_role_policy.lambda_policy
+  ]
+}
+
+# Authentication Lambda
+resource "aws_lambda_function" "auth" {
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = "${var.lambda_function_name}-auth-handler"
+  role            = aws_iam_role.lambda_role.arn
+  handler         = "auth_handler.lambda_handler"
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  runtime         = "python3.11"
+  timeout         = var.lambda_timeout
+  memory_size     = var.lambda_memory_size
+
+  environment {
+    variables = {
+      USERS_TABLE = var.dynamodb_table_name
+    }
+  }
+
+  tags = var.tags
+
+  depends_on = [
+    aws_cloudwatch_log_group.lambda_logs_auth,
     aws_iam_role_policy.lambda_policy
   ]
 }
@@ -135,10 +178,10 @@ resource "aws_lambda_function" "ecs_control" {
 # API Gateway
 # ============================================
 
-resource "aws_apigatewayv2_api" "ecs_control" {
+resource "aws_apigatewayv2_api" "mayday_control" {
   name          = "${var.lambda_function_name}-api"
   protocol_type = "HTTP"
-  description   = "API Gateway for ECS Control Lambda"
+  description   = "API Gateway for MayDay Control API"
 
   cors_configuration {
     allow_methods = ["POST", "OPTIONS"]
@@ -153,7 +196,7 @@ resource "aws_apigatewayv2_api" "ecs_control" {
 # API Gateway Stage
 ##########################
 resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.ecs_control.id
+  api_id      = aws_apigatewayv2_api.mayday_control.id
   name        = "$default"
   auto_deploy = true
 
@@ -175,31 +218,71 @@ resource "aws_apigatewayv2_stage" "default" {
 }
 
 ##########################
-# Lambda Integration
+# Lambda Integrations
 ##########################
-resource "aws_apigatewayv2_integration" "lambda" {
-  api_id                 = aws_apigatewayv2_api.ecs_control.id
+resource "aws_apigatewayv2_integration" "lambda_ecs" {
+  api_id                 = aws_apigatewayv2_api.mayday_control.id
   integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.ecs_control.invoke_arn
   payload_format_version = "2.0"
 }
 
-##########################
-# POST Route Only (NO DEFAULT)
-##########################
-resource "aws_apigatewayv2_route" "post" {
-  api_id    = aws_apigatewayv2_api.ecs_control.id
-  route_key = "POST /"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+resource "aws_apigatewayv2_integration" "lambda_auth" {
+  api_id                 = aws_apigatewayv2_api.mayday_control.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.auth.invoke_arn
+  payload_format_version = "2.0"
 }
 
 ##########################
-# Lambda Permission
+# API Gateway Authorizer
 ##########################
-resource "aws_lambda_permission" "api_gateway" {
-  statement_id  = "AllowAPIGatewayInvoke"
+resource "aws_apigatewayv2_authorizer" "token_authorizer" {
+  api_id           = aws_apigatewayv2_api.mayday_control.id
+  authorizer_type  = "REQUEST"
+  authorizer_uri   = aws_lambda_function.auth.invoke_arn
+  name             = "token-authorizer"
+  identity_sources = ["$request.header.Authorization"]
+  
+  authorizer_payload_format_version = "2.0"
+  enable_simple_responses           = true
+}
+
+##########################
+# Routes
+##########################
+
+# Login route (no auth required)
+resource "aws_apigatewayv2_route" "post_login" {
+  api_id    = aws_apigatewayv2_api.mayday_control.id
+  route_key = "POST /login"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_auth.id}"
+}
+
+# ECS control route (auth required)
+resource "aws_apigatewayv2_route" "post_scale" {
+  api_id             = aws_apigatewayv2_api.mayday_control.id
+  route_key          = "POST /scale"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda_ecs.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.token_authorizer.id
+}
+
+##########################
+# Lambda Permissions
+##########################
+resource "aws_lambda_permission" "api_gateway_ecs" {
+  statement_id  = "AllowAPIGatewayInvokeECS"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ecs_control.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.ecs_control.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.mayday_control.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "api_gateway_auth" {
+  statement_id  = "AllowAPIGatewayInvokeAuth"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.auth.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.mayday_control.execution_arn}/*/*"
 }

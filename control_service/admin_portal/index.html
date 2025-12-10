@@ -8,9 +8,53 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 MayDay Admin Portal</h1>
-        <p class="subtitle">Manage your ECS services with ease</p>
+    <!-- Login Container -->
+    <div id="loginContainer" class="container" style="display: none;">
+        <h1>🔐 Admin Login</h1>
+        <p class="subtitle">Enter your credentials to access the control panel</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    placeholder="Enter your username" 
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Enter your password" 
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <div id="loginError" class="result error" style="display: none; margin-bottom: 20px;"></div>
+
+            <button type="submit" id="loginBtn" class="btn-primary" style="width: 100%;">
+                Login
+            </button>
+        </form>
+    </div>
+
+    <!-- Service Control Container -->
+    <div id="serviceContainer" class="container" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>🚀 MayDay Admin Portal</h1>
+                <p class="subtitle">Manage your ECS services with ease</p>
+            </div>
+            <button type="button" onclick="logout()" class="btn-secondary" style="height: fit-content;">
+                Logout
+            </button>
+        </div>
 
         <form id="serviceControlForm">
             <div class="form-group">

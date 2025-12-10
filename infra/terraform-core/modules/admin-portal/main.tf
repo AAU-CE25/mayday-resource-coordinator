@@ -52,3 +52,21 @@ resource "aws_s3_object" "index" {
   content_type = "text/html"
   etag         = filemd5(var.index_html_path)
 }
+
+# ============================================
+# DynamoDB Table for Admin Users
+# ============================================
+
+resource "aws_dynamodb_table" "admin_users" {
+  name           = var.table_name
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "username"
+
+  attribute {
+    name = "username"
+    type = "S"
+  }
+
+  tags = var.tags
+}
+

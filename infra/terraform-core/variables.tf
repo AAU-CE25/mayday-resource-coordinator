@@ -1,13 +1,13 @@
 variable "lambda_function_name" {
-  description = "Name of the ECS control Lambda function"
+  description = "Name of the MayDay control Lambda function"
   type        = string
-  default     = "mayday-ecs-control"
+  default     = "mayday-control-api"
 }
 
 variable "lambda_source_path" {
   description = "Path to the Lambda function source code"
   type        = string
-  default     = "../../control_service/ecs_control_lambda"
+  default     = "../../control_service/mayday-control-api"
 }
 
 variable "aws_region" {
