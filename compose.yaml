@@ -51,27 +51,26 @@ services:
     image: frontend:latest
     build:
       context: ./frontend
-      args:
-        # Build-time variable - must include protocol for validation
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+      # args section omitted - uses default from Dockerfile (http://localhost:8000)
+      # Override by uncommenting:
+      # args:
+      #   NEXT_PUBLIC_API_URL: http://your-custom-url
     container_name: frontend_container
     ports:
       - "3000:3000"
     depends_on:
       - api_service
     restart: always
-    environment:
-      # Runtime variable for browser (uses localhost since it's accessed from host machine)
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
     networks:
       - default
   suv_ui:
     image: suv_ui:latest
     build:
       context: ./suv_ui
-      args:
-        # Build-time variable - must include protocol for validation
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+      # args section omitted - uses default from Dockerfile (http://localhost:8000)
+      # Override by uncommenting:
+      # args:
+      #   NEXT_PUBLIC_API_URL: http://your-custom-url
     container_name: suv_ui_container
     ports:
       - "3030:3030"
@@ -79,8 +78,6 @@ services:
       - api_service
     restart: always
     environment:
-      # Runtime variable for SUV UI
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
       - PORT=3030
     networks:
       - default
