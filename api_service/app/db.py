@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy import text
 from .models import *
 from .core.config import settings    
 
@@ -28,7 +29,7 @@ def get_session():
 def check_database_health():
     try:
         with Session(engine) as session:
-            session.exec("SELECT 1")
+            session.exec(text("SELECT 1"))
         return True
     except Exception:
         return False

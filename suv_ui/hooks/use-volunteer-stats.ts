@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { fetchAllUserVolunteers } from "@/lib/api-client"
+import { useVolunteers } from "./use-volunteers"
 import type { Volunteer } from "@/lib/types"
 
 /**
@@ -64,6 +64,8 @@ export function useVolunteerStats(
   const [volunteers, setVolunteers] = useState<Volunteer[]>([])
   const [isLoading, setIsLoading] = useState(autoFetch)
   const [error, setError] = useState<Error | null>(null)
+  
+  const { fetchAllUserVolunteers } = useVolunteers()
 
   /**
    * Fetch volunteer data from API
@@ -87,7 +89,7 @@ export function useVolunteerStats(
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, fetchAllUserVolunteers])
 
   /**
    * Auto-fetch on mount if enabled

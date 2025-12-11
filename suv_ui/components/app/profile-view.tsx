@@ -4,12 +4,11 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useVolunteerStats } from "@/hooks/use-volunteer-stats";
 import { useEffect, useState } from "react";
-import {
-  fetchEvents,
-  getUserVolunteerProfile,
-  updateVolunteerStatus,
-} from "@/lib/api-client";
-import type { Event, Volunteer } from "@/lib/types";
+import { useEvents } from "@/hooks/use-events";
+import { useVolunteers } from "@/hooks/use-volunteers";
+import { useUsers } from "@/hooks/use-users";
+import { useResources } from "@/hooks/use-resources";
+import type { Event, ResourceAvailable, Volunteer } from "@/lib/types";
 import { ResourcesManager } from "./resources-manager";
 
 /**
@@ -17,13 +16,20 @@ import { ResourcesManager } from "./resources-manager";
  * Displays authenticated user information and volunteer statistics
  */
 export function ProfileView() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, refreshUser } = useAuth();
   const router = useRouter();
   const {
     stats,
     isLoading: statsLoading,
     error: statsError,
   } = useVolunteerStats(user?.id);
+  
+  // Hook instances
+  const { fetchEvents } = useEvents();
+  const { getUserVolunteerProfile } = useVolunteers();
+  const { updateUser } = useUsers();
+  const { fetchVolunteerResources, updateResource } = useResources();
+  
   // Ensure we have a safe default for stats to avoid runtime/TS errors
   const safeStats = stats ?? { totalEvents: 0, totalHours: 0, volunteers: [] };
   const [events, setEvents] = useState<Event[]>([]);
@@ -32,6 +38,12 @@ export function ProfileView() {
     null
   );
   const [statusLoading, setStatusLoading] = useState(false);
+  const availabilityStatus =
+    user?.status === "unavailable" ? "unavailable" : "available";
+  const isUserAvailable = availabilityStatus === "available";
+  const [allocatedResources, setAllocatedResources] = useState<ResourceAvailable[]>([]);
+  const [allocatedResourcesLoading, setAllocatedResourcesLoading] = useState(false);
+  const [resourcesRefreshKey, setResourcesRefreshKey] = useState(0);
 
   // Fetch events for mapping descriptions
   useEffect(() => {
@@ -48,7 +60,7 @@ export function ProfileView() {
     };
 
     loadEvents();
-  }, []);
+  }, [fetchEvents]);
 
   // Fetch volunteer profile
   useEffect(() => {
@@ -56,11 +68,34 @@ export function ProfileView() {
       if (user?.id) {
         const profile = await getUserVolunteerProfile(user.id);
         setVolunteerProfile(profile);
+      } else {
+        setVolunteerProfile(null);
       }
     };
 
     loadVolunteerProfile();
-  }, [user]);
+  }, [user, getUserVolunteerProfile]);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      if (!volunteerProfile) {
+        setAllocatedResources([]);
+        return;
+      }
+      setAllocatedResourcesLoading(true);
+      try {
+        const resources = await fetchVolunteerResources(volunteerProfile.id);
+        setAllocatedResources(resources.filter((r: ResourceAvailable) => r.event_id));
+      } catch (error) {
+        console.error("Failed to load allocated resources:", error);
+        setAllocatedResources([]);
+      } finally {
+        setAllocatedResourcesLoading(false);
+      }
+    };
+
+    void fetchResources();
+  }, [volunteerProfile, resourcesRefreshKey, fetchVolunteerResources]);
 
   // Helper to get event description
   const getEventDescription = (eventId: number): string => {
@@ -74,33 +109,38 @@ export function ProfileView() {
   };
 
   const handleStatusToggle = async () => {
-    if (!volunteerProfile) return;
+    if (!user) return;
 
     setStatusLoading(true);
     try {
-      // Toggle between available and unavailable (preserve active/completed for event assignments)
-      const currentStatus = volunteerProfile.status;
-      let newStatus: string;
+      const currentStatus = user.status === "unavailable" ? "unavailable" : "available";
+      const newStatus = currentStatus === "unavailable" ? "available" : "unavailable";
 
-      if (currentStatus === "unavailable") {
-        newStatus = "available";
-      } else if (currentStatus === "available") {
-        newStatus = "unavailable";
-      } else {
-        // If currently active or completed, default to available
-        newStatus = "available";
-      }
-
-      const updated = await updateVolunteerStatus(
-        volunteerProfile.id,
-        newStatus
-      );
-      setVolunteerProfile(updated);
+      await updateUser(user.id, { status: newStatus });
+      await refreshUser();
     } catch (error) {
       console.error("Failed to update status:", error);
       alert("Failed to update status. Please try again.");
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const handleRemoveResource = async (resource: ResourceAvailable) => {
+    if (!volunteerProfile) return;
+    if (
+      !confirm(
+        `Remove "${resource.name}" from ${getEventDescription(resource.event_id!)}?`
+      )
+    )
+      return;
+
+    try {
+      await updateResource(resource.id, { event_id: null, status: "available" });
+      setResourcesRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to remove resource from event:", error);
+      alert("Failed to remove resource. Please try again.");
     }
   };
 
@@ -165,7 +205,7 @@ export function ProfileView() {
           </div>
 
           {/* Availability Status Toggle */}
-          {volunteerProfile && (
+          {user && (
             <div className="flex flex-col items-end gap-2">
               <div className="text-right">
                 <p className="text-xs font-medium text-gray-700">
@@ -179,43 +219,33 @@ export function ProfileView() {
                 onClick={handleStatusToggle}
                 disabled={statusLoading}
                 className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  volunteerProfile.status === "available"
-                    ? "bg-green-500"
-                    : "bg-gray-300"
+                  isUserAvailable ? "bg-green-500" : "bg-gray-300"
                 }`}
               >
                 <span
                   className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    volunteerProfile.status === "available"
-                      ? "translate-x-6"
-                      : "translate-x-0"
+                    isUserAvailable ? "translate-x-6" : "translate-x-0"
                   }`}
                 />
               </button>
               <div
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
-                  volunteerProfile.status === "available"
+                  isUserAvailable
                     ? "bg-green-50 border border-green-200"
                     : "bg-gray-50 border border-gray-200"
                 }`}
               >
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    volunteerProfile.status === "available"
-                      ? "bg-green-500"
-                      : "bg-gray-400"
+                    isUserAvailable ? "bg-green-500" : "bg-gray-400"
                   }`}
                 />
                 <span
                   className={`text-xs font-medium ${
-                    volunteerProfile.status === "available"
-                      ? "text-green-700"
-                      : "text-gray-600"
+                    isUserAvailable ? "text-green-700" : "text-gray-600"
                   }`}
                 >
-                  {volunteerProfile.status === "available"
-                    ? "Available"
-                    : "Unavailable"}
+                  {isUserAvailable ? "Available" : "Unavailable"}
                 </span>
               </div>
             </div>
@@ -405,9 +435,53 @@ export function ProfileView() {
         </div>
       )}
 
+      {/* Allocated Resources */}
+      {volunteerProfile && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">Allocated Resources</h3>
+            <span className="text-xs text-gray-500">
+              {allocatedResources.length} active
+            </span>
+          </div>
+          {allocatedResourcesLoading ? (
+            <p className="text-sm text-gray-500">Loading allocated resources...</p>
+          ) : allocatedResources.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              You have no resources assigned to events right now.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {allocatedResources.map((resource) => (
+                <div
+                  key={resource.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{resource.name}</p>
+                    <p className="text-xs text-gray-500">
+                      Assigned to {getEventDescription(resource.event_id!)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveResource(resource)}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Resources Manager */}
       {volunteerProfile && (
-        <ResourcesManager volunteerId={volunteerProfile.id} />
+        <ResourcesManager
+          key={resourcesRefreshKey}
+          volunteerId={volunteerProfile.id}
+        />
       )}
 
       {/* Account Actions */}

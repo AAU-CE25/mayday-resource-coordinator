@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { register as apiRegister, login as apiLogin } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
@@ -13,7 +12,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { registerUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,10 +20,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Create account, then login and initialize session
-      await apiRegister({ name, email, phonenumber, password });
-      await apiLogin({ email, password });
-      await login();
+      await registerUser({ name, email, phonenumber, password });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

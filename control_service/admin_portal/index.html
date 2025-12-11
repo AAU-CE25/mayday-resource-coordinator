@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MayDay Admin Portal</title>
+    <meta name="description" content="Administrative control panel for MayDay ECS cluster management">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Login Container -->
+    <div id="loginContainer" class="container" style="display: none;">
+        <h1>🔐 Admin Login</h1>
+        <p class="subtitle">Enter your credentials to access the control panel</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    placeholder="Enter your username" 
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Enter your password" 
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <div id="loginError" class="result error" style="display: none; margin-bottom: 20px;"></div>
+
+            <button type="submit" id="loginBtn" class="btn-primary" style="width: 100%;">
+                Login
+            </button>
+        </form>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="serviceContainer" class="container" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div>
+                <h1>🚀 MayDay Monitoring Dashboard</h1>
+                <p class="subtitle" id="clusterSubtitle">Loading cluster status...</p>
+            </div>
+            <button type="button" onclick="logout()" class="btn-secondary" style="height: fit-content;">
+                Logout
+            </button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            Loading cluster status...
+        </div>
+
+        <!-- Cluster Summary -->
+        <div id="clusterSummary" class="summary-grid" style="display: none;">
+            <div class="summary-card">
+                <div class="summary-label">Total Services</div>
+                <div class="summary-value" id="totalServices">-</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Running Services</div>
+                <div class="summary-value" id="runningServices">-</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Running Tasks</div>
+                <div class="summary-value" id="runningTasks">-</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Cluster Status</div>
+                <div class="summary-value" id="clusterStatus">-</div>
+            </div>
+        </div>
+
+        <!-- Services Grid -->
+        <div id="servicesGrid" class="services-grid" style="display: none;">
+            <!-- Dispatcher Dashboard -->
+            <div class="service-card" id="frontendCard">
+                <div class="service-header">
+                    <h3>📊 Dispatcher Dashboard</h3>
+                    <span class="status-badge" id="frontendStatus">-</span>
+                </div>
+                <div class="service-body">
+                    <div class="service-stat">
+                        <span class="stat-label">Running:</span>
+                        <span class="stat-value" id="frontendRunning">-</span>
+                    </div>
+                    <div class="service-stat">
+                        <span class="stat-label">Desired:</span>
+                        <span class="stat-value" id="frontendDesired">-</span>
+                    </div>
+                    <a href="#" id="frontendLink" class="service-link" target="_blank" style="display: none;">
+                        🔗 Open Dashboard
+                    </a>
+                    <div class="service-controls" id="frontendControls" style="display: none;">
+                        <button class="btn-on" id="frontendOnBtn" onclick="toggleService('frontend-service', 1)" style="display: none;">
+                            ✅ Turn ON
+                        </button>
+                        <button class="btn-off" id="frontendOffBtn" onclick="toggleService('frontend-service', 0)" style="display: none;">
+                            ⛔ Turn OFF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUV App -->
+            <div class="service-card" id="suvCard">
+                <div class="service-header">
+                    <h3>🚗 SUV App</h3>
+                    <span class="status-badge" id="suvStatus">-</span>
+                </div>
+                <div class="service-body">
+                    <div class="service-stat">
+                        <span class="stat-label">Running:</span>
+                        <span class="stat-value" id="suvRunning">-</span>
+                    </div>
+                    <div class="service-stat">
+                        <span class="stat-label">Desired:</span>
+                        <span class="stat-value" id="suvDesired">-</span>
+                    </div>
+                    <a href="#" id="suvLink" class="service-link" target="_blank" style="display: none;">
+                        🔗 Open SUV App
+                    </a>
+                    <div class="service-controls" id="suvControls" style="display: none;">
+                        <button class="btn-on" id="suvOnBtn" onclick="toggleService('suv-ui-service', 1)" style="display: none;">
+                            ✅ Turn ON
+                        </button>
+                        <button class="btn-off" id="suvOffBtn" onclick="toggleService('suv-ui-service', 0)" style="display: none;">
+                            ⛔ Turn OFF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backend API -->
+            <div class="service-card" id="apiCard">
+                <div class="service-header">
+                    <h3>⚙️ Backend API</h3>
+                    <span class="status-badge" id="apiStatus">-</span>
+                </div>
+                <div class="service-body">
+                    <div class="service-stat">
+                        <span class="stat-label">Running:</span>
+                        <span class="stat-value" id="apiRunning">-</span>
+                    </div>
+                    <div class="service-stat">
+                        <span class="stat-label">Desired:</span>
+                        <span class="stat-value" id="apiDesired">-</span>
+                    </div>
+                    <div class="service-info">
+                        Port: 8000
+                    </div>
+                    <div class="service-controls" id="apiControls" style="display: none;">
+                        <button class="btn-on" id="apiOnBtn" onclick="toggleService('api-service', 1)" style="display: none;">
+                            ✅ Turn ON
+                        </button>
+                        <button class="btn-off" id="apiOffBtn" onclick="toggleService('api-service', 0)" style="display: none;">
+                            ⛔ Turn OFF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database -->
+            <div class="service-card" id="dbCard">
+                <div class="service-header">
+                    <h3>🗄️ Database</h3>
+                    <span class="status-badge" id="dbStatus">-</span>
+                </div>
+                <div class="service-body">
+                    <div class="service-stat">
+                        <span class="stat-label">Running:</span>
+                        <span class="stat-value" id="dbRunning">-</span>
+                    </div>
+                    <div class="service-stat">
+                        <span class="stat-label">Desired:</span>
+                        <span class="stat-value" id="dbDesired">-</span>
+                    </div>
+                    <div class="service-info">
+                        PostgreSQL
+                    </div>
+                    <div class="service-controls" id="dbControls" style="display: none;">
+                        <button class="btn-on" id="dbOnBtn" onclick="toggleService('db-service', 1)" style="display: none;">
+                            ✅ Turn ON
+                        </button>
+                        <button class="btn-off" id="dbOffBtn" onclick="toggleService('db-service', 0)" style="display: none;">
+                            ⛔ Turn OFF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Balancer Info -->
+        <div id="loadBalancerInfo" class="info-card" style="display: none;">
+            <h3>🔀 Load Balancer</h3>
+            <div class="info-row">
+                <span class="info-label">DNS Name:</span>
+                <span class="info-value" id="albDns">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Type:</span>
+                <span class="info-value" id="albType">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">State:</span>
+                <span class="info-value" id="albState">-</span>
+            </div>
+        </div>
+
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
+ 

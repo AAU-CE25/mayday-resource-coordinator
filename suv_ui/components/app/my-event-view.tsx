@@ -1,19 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import type { Event, ResourceAvailable, ResourceNeeded } from "@/lib/types"
-import {
-  fetchResourcesAvailableForEvent,
-  fetchResourcesNeededForEvent,
-  fetchVolunteerResources,
-  updateResource,
-  fetchAllUserVolunteers,
-} from "@/lib/api-client"
+import { useEffect, useMemo, useState, useCallback } from "react"
+import type { Event, ResourceAvailable, ResourceNeeded, Volunteer } from "@/lib/types"
+import { useResources } from "@/hooks/use-resources"
+import { useVolunteers } from "@/hooks/use-volunteers"
 import { useAuth } from "@/lib/auth-context"
 
 interface MyEventViewProps {
   event: Event
-  volunteerId: number
+  volunteer: Volunteer
   onLeaveEvent: () => void
 }
 
@@ -21,8 +16,13 @@ interface MyEventViewProps {
  * My Event view component
  * Shows the current event user is volunteering for with resources needed/available
  */
-export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewProps) {
+export function MyEventView({ event, volunteer, onLeaveEvent }: MyEventViewProps) {
   const { user } = useAuth()
+  const { fetchResourcesNeededForEvent, fetchResourcesAvailableForEvent, fetchVolunteerResources, updateResource } = useResources()
+  const { fetchAllUserVolunteers } = useVolunteers()
+  
+  const volunteerId = volunteer.id
+  
   const [resourcesNeeded, setResourcesNeeded] = useState<ResourceNeeded[]>([])
   const [resourcesAvailable, setResourcesAvailable] = useState<ResourceAvailable[]>([])
   const [resourcesLoading, setResourcesLoading] = useState(true)
@@ -35,7 +35,7 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
   const [offerSubmitting, setOfferSubmitting] = useState(false)
   const [offerError, setOfferError] = useState<string | null>(null)
 
-  const loadEventResources = async () => {
+  const loadEventResources = useCallback(async () => {
     setResourcesLoading(true)
     setResourcesError(null)
 
@@ -55,9 +55,9 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
     } finally {
       setResourcesLoading(false)
     }
-  }
+  }, [event.id, fetchResourcesNeededForEvent, fetchResourcesAvailableForEvent])
 
-  const determineResourceOwnerIds = async () => {
+  const determineResourceOwnerIds = useCallback(async () => {
     if (!user) {
       setVolunteerResourceOwnerIds([])
       return
@@ -65,7 +65,7 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
     try {
       const volunteerRecords = await fetchAllUserVolunteers(user.id)
       if (volunteerRecords.length > 0) {
-        setVolunteerResourceOwnerIds(volunteerRecords.map((v) => v.id))
+        setVolunteerResourceOwnerIds(volunteerRecords.map((v: { id: number }) => v.id))
       } else if (volunteerId) {
         setVolunteerResourceOwnerIds([volunteerId])
       } else {
@@ -79,9 +79,9 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
         setVolunteerResourceOwnerIds([])
       }
     }
-  }
+  }, [user, volunteerId, fetchAllUserVolunteers])
 
-  const loadVolunteerResources = async (ownerIds: number[]) => {
+  const loadVolunteerResources = useCallback(async (ownerIds: number[]) => {
     if (!ownerIds.length) {
       setVolunteerResources([])
       setVolunteerResourcesLoading(false)
@@ -92,7 +92,7 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
       const results = await Promise.all(ownerIds.map((id) => fetchVolunteerResources(id)))
       const combined = results.flat()
       const uniqueMap = new Map<number, ResourceAvailable>()
-      combined.forEach((resource) => {
+      combined.forEach((resource: ResourceAvailable) => {
         uniqueMap.set(resource.id, resource)
       })
       setVolunteerResources(Array.from(uniqueMap.values()))
@@ -102,21 +102,21 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
     } finally {
       setVolunteerResourcesLoading(false)
     }
-  }
+  }, [fetchVolunteerResources])
 
   useEffect(() => {
     loadEventResources()
-  }, [event.id])
+  }, [loadEventResources])
 
   useEffect(() => {
     void (async () => {
       await determineResourceOwnerIds()
     })()
-  }, [user?.id, volunteerId])
+  }, [determineResourceOwnerIds])
 
   useEffect(() => {
     void loadVolunteerResources(volunteerResourceOwnerIds)
-  }, [volunteerResourceOwnerIds])
+  }, [volunteerResourceOwnerIds, loadVolunteerResources])
 
   const resourceSummary = useMemo(() => {
     if (resourcesNeeded.length === 0) {
@@ -321,7 +321,7 @@ export function MyEventView({ event, volunteerId, onLeaveEvent }: MyEventViewPro
                 <p className="text-sm text-gray-500">Loading your resources...</p>
               ) : volunteerResources.length === 0 ? (
                 <p className="text-sm text-gray-500">
-                  You haven't added any resources yet. Use the My Resources section in your profile to add them.
+                  You have not added any resources yet. Use the My Resources section in your profile to add them.
                 </p>
               ) : (
                 volunteerResources.map((resource) => {

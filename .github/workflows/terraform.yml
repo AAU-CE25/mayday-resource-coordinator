@@ -25,6 +25,11 @@ on:
           - apply
           - destroy
         default: 'plan'
+      cluster_name:
+        description: 'ECS cluster name'
+        required: false
+        type: string
+        default: 'mayday-cluster'
 
 env:
   AWS_REGION: eu-central-1
@@ -65,6 +70,27 @@ jobs:
         id: init
         run: terraform init
 
+      - name: Select or Create Workspace
+        run: |
+          CLUSTER_NAME="${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
+          
+          # Only use workspace if not the default cluster
+          if [ "$CLUSTER_NAME" != "mayday-cluster" ]; then
+            echo "Using workspace: $CLUSTER_NAME"
+            
+            # List existing workspaces
+            terraform workspace list
+            
+            # Select workspace or create if it doesn't exist
+            terraform workspace select "$CLUSTER_NAME" || terraform workspace new "$CLUSTER_NAME"
+            
+            echo "Current workspace:"
+            terraform workspace show
+          else
+            echo "Using default workspace for mayday-cluster"
+            terraform workspace select default
+          fi
+
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
@@ -76,6 +102,7 @@ jobs:
           terraform plan -no-color -input=false \
             -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
             -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="cluster_name=${{ github.event.inputs.cluster_name || 'mayday-cluster' }}" \
             -out=tfplan
         continue-on-error: false
 
@@ -88,19 +115,64 @@ jobs:
           retention-days: 5
 
       - name: Terraform Apply
-        if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
+        id: apply
+        if: github.event.inputs.action == 'apply'
         run: |
           terraform apply -auto-approve -input=false \
             -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
-            -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}"
+            -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="cluster_name=${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
+
+      - name: Check and Create Admin User
+        if: github.event.inputs.action == 'apply' && steps.apply.outcome == 'success'
+        run: |
+          # Check if cluster already has admin user
+          CLUSTER_NAME="${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
+          USERNAME="${CLUSTER_NAME}-admin"
+          
+          echo "Checking if admin user exists: $USERNAME"
+          
+          # Query DynamoDB for existing admin user with this username
+          EXISTING_USER=$(aws dynamodb get-item \
+            --table-name mayday-control-api-admin-users \
+            --key '{"username":{"S":"'"$USERNAME"'"}}' \
+            --region ${{ env.AWS_REGION }} \
+            --output json | jq -r 'select(.Item != null) | .Item.username.S')
+          
+          if [ -z "$EXISTING_USER" ]; then
+            echo "No admin user found. Creating default admin user..."
+            
+            # Generate password hash (SHA-256)
+            PASSWORD_HASH=$(echo -n "admin123" | sha256sum | cut -d' ' -f1)
+            TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            
+            # Create admin user
+            aws dynamodb put-item \
+              --table-name mayday-control-api-admin-users \
+              --item '{
+                "username": {"S": "'"$USERNAME"'"},
+                "password_hash": {"S": "'"$PASSWORD_HASH"'"},
+                "cluster_name": {"S": "'"$CLUSTER_NAME"'"},
+                "created_at": {"S": "'"$TIMESTAMP"'"}
+              }' \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "✅ Admin user created successfully"
+            echo "Username: $USERNAME"
+            echo "Password: admin123"
+            echo "⚠️  IMPORTANT: Change this password after first login!"
+          else
+            echo "✅ Admin user already exists: $USERNAME"
+          fi
 
       - name: Terraform Destroy
-        if: github.event.inputs.action == 'destroy' && github.ref == 'refs/heads/main'
+        if: github.event.inputs.action == 'destroy'
         run: |
           echo "⚠️ WARNING: This will destroy all infrastructure!"
           terraform destroy -auto-approve -input=false \
             -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
-            -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}"
+            -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="cluster_name=${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
 
       - name: Terraform Output
         if: github.event.inputs.action == 'apply' && steps.apply.outcome == 'success'
@@ -111,8 +183,9 @@ jobs:
           
           echo ""
           echo "=== Access Information ==="
-          terraform output api_url
-          terraform output ecr_repository_urls
+          echo "API URL: $(terraform output -raw api_url)"
+          echo "ALB DNS: $(terraform output -raw alb_dns_name)"
+          echo "ECS Cluster: $(terraform output -raw ecs_cluster_name)"
 
       - name: Upload Terraform Outputs
         if: github.event.inputs.action == 'apply'

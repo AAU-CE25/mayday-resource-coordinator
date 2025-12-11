@@ -1,0 +1,16 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Lambda package
+lambda_function.zip
+*.zip
+
+# Terraform plan files
+*.tfplan
+
+# Environment files
+.env
+*.auto.tfvars

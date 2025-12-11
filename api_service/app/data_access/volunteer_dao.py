@@ -22,14 +22,19 @@ class VolunteerDAO:
             owns_session = True
 
         try:
-            # Check for any active volunteer assignments for this user
-            active = session.exec(
-                select(Volunteer).where(Volunteer.user_id == user_id, Volunteer.status == "active")
-            ).first()
-
             user = session.get(User, user_id)
             if user:
-                desired_status = "assigned" if active else "available"
+                active = session.exec(
+                    select(Volunteer).where(Volunteer.user_id == user_id, Volunteer.status == "active")
+                ).first()
+
+                if user.status == "unavailable":
+                    desired_status = "unavailable"
+                elif active:
+                    desired_status = "assigned"
+                else:
+                    desired_status = "available"
+
                 if user.status != desired_status:
                     user.status = desired_status
                     session.add(user)

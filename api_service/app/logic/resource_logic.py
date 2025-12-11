@@ -36,6 +36,7 @@ class ResourceLogic:
             description=resource.description,
             status=resource.status,
             volunteer_id=resource.volunteer_id,
+            event_id=resource.event_id,
             is_allocated=resource.is_allocated
         )
         return ResourceDAO.create_resource_available(new_resource_available)

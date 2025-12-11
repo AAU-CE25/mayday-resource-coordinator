@@ -87,3 +87,8 @@ output "service_discovery_namespace_name" {
   description = "Name of the service discovery namespace"
   value       = aws_service_discovery_private_dns_namespace.main.name
 }
+
+output "ecs_log_group_name" {
+  description = "Name of the shared CloudWatch log group for ECS services"
+  value       = aws_cloudwatch_log_group.ecs_cluster.name
+}
