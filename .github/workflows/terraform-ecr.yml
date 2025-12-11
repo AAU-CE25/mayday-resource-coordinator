@@ -1,4 +1,4 @@
-name: Terraform Container Registry
+name: Terraform Core
 
 on:
   workflow_dispatch:

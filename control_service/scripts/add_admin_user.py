@@ -14,7 +14,7 @@ def hash_password(password):
     """Hash password using SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
 
-def add_user(username, password, table_name='mayday-control-api-admin-users'):
+def add_user(username, password, cluster_name, table_name='mayday-control-api-admin-users'):
     """Add user to DynamoDB"""
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(table_name)
@@ -22,12 +22,15 @@ def add_user(username, password, table_name='mayday-control-api-admin-users'):
     try:
         password_hash = hash_password(password)
         
+        from datetime import datetime
+        timestamp = datetime.utcnow().isoformat() + 'Z'
+        
         table.put_item(
             Item={
                 'username': username,
                 'password_hash': password_hash,
                 'cluster_name': cluster_name,
-                'created_at': str(boto3.dynamodb.conditions.Attr),
+                'created_at': timestamp,
             }
         )
         
@@ -50,4 +53,4 @@ if __name__ == '__main__':
         print("❌ Password must be at least 8 characters long")
         sys.exit(1)
     
-    add_user(username, password)
+    add_user(username, password, cluster_name)
