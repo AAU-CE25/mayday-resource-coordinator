@@ -233,7 +233,7 @@ function updateServiceCard(serviceId, serviceData) {
         statusBadge.textContent = 'Active';
         statusBadge.className = 'status-badge active';
     } else {
-        statusBadge.textContent = 'Degraded';
+        statusBadge.textContent = 'Starting...';
         statusBadge.className = 'status-badge inactive';
     }
     

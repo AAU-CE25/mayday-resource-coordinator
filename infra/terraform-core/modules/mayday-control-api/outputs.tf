@@ -18,19 +18,29 @@ output "lambda_auth_name" {
   value       = aws_lambda_function.auth.function_name
 }
 
+output "lambda_status_arn" {
+  description = "ARN of the MayDay cluster status Lambda function"
+  value       = aws_lambda_function.cluster_status.arn
+}
+
+output "lambda_status_name" {
+  description = "Name of the MayDay cluster status Lambda function"
+  value       = aws_lambda_function.cluster_status.function_name
+}
+
 output "lambda_role_arn" {
   description = "ARN of the Lambda execution role"
   value       = aws_iam_role.lambda_role.arn
 }
 
-output "lambda_log_group" {
-  description = "CloudWatch Log Group for ECS Lambda"
-  value       = aws_cloudwatch_log_group.lambda_logs_ecs.name
+output "cloudwatch_log_group_name" {
+  description = "Name of the shared CloudWatch log group"
+  value       = aws_cloudwatch_log_group.mayday_core.name
 }
 
-output "lambda_log_group_auth" {
-  description = "CloudWatch Log Group for Auth Lambda"
-  value       = aws_cloudwatch_log_group.lambda_logs_auth.name
+output "cloudwatch_log_group_arn" {
+  description = "ARN of the shared CloudWatch log group"
+  value       = aws_cloudwatch_log_group.mayday_core.arn
 }
 
 output "api_gateway_id" {

@@ -25,24 +25,49 @@ output "suv_ui_repository_url" {
 }
 
 # Lambda Outputs
-output "lambda_function_arn" {
+output "lambda_ecs_control_arn" {
   description = "ARN of the ECS control Lambda function"
   value       = module.mayday_control_api.lambda_function_arn
 }
 
-output "lambda_function_name" {
+output "lambda_ecs_control_name" {
   description = "Name of the ECS control Lambda function"
   value       = module.mayday_control_api.lambda_function_name
 }
 
+output "lambda_auth_arn" {
+  description = "ARN of the auth Lambda function"
+  value       = module.mayday_control_api.lambda_auth_arn
+}
+
+output "lambda_auth_name" {
+  description = "Name of the auth Lambda function"
+  value       = module.mayday_control_api.lambda_auth_name
+}
+
+output "lambda_status_arn" {
+  description = "ARN of the cluster status Lambda function"
+  value       = module.mayday_control_api.lambda_status_arn
+}
+
+output "lambda_status_name" {
+  description = "Name of the cluster status Lambda function"
+  value       = module.mayday_control_api.lambda_status_name
+}
+
 output "lambda_role_arn" {
-  description = "ARN of the Lambda execution role"
+  description = "ARN of the shared Lambda execution role"
   value       = module.mayday_control_api.lambda_role_arn
 }
 
-output "lambda_log_group" {
-  description = "CloudWatch Log Group for Lambda"
-  value       = module.mayday_control_api.lambda_log_group
+output "cloudwatch_log_group_name" {
+  description = "Name of the shared CloudWatch log group for all Lambda functions and API Gateway"
+  value       = module.mayday_control_api.cloudwatch_log_group_name
+}
+
+output "cloudwatch_log_group_arn" {
+  description = "ARN of the shared CloudWatch log group for all Lambda functions and API Gateway"
+  value       = module.mayday_control_api.cloudwatch_log_group_arn
 }
 
 # API Gateway Outputs

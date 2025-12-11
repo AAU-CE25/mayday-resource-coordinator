@@ -8,11 +8,6 @@ output "task_definition_arn" {
   value       = aws_ecs_task_definition.api.arn
 }
 
-output "log_group_name" {
-  description = "Name of the CloudWatch log group"
-  value       = aws_cloudwatch_log_group.api.name
-}
-
 output "service_discovery_arn" {
   description = "ARN of the service discovery service"
   value       = aws_service_discovery_service.api.arn

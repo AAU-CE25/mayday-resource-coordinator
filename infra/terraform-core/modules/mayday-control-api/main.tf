@@ -98,30 +98,12 @@ resource "aws_iam_role_policy" "lambda_policy" {
 # ============================================
 # CloudWatch Logs
 # ============================================
+# CloudWatch Log Groups
+# ============================================
 
-resource "aws_cloudwatch_log_group" "lambda_logs_ecs" {
-  name              = "/aws/lambda/${var.lambda_function_name}-ecs-scaling-handler"
-  retention_in_days = var.log_retention_days
-
-  tags = var.tags
-}
-
-resource "aws_cloudwatch_log_group" "lambda_logs_auth" {
-  name              = "/aws/lambda/${var.lambda_function_name}-auth-handler"
-  retention_in_days = var.log_retention_days
-
-  tags = var.tags
-}
-
-resource "aws_cloudwatch_log_group" "lambda_logs_status" {
-  name              = "/aws/lambda/${var.lambda_function_name}-cluster-status-handler"
-  retention_in_days = var.log_retention_days
-
-  tags = var.tags
-}
-
-resource "aws_cloudwatch_log_group" "api_gateway_logs" {
-  name              = "/aws/apigateway/${var.lambda_function_name}"
+# Shared log group for all mayday-core components
+resource "aws_cloudwatch_log_group" "mayday_core" {
+  name              = "/aws/mayday-core/all"
   retention_in_days = var.log_retention_days
 
   tags = var.tags
@@ -137,7 +119,7 @@ data "archive_file" "lambda_zip" {
   output_path = "${path.module}/lambda_function.zip"
 }
 
-# ECS Scaling Lambda
+# ECS Control Lambda
 resource "aws_lambda_function" "ecs_control" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = "${var.lambda_function_name}-ecs-scaling-handler"
@@ -148,10 +130,15 @@ resource "aws_lambda_function" "ecs_control" {
   timeout         = var.lambda_timeout
   memory_size     = var.lambda_memory_size
 
+  logging_config {
+    log_format = "Text"
+    log_group  = aws_cloudwatch_log_group.mayday_core.name
+  }
+
   tags = var.tags
 
   depends_on = [
-    aws_cloudwatch_log_group.lambda_logs_ecs,
+    aws_cloudwatch_log_group.mayday_core,
     aws_iam_role_policy.lambda_policy
   ]
 }
@@ -173,10 +160,15 @@ resource "aws_lambda_function" "auth" {
     }
   }
 
+  logging_config {
+    log_format = "Text"
+    log_group  = aws_cloudwatch_log_group.mayday_core.name
+  }
+
   tags = var.tags
 
   depends_on = [
-    aws_cloudwatch_log_group.lambda_logs_auth,
+    aws_cloudwatch_log_group.mayday_core,
     aws_iam_role_policy.lambda_policy
   ]
 }
@@ -192,10 +184,15 @@ resource "aws_lambda_function" "cluster_status" {
   timeout         = var.lambda_timeout
   memory_size     = var.lambda_memory_size
 
+  logging_config {
+    log_format = "Text"
+    log_group  = aws_cloudwatch_log_group.mayday_core.name
+  }
+
   tags = var.tags
 
   depends_on = [
-    aws_cloudwatch_log_group.lambda_logs_status,
+    aws_cloudwatch_log_group.mayday_core,
     aws_iam_role_policy.lambda_policy
   ]
 }
@@ -227,7 +224,7 @@ resource "aws_apigatewayv2_stage" "default" {
   auto_deploy = true
 
   access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    destination_arn = aws_cloudwatch_log_group.mayday_core.arn
     format = jsonencode({
       requestId      = "$context.requestId"
       ip             = "$context.identity.sourceIp"

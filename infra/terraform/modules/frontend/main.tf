@@ -8,16 +8,6 @@ terraform {
   }
 }
 
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "frontend" {
-  name              = "/ecs/${var.cluster_name}/frontend"
-  retention_in_days = 7
-
-  tags = merge(var.tags, {
-    Name = "${var.cluster_name}-frontend-logs"
-  })
-}
-
 # ECS Task Definition
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "${var.cluster_name}-frontend"
@@ -47,9 +37,9 @@ resource "aws_ecs_task_definition" "frontend" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.frontend.name
+        "awslogs-group"         = var.log_group_name
         "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "ecs"
+        "awslogs-stream-prefix" = "frontend"
       }
     }
   }])

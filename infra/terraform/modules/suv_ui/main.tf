@@ -8,16 +8,6 @@ terraform {
   }
 }
 
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "suv_ui" {
-  name              = "/ecs/${var.cluster_name}/suv_ui"
-  retention_in_days = 7
-
-  tags = merge(var.tags, {
-    Name = "${var.cluster_name}-suv-ui-logs"
-  })
-}
-
 # ECS Task Definition
 resource "aws_ecs_task_definition" "suv_ui" {
   family                   = "${var.cluster_name}-suv-ui"
@@ -51,9 +41,9 @@ resource "aws_ecs_task_definition" "suv_ui" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.suv_ui.name
+        "awslogs-group"         = var.log_group_name
         "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "ecs"
+        "awslogs-stream-prefix" = "suv-ui"
       }
     }
   }])
