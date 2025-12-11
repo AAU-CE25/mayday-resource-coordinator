@@ -73,16 +73,23 @@ jobs:
       - name: Select or Create Workspace
         run: |
           CLUSTER_NAME="${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
-          echo "Using workspace: $CLUSTER_NAME"
           
-          # List existing workspaces
-          terraform workspace list
-          
-          # Select workspace or create if it doesn't exist
-          terraform workspace select "$CLUSTER_NAME" || terraform workspace new "$CLUSTER_NAME"
-          
-          echo "Current workspace:"
-          terraform workspace show
+          # Only use workspace if not the default cluster
+          if [ "$CLUSTER_NAME" != "mayday-cluster" ]; then
+            echo "Using workspace: $CLUSTER_NAME"
+            
+            # List existing workspaces
+            terraform workspace list
+            
+            # Select workspace or create if it doesn't exist
+            terraform workspace select "$CLUSTER_NAME" || terraform workspace new "$CLUSTER_NAME"
+            
+            echo "Current workspace:"
+            terraform workspace show
+          else
+            echo "Using default workspace for mayday-cluster"
+            terraform workspace select default
+          fi
 
       - name: Terraform Validate
         id: validate
