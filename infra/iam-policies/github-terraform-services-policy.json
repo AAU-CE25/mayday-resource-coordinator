@@ -178,6 +178,18 @@
       "Resource": [
         "arn:aws:dynamodb:*:*:table/mayday-control-api-admin-users"
       ]
+    },
+    {
+      "Sid": "ElasticIPManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:AllocateAddress",
+        "ec2:ReleaseAddress",
+        "ec2:DescribeAddresses",
+        "ec2:AssociateAddress",
+        "ec2:DisassociateAddress"
+      ],
+      "Resource": "*"
     }
   ]
 }
