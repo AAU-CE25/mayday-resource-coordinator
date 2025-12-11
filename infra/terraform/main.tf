@@ -53,6 +53,7 @@ module "database" {
   source = "./modules/database"
 
   cluster_name                   = var.cluster_name
+  log_group_name                 = module.common.ecs_log_group_name
   ecs_cluster_id                 = module.common.cluster_id
   task_execution_role_arn        = module.common.task_execution_role_arn
   subnet_ids                     = module.common.private_subnets # Use private subnets for database
@@ -70,6 +71,7 @@ module "api_service" {
   source = "./modules/api_service"
 
   cluster_name                   = var.cluster_name
+  log_group_name                 = module.common.ecs_log_group_name
   ecs_cluster_id                 = module.common.cluster_id
   task_execution_role_arn        = module.common.task_execution_role_arn
   subnet_ids                     = module.common.subnets
@@ -92,6 +94,7 @@ module "frontend" {
   source = "./modules/frontend"
 
   cluster_name                   = var.cluster_name
+  log_group_name                 = module.common.ecs_log_group_name
   ecs_cluster_id                 = module.common.cluster_id
   task_execution_role_arn        = module.common.task_execution_role_arn
   subnet_ids                     = module.common.subnets
@@ -109,6 +112,7 @@ module "suv_ui" {
   source = "./modules/suv_ui"
 
   cluster_name                   = var.cluster_name
+  log_group_name                 = module.common.ecs_log_group_name
   ecs_cluster_id                 = module.common.cluster_id
   task_execution_role_arn        = module.common.task_execution_role_arn
   subnet_ids                     = module.common.subnets

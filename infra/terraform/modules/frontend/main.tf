@@ -8,16 +8,6 @@ terraform {
   }
 }
 
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "frontend" {
-  name              = "/ecs/${var.cluster_name}/frontend"
-  retention_in_days = 7
-
-  tags = merge(var.tags, {
-    Name = "${var.cluster_name}-frontend-logs"
-  })
-}
-
 # ECS Task Definition
 resource "aws_ecs_task_definition" "frontend" {
   family                   = "${var.cluster_name}-frontend"
@@ -47,9 +37,9 @@ resource "aws_ecs_task_definition" "frontend" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.frontend.name
+        "awslogs-group"         = var.log_group_name
         "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "ecs"
+        "awslogs-stream-prefix" = "frontend"
       }
     }
   }])
@@ -85,6 +75,8 @@ resource "aws_ecs_service" "frontend" {
   desired_count   = 1 # Increased for high availability
   launch_type     = "FARGATE"
 
+  health_check_grace_period_seconds = 60
+
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
@@ -109,7 +101,7 @@ resource "aws_ecs_service" "frontend" {
 # Autoscaling Target
 resource "aws_appautoscaling_target" "frontend" {
   max_capacity       = 3
-  min_capacity       = 1
+  min_capacity       = 0
   resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.frontend.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"

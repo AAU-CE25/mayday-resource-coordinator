@@ -1,0 +1,5 @@
+# boto3 and botocore are included by default in AWS Lambda Python runtime
+# Add any additional dependencies here
+
+# Example:
+# requests==2.31.0

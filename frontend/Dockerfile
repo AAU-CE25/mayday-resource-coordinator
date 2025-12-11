@@ -2,19 +2,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Pass API base URL into build for Next.js
-ARG NEXT_PUBLIC_API_URL
+# Build-time environment variable with default value
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 COPY package*.json ./
 RUN npm install
 
 COPY . .
-
-# Build-time environment variables
-# REQUIRED: NEXT_PUBLIC_API_URL must be provided at build time - no default value
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 

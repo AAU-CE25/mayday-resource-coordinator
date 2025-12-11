@@ -8,16 +8,6 @@ terraform {
   }
 }
 
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "db" {
-  name              = "/ecs/${var.cluster_name}/db"
-  retention_in_days = 7
-
-  tags = merge(var.tags, {
-    Name = "${var.cluster_name}-db-logs"
-  })
-}
-
 # ECS Task Definition
 resource "aws_ecs_task_definition" "db" {
   family                   = "${var.cluster_name}-db"
@@ -59,9 +49,9 @@ resource "aws_ecs_task_definition" "db" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.db.name
+        "awslogs-group"         = var.log_group_name
         "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "ecs"
+        "awslogs-stream-prefix" = "db"
       }
     }
 
