@@ -176,8 +176,9 @@ jobs:
           
           echo ""
           echo "=== Access Information ==="
-          terraform output api_url
-          terraform output ecr_repository_urls
+          echo "API URL: $(terraform output -raw api_url)"
+          echo "ALB DNS: $(terraform output -raw alb_dns_name)"
+          echo "ECS Cluster: $(terraform output -raw ecs_cluster_name)"
 
       - name: Upload Terraform Outputs
         if: github.event.inputs.action == 'apply'

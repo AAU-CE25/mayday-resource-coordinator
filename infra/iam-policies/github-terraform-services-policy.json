@@ -79,7 +79,7 @@
       ],
       "Resource": [
         "arn:aws:logs:*:*:log-group:/ecs/mayday-cluster/*",
-        "arn:aws:logs:*:*:log-group:/ecs/*-cluster/*"
+        "arn:aws:logs:*:*:log-group:*"
       ]
     },
     {
@@ -164,6 +164,20 @@
         "ecr:GetRepositoryPolicy"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "DynamoDBAdminUserManagement",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Scan",
+        "dynamodb:Query",
+        "dynamodb:DescribeTable"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:*:*:table/mayday-control-api-admin-users"
+      ]
     }
   ]
 }
