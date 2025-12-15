@@ -8,7 +8,7 @@ from api_service.app.auth.role_checker import require_role
 
 router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 
-@router.post("/", response_model=VolunteerResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["AUTHORITY"]))])
+@router.post("/", response_model=VolunteerResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def create_volunteer(volunteer: VolunteerCreate):
     try:
         return VolunteerLogic.create_volunteer(volunteer)
@@ -18,7 +18,7 @@ def create_volunteer(volunteer: VolunteerCreate):
             detail=str(ve)
         )
 
-@router.get("/", response_model=list[VolunteerResponse], dependencies=[Depends(require_role(["AUTHORITY"]))])
+@router.get("/", response_model=list[VolunteerResponse], dependencies=[Depends(require_role(["AUTHORITY", "VC"]))])
 def read_volunteers(
     event_id: Optional[int] = Query(None, description="Filter by event ID"),
     user_id: Optional[int] = Query(None, description="Filter by user ID"),
@@ -37,14 +37,14 @@ def read_volunteers(
         limit=limit
     )
 
-@router.get("/{volunteer_id}", response_model=VolunteerResponse, dependencies=[Depends(require_role(["AUTHORITY"]))])
+@router.get("/{volunteer_id}", response_model=VolunteerResponse, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def read_volunteer(volunteer_id: int):
     volunteer = VolunteerLogic.get_volunteer(volunteer_id)
     if not volunteer:
         raise HTTPException(status_code=404, detail="Volunteer not found")
     return volunteer
 
-@router.put("/{volunteer_id}", response_model=VolunteerResponse, dependencies=[Depends(require_role(["AUTHORITY"]))])
+@router.put("/{volunteer_id}", response_model=VolunteerResponse, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def update_volunteer(volunteer_id: int, volunteer: VolunteerUpdate):
     """Update a volunteer record (e.g., mark as completed)."""
     volunteer.id = volunteer_id

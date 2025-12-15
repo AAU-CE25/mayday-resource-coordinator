@@ -12,7 +12,7 @@ router = APIRouter(prefix="/events", tags=["events"])
     summary="Get all events",
     description="Retrieve a list of all disaster events with optional filtering",
     response_description="List of events",
-    dependencies=[Depends(require_role(["AUTHORITY"]))]
+    dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))]
 )
 def get_events(
     skip: int = Query(0, ge=0, description="Number of events to skip"),
@@ -32,7 +32,7 @@ def get_events(
         200: {"description": "Event found"},
         404: {"description": "Event not found"}
     },
-    dependencies=[Depends(require_role(["AUTHORITY"]))]
+    dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))]
 )
 def get_event(event_id: int):
     event = EventLogic.get_event(event_id)
