@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, Depends
 from typing import Optional
 
 from domain.schemas import VolunteerCreate, VolunteerResponse, VolunteerUpdate
@@ -8,7 +8,7 @@ from api_service.app.auth.role_checker import require_role
 
 router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 
-@router.post("/", response_model=VolunteerResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=VolunteerResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["AUTHORITY"]))])
 def create_volunteer(volunteer: VolunteerCreate):
     try:
         return VolunteerLogic.create_volunteer(volunteer)
