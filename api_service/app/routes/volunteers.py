@@ -18,7 +18,7 @@ def create_volunteer(volunteer: VolunteerCreate):
             detail=str(ve)
         )
 
-@router.get("/", response_model=list[VolunteerResponse], dependencies=[Depends(require_role(["AUTHORITY", "VC"]))])
+@router.get("/", response_model=list[VolunteerResponse], dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def read_volunteers(
     event_id: Optional[int] = Query(None, description="Filter by event ID"),
     user_id: Optional[int] = Query(None, description="Filter by user ID"),
