@@ -50,9 +50,9 @@ export function VolunteersList() {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
+          {/* <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -168,12 +168,12 @@ export function VolunteersList() {
         </div>
       )}
 
-      <AddVolunteerDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      {/* <AddVolunteerDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
       <AssignVolunteerDialog
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
         volunteer={selectedVolunteer}
-      />
+      /> */}
     </div>
   )
 }

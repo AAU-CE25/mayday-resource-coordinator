@@ -1,3 +1,6 @@
+# Kajetans github workflow
+.github/workflows/deploy_provisioning_service.yaml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -218,6 +221,7 @@ __marimo__/
 mayday-venv/*
 
 *.db
+
 .terraform/
 .terraform.lock.hcl
 

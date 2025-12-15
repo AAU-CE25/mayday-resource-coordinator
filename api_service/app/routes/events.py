@@ -134,31 +134,6 @@ def ingest_event(full_event: dict):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@event_router.post(
-    "/{event_id}/mark-read/",
-    response_model=dict,
-    summary="Mark event as read",
-    description="Mark a specific event notification as read"
-)
-def mark_event_read(event_id: int, db: Session = Depends(get_db)):
-    event = db.query(Event).filter(Event.id == event_id).first()
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    event.read = True
-    db.commit()
-    return {"id": event_id, "read": True}
-
-@event_router.post(
-    "/mark-all-read/",
-    response_model=dict,
-    summary="Mark all events as read",
-    description="Mark all event notifications as read"
-)
-def mark_all_read(db: Session = Depends(get_db)):
-    db.query(Event).update({Event.read: True})
-    db.commit()
-    return {"status": "all marked read"}
-
 # At the bottom of file, export both routers
 # router = [event_router]   Keep for backward compatibility
 __all__ = ["event_router", "ws_router"]

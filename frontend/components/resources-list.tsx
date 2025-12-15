@@ -60,9 +60,9 @@ export function ResourcesList() {
             className="pl-9"
           />
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
+        {/* <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
           <Plus className="h-4 w-4" />
-        </Button>
+        </Button> */}
       </div>
 
       <Tabs defaultValue="available" className="w-full">

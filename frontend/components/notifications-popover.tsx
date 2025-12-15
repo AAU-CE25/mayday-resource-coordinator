@@ -9,72 +9,29 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertCircle, CheckCircle, Info, XCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { api } from "@/lib/api-client"
 
 interface NotificationsPopoverProps {
   children: React.ReactNode
 }
 
 export function NotificationsPopover({ children }: NotificationsPopoverProps) {
-  const { data: notifications, isLoading, mutate } = useNotifications()
+  const { data: notifications, isLoading, markAsRead, markAllAsRead } = useNotifications()
   const { toast } = useToast()
-  const [marking, setMarking] = React.useState<number | null>(null)
 
-  // Mark single notification as read
-  const handleMarkRead = async (notificationId: number) => {
-    setMarking(notificationId)
-    try {
-      // Optimistically update local cache
-      mutate((current: any[]) => {
-        return (current ?? []).map((n: any) =>
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      }, false)
-
-      // Call backend to persist (adjust endpoint if needed)
-      await api.post(`/events/${notificationId}/mark-read/`, {})
-
-      toast({
-        title: "Marked as read",
-        description: "Notification updated.",
-      })
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to mark notification as read.",
-        variant: "destructive",
-      })
-      // Revalidate to revert optimistic update on error
-      mutate()
-    } finally {
-      setMarking(null)
-    }
+  const handleMarkRead = (notificationId: number) => {
+    markAsRead(notificationId)
+    toast({
+      title: "Marked as read",
+      description: "Notification removed from list.",
+    })
   }
 
-  // Mark all notifications as read
-  const handleMarkAllRead = async () => {
-    try {
-      // Optimistically update local cache
-      mutate((current: any[]) => {
-        return (current ?? []).map((n: any) => ({ ...n, read: true }))
-      }, false)
-
-      // Call backend to persist (adjust endpoint if needed)
-      await api.post("/events/mark-all-read/", {})
-
-      toast({
-        title: "All marked as read",
-        description: "All notifications have been marked as read.",
-      })
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to mark all as read.",
-        variant: "destructive",
-      })
-      // Revalidate to revert optimistic update on error
-      mutate()
-    }
+  const handleMarkAllRead = () => {
+    markAllAsRead()
+    toast({
+      title: "All marked as read",
+      description: "All notifications cleared.",
+    })
   }
 
   const getIcon = (type: string) => {
@@ -113,28 +70,17 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
               {notifications.map((notification: any) => (
                 <Card
                   key={notification.id}
-                  className={`group cursor-pointer p-3 transition-colors hover:bg-secondary ${
-                    !notification.read ? "border-primary bg-secondary/50" : ""
-                  }`}
-                  onClick={() => !notification.read && handleMarkRead(notification.id)}
+                  className="group cursor-pointer p-3 transition-colors hover:bg-secondary border-primary bg-secondary/50"
+                  onClick={() => handleMarkRead(notification.id)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5">{getIcon("info")}</div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium text-foreground">{notification.title}</p>
-                        {!notification.read && (
-                          <Badge
-                            variant="default"
-                            className="h-5 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleMarkRead(notification.id)
-                            }}
-                          >
-                            {marking === notification.id ? "Marking..." : "New"}
-                          </Badge>
-                        )}
+                        <Badge variant="default" className="h-5 text-xs">
+                          New
+                        </Badge>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">{notification.message}</p>
                       <p className="mt-2 text-xs text-muted-foreground">{notification.timestamp}</p>

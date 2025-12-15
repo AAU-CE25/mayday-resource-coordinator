@@ -13,10 +13,12 @@ create_db_and_tables()
 app = FastAPI(title="MDay API Service")
 
 origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
+    "http://localhost:3000",   # Frontend dev server
+    "http://localhost:3030",   # SUV UI dev server
+    "http://localhost:5173",   # React dev server (Vite default)
     "http://127.0.0.1:5173",
-    "http://frontend_container:3000",
+    "http://frontend_container:3000",   # optional - if frontend runs in Docker
+    "http://suv_ui_container:3030",   # optional - if suv ui runs in Docker
 ]
 
 app.add_middleware(

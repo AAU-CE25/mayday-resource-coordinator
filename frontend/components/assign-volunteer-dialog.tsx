@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useEvents } from "@/hooks/use-events"
 import { mutate } from "swr"
 import { Badge } from "@/components/ui/badge"
+import { api } from "@/lib/api-client"
 
 interface AssignVolunteerDialogProps {
   open: boolean
@@ -42,29 +43,22 @@ export function AssignVolunteerDialog({ open, onOpenChange, volunteer }: AssignV
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/volunteers/assign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await api.post("/volunteers/assign", {
           volunteer_id: volunteer.id,
           event_id: selectedEventId,
-        }),
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Volunteer assigned",
-          description: `${volunteer.name} has been assigned to the event.`,
         })
 
-        mutate("/api/volunteers")
-        mutate("/api/events")
+      toast({
+        title: "Volunteer assigned",
+        description: `${volunteer.name} has been assigned to the event.`,
+      })
 
-        setSelectedEventId("")
-        onOpenChange(false)
-      } else {
-        throw new Error("Failed to assign volunteer")
-      }
+      mutate("volunteers")
+      mutate("events")
+
+      setSelectedEventId("")
+      onOpenChange(false)
+
     } catch (error) {
       toast({
         title: "Error",

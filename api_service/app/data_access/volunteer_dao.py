@@ -1,5 +1,6 @@
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from datetime import datetime
 
 from api_service.app.models import Volunteer
 from api_service.app.db import engine
@@ -8,13 +9,9 @@ class VolunteerDAO:
     @staticmethod
     def create_volunteer(volunteer_data: Volunteer) -> Volunteer:
         with Session(engine) as session:
-             # Check if a volunteer with the same user already exists
-            query = select(Volunteer).where(Volunteer.user_id == volunteer_data.user_id)
-            existing_volunteer = session.exec(query).first()
-
-            if existing_volunteer:
-                # Return the existing user (avoid duplicates)
-                return existing_volunteer           
+            # Set create_time for new volunteer
+            volunteer_data.create_time = datetime.now()
+            
             session.add(volunteer_data)
             session.commit()
             session.refresh(volunteer_data)
@@ -27,9 +24,31 @@ class VolunteerDAO:
             return session.get(Volunteer, volunteer_id)
 
     @staticmethod
-    def get_volunteers(skip, limit) -> list[Volunteer]:
-        """Retrieve all volunteers."""
+    def get_volunteers(event_id: int = None, user_id: int = None, status: str = None, skip: int = 0, limit: int = 100) -> list[Volunteer]:
+        """Retrieve all volunteers with optional filtering."""
         query = select(Volunteer)
+        
+        # Add conditional WHERE clauses for each filter parameter
+        if event_id is not None:
+            query = query.where(Volunteer.event_id == event_id)
+        
+        if user_id is not None:
+            query = query.where(Volunteer.user_id == user_id)
+        
+        if status is not None:
+            query = query.where(Volunteer.status == status)
+
+        with Session(engine) as session:
+            return session.exec(query.offset(skip).limit(limit)).all()
+
+    @staticmethod
+    def get_active_volunteers(event_id: int = None, skip: int = 0, limit: int = 100) -> list[Volunteer]:
+        """Retrieve all active volunteers. Optionally filter by event_id."""
+        query = select(Volunteer).where(Volunteer.status == "active")
+        
+        # Add event_id filter if provided
+        if event_id is not None:
+            query = query.where(Volunteer.event_id == event_id)
 
         with Session(engine) as session:
             return session.exec(query.offset(skip).limit(limit)).all()
@@ -49,6 +68,10 @@ class VolunteerDAO:
                     if key != "id" and value is not None:
                         setattr(existing, key, value)
 
+                # If status is being set to 'completed', set completion_time
+                if volunteer_update.status == "completed" and existing.completion_time is None:
+                    existing.completion_time = datetime.now()
+
                 # Commit changes to database
                 session.commit()
                 session.refresh(existing)
@@ -61,8 +84,8 @@ class VolunteerDAO:
 
             except Exception as ex:
                 session.rollback()
-                err =f"Database error while updating volunteer {volunteer_update.id}: {e}"
-                raise Exception(err) from e
+                err = f"Database error while updating volunteer {volunteer_update.id}: {ex}"
+                raise Exception(err) from ex
 
     @staticmethod
     def delete_volunteer(volunteer_id: int) -> bool:

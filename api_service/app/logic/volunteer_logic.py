@@ -5,17 +5,18 @@ from api_service.app.data_access import VolunteerDAO
 
 class VolunteerLogic:
     def create_volunteer(volunteerCreate: VolunteerCreate) -> VolunteerResponse:
-        #returs existing if exists
-        _existing_user: UserResponse = UserLogic.create_user(volunteerCreate.user)
-
-        new_volunteer = Volunteer(
-            **volunteerCreate.model_dump(exclude={"user"}),  # Exclude nested user data
-            user_id=_existing_user.id
-        )
+        # Create the volunteer with the provided user_id
+        new_volunteer = Volunteer(**volunteerCreate.model_dump())
         volunteer = VolunteerDAO.create_volunteer(new_volunteer)
+        
+        # Fetch the user for the response
+        user = UserLogic.get_user(volunteer.user_id)
+        if not user:
+            raise ValueError(f"User with id {volunteer.user_id} not found")
+        
         return VolunteerResponse.model_validate({
             **volunteer.model_dump(),
-            "user": _existing_user
+            "user": user
         })
 
     def get_volunteer(volunteer_id: int) -> VolunteerResponse | None:
@@ -24,21 +25,36 @@ class VolunteerLogic:
             return None
         
         user : UserResponse= None
-        # Load the associated location if it exists
+        # Load the associated user if it exists
         if response_volunteer.user_id:
             user = UserLogic.get_user(response_volunteer.user_id) 
         if not user:
             return None
-        # Validate the event including nested user
+        # Validate the volunteer including nested user
         return VolunteerResponse.model_validate({
-            **response_volunteer.model_dump(),  # Event fields
+            **response_volunteer.model_dump(),  # Volunteer fields
             "user": user.model_dump()
         })
         return response_volunteer
 
 
-    def get_volunteers(skip: int, limit: int) -> list[VolunteerResponse]:
-        volunteers = VolunteerDAO.get_volunteers(skip, limit)
+    def get_volunteers(event_id: int = None, user_id: int = None, status: str = None, skip: int = 0, limit: int = 100) -> list[VolunteerResponse]:
+        """Get volunteers with optional filtering by event_id, user_id, and status."""
+        volunteers = VolunteerDAO.get_volunteers(
+            event_id=event_id,
+            user_id=user_id,
+            status=status,
+            skip=skip,
+            limit=limit
+        )
+        result: list[VolunteerResponse] = []
+        for volunteer in volunteers:
+            result.append(VolunteerLogic.get_volunteer(volunteer.id))
+        return result
+
+    def get_active_volunteers(event_id: int = None, skip: int = 0, limit: int = 100) -> list[VolunteerResponse]:
+        """Get all volunteers with status='active'. Optionally filter by event_id."""
+        volunteers = VolunteerDAO.get_active_volunteers(event_id=event_id, skip=skip, limit=limit)
         result: list[VolunteerResponse] = []
         for volunteer in volunteers:
             result.append(VolunteerLogic.get_volunteer(volunteer.id))
@@ -47,9 +63,18 @@ class VolunteerLogic:
     def update_volunteer(volunteer_update: VolunteerUpdate) -> VolunteerResponse | None:
         _volunteer = Volunteer(**volunteer_update.model_dump())
         response_volunteer = VolunteerDAO.update_volunteer(_volunteer)
-        if response_volunteer:
-            return VolunteerResponse.model_validate(response_volunteer)
-        return None
+        if not response_volunteer:
+            return None
+        
+        # Fetch the user for the response
+        user = UserLogic.get_user(response_volunteer.user_id)
+        if not user:
+            return None
+        
+        return VolunteerResponse.model_validate({
+            **response_volunteer.model_dump(),
+            "user": user
+        })
 
     def delete_volunteer(volunteer_id: int):
         return VolunteerDAO.delete_volunteer(volunteer_id)

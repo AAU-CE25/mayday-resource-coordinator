@@ -12,7 +12,7 @@ class StatsDAO:
         with Session(engine) as session:
             # active events are those with status active or pending (matches frontend filter)
             active_events = session.exec(
-                select(func.count()).select_from(Event).where(Event.status.in_(["active", "pending"]))
+                select(func.count()).select_from(Event).where(Event.status.in_(["active"]))
             ).one()
 
             total_volunteers = session.exec(

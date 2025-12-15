@@ -1,5 +1,5 @@
 "use client"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import useSWR, { mutate as globalMutate } from "swr"
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "")
@@ -13,10 +13,30 @@ const fetcher = (path: string) =>
     return res.json()
   })
 
+const STORAGE_KEY = "notification_read_ids"
+
+// Get read notification IDs from localStorage
+const getReadIds = (): Set<number> => {
+  if (typeof window === "undefined") return new Set()
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return new Set(stored ? JSON.parse(stored) : [])
+  } catch {
+    return new Set()
+  }
+}
+
+// Save read notification IDs to localStorage
+const saveReadIds = (ids: Set<number>) => {
+  if (typeof window === "undefined") return
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(ids)))
+}
+
 /**
  * useNotifications
  * - Uses /events/ as the source of "notifications"
  * - Keeps data realtime by opening a websocket to `${WS_BASE}/ws/events`
+ * - Filters out read notifications (stored in localStorage)
  * - Maps event -> notification shape expected by UI
  */
 export function useNotifications() {
@@ -25,6 +45,13 @@ export function useNotifications() {
     revalidateOnFocus: true,
     refreshInterval: 15000,
   })
+
+  const [readIds, setReadIds] = useState<Set<number>>(new Set())
+
+  // Initialize read IDs from localStorage on mount
+  useEffect(() => {
+    setReadIds(getReadIds())
+  }, [])
 
   // realtime: open WS and trigger revalidation on incoming messages
   useEffect(() => {
@@ -37,22 +64,15 @@ export function useNotifications() {
     }
 
     ws.onopen = () => {
-      // no-op, but useful for debugging
       console.debug("WS /ws/events connected")
     }
 
     ws.onmessage = (evt) => {
       try {
-        // payload may be the new event or a simple signal; revalidate list
         const payload = JSON.parse(evt.data)
-        // Optionally you can optimistically prepend the new event to cache:
-        // mutate((current: any[]) => [payload, ...(current ?? [])], false)
-        // But here we revalidate from server to keep authoritative state:
         mutate()
-        // Also update any global listeners keyed by the same key:
         globalMutate(key)
       } catch (e) {
-        // if payload isn't JSON, just revalidate
         mutate()
       }
     }
@@ -73,23 +93,45 @@ export function useNotifications() {
       ws = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [WS_BASE]) // only run once / when WS_BASE changes
+  }, [WS_BASE])
 
-  // map events -> notification-like objects for UI
-  const notifications = (events ?? []).map((ev: any) => ({
-    id: ev.id,
-    title: ev.description?.split("\n")[0] ?? `Event #${ev.id}`,
-    message: `Priority ${ev.priority} • ${ev.status}`,
-    timestamp: ev.create_time ?? ev.modified_time ?? ev.created_at ?? "",
-    raw: ev,
-  }))
+  // map events -> notification-like objects and filter out read ones
+  const notifications = (events ?? [])
+    .filter((ev: any) => !readIds.has(ev.id)) // only show unread
+    .map((ev: any) => ({
+      id: ev.id,
+      title: ev.description?.split("\n")[0] ?? `Event #${ev.id}`,
+      message: `Priority ${ev.priority} • ${ev.status}`,
+      timestamp: ev.create_time ?? ev.modified_time ?? ev.created_at ?? "",
+      read: false,
+      raw: ev,
+    }))
+
+  // Mark single notification as read
+  const markAsRead = (notificationId: number) => {
+    const updated = new Set(readIds)
+    updated.add(notificationId)
+    setReadIds(updated)
+    saveReadIds(updated)
+  }
+
+  // Mark all notifications as read
+  const markAllAsRead = () => {
+    const allIds = new Set<number>(
+      (events ?? []).map((ev: any) => ev.id as number)
+    )
+    setReadIds(allIds)
+    saveReadIds(allIds)
+  }
 
   return {
     data: notifications,
     rawEvents: events ?? [],
     isLoading: !error && !events,
     isError: !!error,
-    mutate, // revalidate events
+    mutate,
     key,
+    markAsRead,
+    markAllAsRead,
   }
 }
