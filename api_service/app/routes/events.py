@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
-
+from api_service.app.auth.role_checker import require_role
 from domain import EventCreate, EventResponse, EventUpdate
 from api_service.app.logic import EventLogic, IngestionLogic
 
@@ -11,7 +11,8 @@ router = APIRouter(prefix="/events", tags=["events"])
     response_model=list[EventResponse],
     summary="Get all events",
     description="Retrieve a list of all disaster events with optional filtering",
-    response_description="List of events"
+    response_description="List of events",
+    dependencies=[Depends(require_role(["AUTHORITY"]))]
 )
 def get_events(
     skip: int = Query(0, ge=0, description="Number of events to skip"),
@@ -30,7 +31,8 @@ def get_events(
     responses={
         200: {"description": "Event found"},
         404: {"description": "Event not found"}
-    }
+    },
+    dependencies=[Depends(require_role(["AUTHORITY"]))]
 )
 def get_event(event_id: int):
     event = EventLogic.get_event(event_id)
@@ -43,7 +45,8 @@ def get_event(event_id: int):
     response_model=EventResponse,
     status_code=201,
     summary="Create new event",
-    description="Create a new disaster event"
+    description="Create a new disaster event",
+    dependencies=[Depends(require_role(["AUTHORITY"]))]
 )
 def create_event(event: EventCreate):
     return EventLogic.create_event(event)
@@ -56,7 +59,8 @@ def create_event(event: EventCreate):
     responses={
         200: {"description": "Event updated"},
         404: {"description": "Event not found"}
-    }
+    },
+    dependencies=[Depends(require_role(["AUTHORITY"]))]
 )
 def update_event(event_id: int, event: EventUpdate):
     db_event = EventLogic.get_event(event_id)
@@ -72,7 +76,8 @@ def update_event(event_id: int, event: EventUpdate):
     responses={
         204: {"description": "Event deleted"},
         404: {"description": "Event not found"}
-    }
+    },
+    dependencies=[Depends(require_role(["AUTHORITY"]))]
 )
 def delete_event(event_id: int):
     event = EventLogic.get_event(event_id)
@@ -80,7 +85,7 @@ def delete_event(event_id: int):
         raise HTTPException(status_code=404, detail="Event not found")
     return EventLogic.delete_event(event_id)
 
-@router.post("/ingest")
+@router.post("/ingest", dependencies=[Depends(require_role(["AUTHORITY"]))])
 def ingest_event(full_event: dict):
     try:
         # print(full_event)

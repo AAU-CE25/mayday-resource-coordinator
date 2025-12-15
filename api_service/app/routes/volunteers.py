@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import Optional
 
 from domain.schemas import VolunteerCreate, VolunteerResponse, VolunteerUpdate
 from domain.exceptions import UserExistsException
 from api_service.app.logic import VolunteerLogic
+from api_service.app.auth.role_checker import require_role
 
 router = APIRouter(prefix="/volunteers", tags=["volunteers"])
 
@@ -17,7 +18,7 @@ def create_volunteer(volunteer: VolunteerCreate):
             detail=str(ve)
         )
 
-@router.get("/", response_model=list[VolunteerResponse])
+@router.get("/", response_model=list[VolunteerResponse], dependencies=[Depends(require_role(["AUTHORITY"]))])
 def read_volunteers(
     event_id: Optional[int] = Query(None, description="Filter by event ID"),
     user_id: Optional[int] = Query(None, description="Filter by user ID"),
@@ -36,14 +37,14 @@ def read_volunteers(
         limit=limit
     )
 
-@router.get("/{volunteer_id}", response_model=VolunteerResponse)
+@router.get("/{volunteer_id}", response_model=VolunteerResponse, dependencies=[Depends(require_role(["AUTHORITY"]))])
 def read_volunteer(volunteer_id: int):
     volunteer = VolunteerLogic.get_volunteer(volunteer_id)
     if not volunteer:
         raise HTTPException(status_code=404, detail="Volunteer not found")
     return volunteer
 
-@router.put("/{volunteer_id}", response_model=VolunteerResponse)
+@router.put("/{volunteer_id}", response_model=VolunteerResponse, dependencies=[Depends(require_role(["AUTHORITY"]))])
 def update_volunteer(volunteer_id: int, volunteer: VolunteerUpdate):
     """Update a volunteer record (e.g., mark as completed)."""
     volunteer.id = volunteer_id

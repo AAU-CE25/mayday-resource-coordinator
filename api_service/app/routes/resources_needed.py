@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from api_service.app.auth.role_checker import require_role
 from domain.schemas import (
     ResourceNeededCreate,
     ResourceNeededResponse,
@@ -9,17 +10,17 @@ from api_service.app.logic import ResourceLogic
 router = APIRouter(prefix="/resources/needed", tags=["resources_needed"])
 
 
-@router.post("/", response_model=ResourceNeededResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ResourceNeededResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["AUTHORITY"]))])
 def create_resource_needed(resource: ResourceNeededCreate):
     return ResourceLogic.create_resource_needed(resource)
 
 
-@router.get("/", response_model=list[ResourceNeededResponse])
+@router.get("/", response_model=list[ResourceNeededResponse], dependencies=[Depends(require_role(["AUTHORITY"]))])
 def read_resources_needed():
     return ResourceLogic.get_resources_needed()
 
 
-@router.get("/{resource_id}", response_model=ResourceNeededResponse)
+@router.get("/{resource_id}", response_model=ResourceNeededResponse, dependencies=[Depends(require_role(["AUTHORITY"]))])
 def read_resource_needed(resource_id: int):
     resource = ResourceLogic.get_resource_needed(resource_id)
     if not resource:
@@ -27,7 +28,7 @@ def read_resource_needed(resource_id: int):
     return resource
 
 
-@router.put("/{resource_id}", response_model=ResourceNeededResponse)
+@router.put("/{resource_id}", response_model=ResourceNeededResponse, dependencies=[Depends(require_role(["AUTHORITY"]))])
 def update_resource_needed(resource_id: int, resource: ResourceNeededUpdate):
     db_resource = ResourceLogic.get_resource_needed(resource_id)
     if not db_resource:
@@ -36,7 +37,7 @@ def update_resource_needed(resource_id: int, resource: ResourceNeededUpdate):
     return updated
 
 
-@router.delete("/{resource_id}")
+@router.delete("/{resource_id}", dependencies=[Depends(require_role(["AUTHORITY"]))])
 def delete_resource_needed(resource_id: int):
     resource = ResourceLogic.get_resource_needed(resource_id)
     if not resource:
