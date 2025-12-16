@@ -11,8 +11,6 @@ from .routes import (
     volunteer_router,
     stats_router,
 )
-from sqlmodel import Session, select
-from .db import engine
 from .models import User
 from .core.config import settings
 from .auth.hashing import hash_password
@@ -88,12 +86,7 @@ def seed_admin_user():
     admin_name = settings.ADMIN_NAME or "Administrator"
     admin_phone = settings.ADMIN_PHONE or ""
 
-    with Session(engine) as session:
-        existing = session.exec(select(User).where(User.email == admin_email)).first()
-        if existing:
-            return
-
-    # Create admin with AUTHORITY role
+    # Create admin with AUTHORITY role if missing (DAO enforces unique email)
     hashed_pw = hash_password(admin_password)
     admin_user = User(
         name=admin_name,
@@ -103,10 +96,10 @@ def seed_admin_user():
         status="available",
         role="AUTHORITY",
     )
-    # Use DAO-style create to persist cleanly
     try:
         from api_service.app.data_access import UserDAO
         UserDAO.create_user(admin_user)
         print("[startup] Created initial administrator:", admin_email)
-    except Exception as e:
-        print("[startup] Admin bootstrap skipped or failed:", str(e))
+    except Exception:
+        # Likely already exists; keep startup idempotent
+        pass

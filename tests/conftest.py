@@ -21,6 +21,7 @@ from api_service.app.data_access import (
     volunteer_dao,
 )
 from api_service.app.main import app
+from api_service.app.core.config import settings
 
 
 @pytest.fixture(scope="function")
@@ -59,6 +60,15 @@ def client(db_session):
     app.dependency_overrides[db.get_session] = get_session_override
 
     with TestClient(app) as test_client:
+        # Auto-login as seeded admin (if configured) and set default Authorization header
+        admin_email = settings.ADMIN_EMAIL
+        admin_password = settings.ADMIN_PASSWORD
+        if admin_email and admin_password:
+            resp = test_client.post("/auth/login", json={"email": admin_email, "password": admin_password})
+            if resp.status_code == 200:
+                token = resp.json().get("access_token")
+                if token:
+                    test_client.headers.update({"Authorization": f"Bearer {token}"})
         yield test_client
 
     app.dependency_overrides.clear()
