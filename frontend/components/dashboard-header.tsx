@@ -8,10 +8,7 @@ import { NotificationsPopover } from "./notifications-popover"
 import { useNotifications } from "@/hooks/use-notifications"
 
 export function Header() {
-  console.log("Header Component: Running client-side code.")
-
-  const { data: notifications = [], isLoading } = useNotifications()
-  const unreadCount = (notifications || []).filter((n: any) => !n.read).length || 0
+  const { unreadCount, isLoading } = useNotifications()
 
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">

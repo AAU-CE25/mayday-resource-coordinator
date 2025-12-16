@@ -93,7 +93,7 @@ export function useNotifications() {
       ws = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [WS_BASE])
+  }, [WS_BASE, mutate])
 
   // map events -> notification-like objects and filter out read ones
   const notifications = (events ?? [])
@@ -106,6 +106,9 @@ export function useNotifications() {
       read: false,
       raw: ev,
     }))
+
+  // Compute unread count (updates whenever readIds or events change)
+  const unreadCount = Math.max(0, (events ?? []).length - readIds.size)
 
   // Mark single notification as read
   const markAsRead = (notificationId: number) => {
@@ -133,5 +136,6 @@ export function useNotifications() {
     key,
     markAsRead,
     markAllAsRead,
+    unreadCount, // NEW: expose unread count
   }
 }
