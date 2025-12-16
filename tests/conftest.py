@@ -8,6 +8,12 @@ from sqlmodel.pool import StaticPool
 # Ensure tests never depend on external Postgres creds
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 
+# Ensure admin bootstrap is present in CI (where .env may be absent)
+os.environ.setdefault("ADMIN_EMAIL", "ci-admin@example.com")
+os.environ.setdefault("ADMIN_PASSWORD", "ChangeMe_CI_123")
+os.environ.setdefault("ADMIN_NAME", "CI Administrator")
+os.environ.setdefault("ADMIN_PHONE", "0000000000")
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from fastapi.testclient import TestClient
