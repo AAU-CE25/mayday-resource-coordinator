@@ -86,18 +86,36 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
       ...options,
     })
 
-    // Handle unauthorized - clear token and redirect
-    if (response.status === 401) {
-      clearAuthToken()
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
-      }
-      throw new Error('Session expired. Please login again.')
-    }
-
     if (!response.ok) {
-      const errorText = await response.text().catch(() => response.statusText)
-      throw new Error(`API error ${response.status}: ${errorText}`)
+      // Try to parse JSON error response first
+      let errorMessage = response.statusText
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.detail || errorData.message || JSON.stringify(errorData)
+      } catch {
+        // If not JSON, try to get text
+        try {
+          errorMessage = await response.text()
+        } catch {
+          // Fall back to statusText
+        }
+      }
+      
+      // Handle 401 - auto logout ONLY for non-auth endpoints
+      if (response.status === 401) {
+        const isAuthEndpoint = path.startsWith('/auth/login') || path.startsWith('/auth/register')
+        
+        if (!isAuthEndpoint) {
+          clearAuthToken()
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+          }
+          throw new Error('Session expired. Please login again.')
+        }
+      }
+      
+      // For all other errors (including 401 on auth endpoints), throw the actual error message
+      throw new Error(errorMessage || `Request failed with status ${response.status}`)
     }
 
     // Handle empty responses (204 No Content)
