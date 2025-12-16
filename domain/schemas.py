@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime as dt
-from typing import Optional
+from typing import Optional, Literal
 
 # ------------------ User ------------------
 class UserCreate(BaseModel):
@@ -8,13 +8,20 @@ class UserCreate(BaseModel):
     email: str
     phonenumber: str
     password: str
-    role: str | None = "SUV"
+    role: Literal["SUV"] = "SUV"
 
 class UserUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
     phonenumber: str | None = None
     status: str | None = None
+
+class UserAdminUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phonenumber: str | None = None
+    status: str | None = None
+    role: str | None = None
 
 class UserResponse(BaseModel):
     id: int

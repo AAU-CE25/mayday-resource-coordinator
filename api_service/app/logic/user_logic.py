@@ -1,5 +1,5 @@
-
-from domain.schemas import UserCreate, UserResponse, UserUpdate, UserLogin
+from typing import Union
+from domain.schemas import UserCreate, UserResponse, UserUpdate, UserLogin, UserAdminUpdate
 from ..models import User
 from api_service.app.data_access import UserDAO
 
@@ -25,7 +25,7 @@ class UserLogic:
             result.append(UserResponse.model_validate(user))
         return result
 
-    def update_user(user_id: int, user_update: UserUpdate) -> UserResponse | None:
+    def update_user(user_id: int, user_update: Union[UserUpdate, UserAdminUpdate]) -> UserResponse | None:
         _user = User(id=user_id, **user_update.model_dump())
         response_user= UserDAO.update_user(user_id, _user)
         if response_user:

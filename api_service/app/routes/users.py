@@ -4,7 +4,7 @@ from api_service.app.auth.role_checker import require_role
 
 
 
-from domain.schemas import UserCreate, UserResponse, UserUpdate
+from domain.schemas import UserAdminUpdate, UserCreate, UserResponse, UserUpdate
 from api_service.app.logic import UserLogic
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -30,6 +30,13 @@ def update_user(user_id: int, user: UserUpdate):
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserLogic.update_user(user_id, user)    
+
+@router.put("/{user_id}/admin", response_model=UserResponse, dependencies=[Depends(require_role(["AUTHORITY", "VC"]))])
+def update_user_admin(user_id: int, user: UserAdminUpdate):
+    db_user = UserLogic.get_user(user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserLogic.update_user(user_id, user)     
 
 @router.delete("/{user_id}",dependencies=[Depends(require_role(["AUTHORITY"]))])
 def delete_user(user_id: int):
