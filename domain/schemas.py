@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime as dt
-from typing import Optional, Literal
+from typing import Optional
 
 # ------------------ User ------------------
 class UserCreate(BaseModel):
@@ -8,7 +8,7 @@ class UserCreate(BaseModel):
     email: str
     phonenumber: str
     password: str
-    role: Literal["SUV"] = "SUV"
+
 
 class UserUpdate(BaseModel):
     name: str | None = None
