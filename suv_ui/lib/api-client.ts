@@ -102,15 +102,19 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
     console.log(`[API] Response status for ${endpoint}: ${response.status}`)
 
-    // Handle unauthorized - clear token and redirect
+    // Handle unauthorized - clear token and redirect (but not for login endpoint)
     if (response.status === 401) {
-      const body = await response.text()
-      console.error(`[API] 401 Unauthorized for ${endpoint}. Body:`, body)
-      clearAuthToken()
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
+      const isLoginEndpoint = endpoint.includes('/auth/login')
+      
+      if (!isLoginEndpoint) {
+        clearAuthToken()
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
+        }
       }
-      throw new Error('Session expired. Please login again.')
+      
+      const errorText = await response.text().catch(() => 'Unauthorized')
+      throw new Error(`API error ${response.status}: ${errorText}`)
     }
 
     if (!response.ok) {

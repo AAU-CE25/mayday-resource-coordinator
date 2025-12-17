@@ -42,7 +42,7 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome to Volunteer Portal</h1>
             <p className="text-gray-600 mt-2">Sign in to continue helping</p>
           </div>
 

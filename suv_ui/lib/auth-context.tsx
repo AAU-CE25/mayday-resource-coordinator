@@ -104,7 +104,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response;
     } catch (error) {
       console.error("Failed to login:", error);
-      throw error;
+      // Transform API errors into user-friendly messages
+      if (error instanceof Error) {
+        if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          throw new Error("Incorrect email or password");
+        }
+        if (error.message.includes("403") || error.message.includes("Forbidden")) {
+          throw new Error("Access denied");
+        }
+        if (error.message.includes("Network") || error.message.includes("fetch")) {
+          throw new Error("Unable to connect to server. Please try again.");
+        }
+        // Pass through if already a friendly message
+        throw error;
+      }
+      throw new Error("Login failed. Please try again.");
     }
   };
 
