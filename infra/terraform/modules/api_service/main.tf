@@ -51,6 +51,30 @@ resource "aws_ecs_task_definition" "api" {
       {
         name  = "CORS_ALLOW_ALL"
         value = "true"
+      },
+      {
+        name  = "SECRET_KEY"
+        value = var.secret_key
+      },
+      {
+        name  = "ADMIN_NAME"
+        value = var.admin_name
+      },
+      {
+        name  = "ADMIN_EMAIL"
+        value = var.admin_email
+      },
+      {
+        name  = "ADMIN_PHONE"
+        value = var.admin_phone
+      },
+      {
+        name  = "ADMIN_PASSWORD"
+        value = var.admin_password
+      },
+      {
+        name  = "ENVIRONMENT"
+        value = "production"
       }
     ]
 
