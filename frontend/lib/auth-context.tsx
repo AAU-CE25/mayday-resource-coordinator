@@ -1,0 +1,176 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { useRouter, usePathname } from "next/navigation";
+import type {
+  UserResponse,
+  LoginCredentials,
+  AuthTokenResponse,
+} from "./types";
+import {
+  getCurrentUser,
+  logout as apiLogout,
+  getAuthToken,
+  clearAuthToken,
+  login as apiLogin,
+} from "./api-client";
+
+// Roles that are allowed to access the coordinator dashboard
+const ALLOWED_ROLES = ["AUTHORITY", "VC"];
+
+interface AuthContextType {
+  user: UserResponse | null;
+  isLoading: boolean;
+  loginWithCredentials: (
+    credentials: LoginCredentials
+  ) => Promise<AuthTokenResponse>;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [checked, setChecked] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Only check auth on mount
+  useEffect(() => {
+    if (checked) return;
+
+    async function loadUser() {
+      const token = getAuthToken();
+
+      // No token - redirect to login if not already there
+      if (!token) {
+        setIsLoading(false);
+        if (
+          !pathname?.startsWith("/dashboard/login")
+        ) {
+          router.push("/dashboard/login");
+        }
+        setChecked(true);
+        return;
+      }
+
+      // Token exists - fetch user data
+      try {
+        const userData = await getCurrentUser();
+        
+        // Check if user has appropriate role for dashboard
+        if (!ALLOWED_ROLES.includes(userData.role)) {
+          clearAuthToken();
+          setUser(null);
+          setIsLoading(false);
+          setChecked(true);
+          if (!pathname?.startsWith("/dashboard/login")) {
+            router.push("/dashboard/login");
+          }
+          return;
+        }
+        
+        setUser(userData);
+
+        // If on login page with valid session, redirect to app
+        if (pathname?.startsWith("/dashboard/login")) {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Failed to load user:", error);
+        setUser(null);
+        if (!pathname?.startsWith("/dashboard/login")) {
+          router.push("/dashboard/login");
+        }
+      } finally {
+        setIsLoading(false);
+        setChecked(true);
+      }
+    }
+
+    loadUser();
+  }, [checked, pathname, router]);
+
+  const loginWithCredentials = async (
+    credentials: LoginCredentials
+  ): Promise<AuthTokenResponse> => {
+    try {
+      const response = await apiLogin(credentials);
+      const userData = await getCurrentUser();
+      
+      // Check if user has appropriate role for dashboard
+      if (!ALLOWED_ROLES.includes(userData.role)) {
+        clearAuthToken();
+        throw new Error("Access denied. This dashboard is for coordinators and administrators only.");
+      }
+      
+      setUser(userData);
+      router.push("/");
+      return response;
+    } catch (error) {
+      console.error("Failed to login:", error);
+      // Re-throw with user-friendly message
+      if (error instanceof Error) {
+        // Check for common error patterns and provide friendly messages
+        if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          throw new Error("Invalid email or password");
+        }
+        if (error.message.includes("403") || error.message.includes("Forbidden")) {
+          throw new Error("Access denied");
+        }
+        if (error.message.includes("Network") || error.message.includes("fetch")) {
+          throw new Error("Unable to connect to server. Please try again.");
+        }
+        // Pass through custom error messages (like role check)
+        throw error;
+      }
+      throw new Error("Login failed. Please try again.");
+    }
+  };
+
+  const logout = () => {
+    apiLogout();
+    setUser(null);
+    router.push("/dashboard/login");
+  };
+
+  const refreshUser = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setUser(userData);
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+      logout();
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        loginWithCredentials,
+        logout,
+        refreshUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

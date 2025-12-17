@@ -18,8 +18,17 @@ class UserLogic:
             return UserResponse.model_validate(user)
         return None
 
-    def get_users(skip: int, limit: int, status: str | None = None) -> list[UserResponse]:
-        users = UserDAO.get_users(skip, limit, status)
+    def get_users(skip: int, limit: int, status: str | None = None, role: str | None = None) -> list[UserResponse]:
+        # Parse role parameter: if starts with !=, treat as not-equal filter
+        role_equal = None
+        role_ne = None
+        if role:
+            if role.startswith("!="):
+                role_ne = role[2:]  # Remove != prefix
+            else:
+                role_equal = role
+        
+        users = UserDAO.get_users(skip, limit, status, role_equal, role_ne)
         result: list[UserResponse] = []
         for user in users:
             result.append(UserResponse.model_validate(user))

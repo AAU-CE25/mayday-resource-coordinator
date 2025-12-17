@@ -1,5 +1,16 @@
 // Types based on domain/schemas.py
 
+// ------------------ Auth ------------------
+export interface AuthTokenResponse {
+  access_token: string
+  token_type: string
+}
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
 // ------------------ User ------------------
 export interface UserCreate {
   name: string
@@ -23,7 +34,7 @@ export interface UserResponse {
   email: string
   phonenumber?: string | null
   status: string
-  role?: string | null
+  role: string
 }
 
 // ------------------ Volunteer ------------------

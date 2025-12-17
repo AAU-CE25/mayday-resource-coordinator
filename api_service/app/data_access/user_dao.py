@@ -28,11 +28,15 @@ class UserDAO:
             return session.get(User, user_id)
 
     @staticmethod
-    def get_users(skip, limit, status: str | None = None) -> list[User]:
-        """Retrieve all users, optionally filtered by status."""
+    def get_users(skip, limit, status: str | None = None, role: str | None = None, role_ne: str | None = None) -> list[User]:
+        """Retrieve all users, optionally filtered by status and role."""
         query = select(User)
         if status:
             query = query.where(User.status == status)
+        if role:
+            query = query.where(User.role == role)
+        if role_ne:
+            query = query.where(User.role != role_ne)
 
         with Session(engine) as session:
             return session.exec(query.offset(skip).limit(limit)).all()
