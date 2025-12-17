@@ -9,27 +9,27 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import type {
-  User,
+  UserResponse,
   LoginCredentials,
-  RegisterData,
   AuthTokenResponse,
 } from "./types";
 import {
   getCurrentUser,
   logout as apiLogout,
   getAuthToken,
+  clearAuthToken,
   login as apiLogin,
-  register as apiRegister,
 } from "./api-client";
 
+// Roles that are allowed to access the coordinator dashboard
+const ALLOWED_ROLES = ["AUTHORITY", "VC"];
+
 interface AuthContextType {
-  user: User | null;
+  user: UserResponse | null;
   isLoading: boolean;
   loginWithCredentials: (
     credentials: LoginCredentials
   ) => Promise<AuthTokenResponse>;
-  registerUser: (data: RegisterData) => Promise<User>;
-  login: () => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -37,7 +37,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [checked, setChecked] = useState(false);
   const router = useRouter();
@@ -54,10 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!token) {
         setIsLoading(false);
         if (
-          !pathname?.startsWith("/login") &&
-          !pathname?.startsWith("/register")
+          !pathname?.startsWith("/dashboard/login")
         ) {
-          router.push("/login");
+          router.push("/dashboard/login");
         }
         setChecked(true);
         return;
@@ -66,23 +65,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Token exists - fetch user data
       try {
         const userData = await getCurrentUser();
+        
+        // Check if user has appropriate role for dashboard
+        if (!ALLOWED_ROLES.includes(userData.role)) {
+          clearAuthToken();
+          setUser(null);
+          setIsLoading(false);
+          setChecked(true);
+          if (!pathname?.startsWith("/dashboard/login")) {
+            router.push("/dashboard/login");
+          }
+          return;
+        }
+        
         setUser(userData);
 
-        // If on auth pages with valid session, redirect to app
-        if (
-          pathname?.startsWith("/login") ||
-          pathname?.startsWith("/register")
-        ) {
+        // If on login page with valid session, redirect to app
+        if (pathname?.startsWith("/dashboard/login")) {
           router.push("/");
         }
       } catch (error) {
         console.error("Failed to load user:", error);
         setUser(null);
-        if (
-          !pathname?.startsWith("/login") &&
-          !pathname?.startsWith("/register")
-        ) {
-          router.push("/login");
+        if (!pathname?.startsWith("/dashboard/login")) {
+          router.push("/dashboard/login");
         }
       } finally {
         setIsLoading(false);
@@ -99,45 +105,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiLogin(credentials);
       const userData = await getCurrentUser();
+      
+      // Check if user has appropriate role for dashboard
+      if (!ALLOWED_ROLES.includes(userData.role)) {
+        clearAuthToken();
+        throw new Error("Access denied. This dashboard is for coordinators and administrators only.");
+      }
+      
       setUser(userData);
       router.push("/");
       return response;
     } catch (error) {
       console.error("Failed to login:", error);
-      throw error;
-    }
-  };
-
-  const registerUser = async (data: RegisterData): Promise<User> => {
-    try {
-      const user = await apiRegister(data);
-      // After registration, log in automatically
-      await apiLogin({ email: data.email, password: data.password });
-      const userData = await getCurrentUser();
-      setUser(userData);
-      router.push("/");
-      return user;
-    } catch (error) {
-      console.error("Failed to register:", error);
-      throw error;
-    }
-  };
-
-  const login = async () => {
-    try {
-      const userData = await getCurrentUser();
-      setUser(userData);
-      router.push("/");
-    } catch (error) {
-      console.error("Failed to get user after login:", error);
-      throw error;
+      // Re-throw with user-friendly message
+      if (error instanceof Error) {
+        // Check for common error patterns and provide friendly messages
+        if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          throw new Error("Invalid email or password");
+        }
+        if (error.message.includes("403") || error.message.includes("Forbidden")) {
+          throw new Error("Access denied");
+        }
+        if (error.message.includes("Network") || error.message.includes("fetch")) {
+          throw new Error("Unable to connect to server. Please try again.");
+        }
+        // Pass through custom error messages (like role check)
+        throw error;
+      }
+      throw new Error("Login failed. Please try again.");
     }
   };
 
   const logout = () => {
     apiLogout();
     setUser(null);
-    router.push("/login");
+    router.push("/dashboard/login");
   };
 
   const refreshUser = async () => {
@@ -156,8 +158,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         loginWithCredentials,
-        registerUser,
-        login,
         logout,
         refreshUser,
       }}

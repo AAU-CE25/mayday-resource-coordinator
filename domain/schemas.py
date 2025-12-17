@@ -8,13 +8,20 @@ class UserCreate(BaseModel):
     email: str
     phonenumber: str
     password: str
-    role: str | None = "SUV"
+
 
 class UserUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
     phonenumber: str | None = None
     status: str | None = None
+
+class UserAdminUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phonenumber: str | None = None
+    status: str | None = None
+    role: str | None = None
 
 class UserResponse(BaseModel):
     id: int

@@ -1,11 +1,13 @@
+import type { UserResponse, LoginCredentials, AuthTokenResponse } from "./types"
+
 // Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+  let apiUrl = process.env.NEXT_PUBLIC_API_URL
   
   if (!apiUrl) {
-    throw new Error(
-      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-      'Please configure it in your .env file or build arguments.'
+    apiUrl = 'http://localhost:8000'  // Default for local development
+    console.warn(
+      'NEXT_PUBLIC_API_URL is not set. Defaulting to http://localhost:8000'
     )
   }
   
@@ -25,56 +27,126 @@ function getApiBaseUrl(): string {
 
 const API_BASE = getApiBaseUrl()
 
-console.log('API_BASE configured as:', API_BASE)
+/**
+ * Get auth token from localStorage
+ */
+export function getAuthToken(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token')
+  }
+  return null
+}
+
+/**
+ * Set auth token in localStorage
+ */
+export function setAuthToken(token: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_token', token)
+  }
+}
+
+/**
+ * Clear auth token from localStorage
+ */
+export function clearAuthToken() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth_token')
+  }
+}
+
+/**
+ * Generic fetch wrapper with auth and error handling
+ */
+async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${API_BASE}${path}`
+  const token = getAuthToken()
+  
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+  }
+  
+  const response = await fetch(url, {
+    headers,
+    cache: "no-store",
+    ...options,
+  })
+
+  // Handle unauthorized - clear token and redirect (but not for login endpoint)
+  if (response.status === 401) {
+    const isLoginEndpoint = endpoint.includes('/auth/login')
+    
+    if (!isLoginEndpoint) {
+      clearAuthToken()
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/dashboard/login')) {
+        window.location.href = '/dashboard/login'
+      }
+    }
+    
+    const errorText = await response.text().catch(() => 'Unauthorized')
+    throw new Error(`API error ${response.status}: ${errorText}`)
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText)
+    throw new Error(`API error ${response.status}: ${errorText}`)
+  }
+
+  // Handle empty responses (204 No Content)
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return {} as T
+  }
+
+  return response.json()
+}
 
 export const api = {
-  get: async (endpoint: string) => {
-    // Ensure endpoint starts with /
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    const response = await fetch(`${API_BASE}${path}`)
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
-    const data = await response.json()
-    console.log('API GET response:', endpoint, 'returned', Array.isArray(data) ? `${data.length} items` : 'data')
-    return data
+  get: async <T = any>(endpoint: string): Promise<T> => {
+    return apiFetch<T>(endpoint, { method: 'GET' })
   },
   
-  post: async (endpoint: string, data: any) => {
-    // Ensure endpoint starts with /
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    const response = await fetch(`${API_BASE}${path}`, {
+  post: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+    return apiFetch<T>(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: data ? JSON.stringify(data) : undefined,
     })
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
-    return response.json()
   },
 
-  delete: async (endpoint: string) => {
-    console.log('API DELETE:', `${API_BASE}${endpoint}`)
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
-    return response.json()
+  delete: async <T = any>(endpoint: string): Promise<T> => {
+    return apiFetch<T>(endpoint, { method: 'DELETE' })
   },
 
-  put: async (endpoint: string, data: any) => {
-    console.log('API PUT:', `${API_BASE}${endpoint}`, data)
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+  put: async <T = any>(endpoint: string, data?: any): Promise<T> => {
+    return apiFetch<T>(endpoint, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: data ? JSON.stringify(data) : undefined,
     })
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
-    return response.json()
   }
+}
+
+// ============= Auth API Functions =============
+
+/**
+ * Login with email and password
+ */
+export async function login(credentials: LoginCredentials): Promise<AuthTokenResponse> {
+  const response = await api.post<AuthTokenResponse>('/auth/login', credentials)
+  setAuthToken(response.access_token)
+  return response
+}
+
+/**
+ * Get current authenticated user
+ */
+export async function getCurrentUser(): Promise<UserResponse> {
+  return api.get<UserResponse>('/auth/me')
+}
+
+/**
+ * Logout (clear token)
+ */
+export function logout() {
+  clearAuthToken()
 }

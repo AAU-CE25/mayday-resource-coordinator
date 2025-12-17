@@ -11,6 +11,9 @@ from .routes import (
     volunteer_router,
     stats_router,
 )
+from .models import User
+from .core.config import settings
+from .auth.hashing import hash_password
 
 # Initialize database
 create_db_and_tables()
@@ -70,3 +73,33 @@ app.include_router(stats_router)
 def health_check():
     db_ok = check_database_health()
     return {"database": "ok" if db_ok else "error"}
+
+
+# Seed an initial administrator account (if configured and missing)
+@app.on_event("startup")
+def seed_admin_user():
+    admin_email = settings.ADMIN_EMAIL
+    admin_password = settings.ADMIN_PASSWORD
+    if not admin_email or not admin_password:
+        return  # Seeding not configured
+
+    admin_name = settings.ADMIN_NAME or "Administrator"
+    admin_phone = settings.ADMIN_PHONE or ""
+
+    # Create admin with AUTHORITY role if missing (DAO enforces unique email)
+    hashed_pw = hash_password(admin_password)
+    admin_user = User(
+        name=admin_name,
+        email=admin_email,
+        phonenumber=admin_phone,
+        password=hashed_pw,
+        status="available",
+        role="AUTHORITY",
+    )
+    try:
+        from api_service.app.data_access import UserDAO
+        UserDAO.create_user(admin_user)
+        print("[startup] Created initial administrator:", admin_email)
+    except Exception:
+        # Likely already exists; keep startup idempotent
+        pass
