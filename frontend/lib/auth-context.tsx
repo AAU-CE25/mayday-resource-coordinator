@@ -30,7 +30,6 @@ interface AuthContextType {
   loginWithCredentials: (
     credentials: LoginCredentials
   ) => Promise<AuthTokenResponse>;
-  login: () => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -122,17 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async () => {
-    try {
-      const userData = await getCurrentUser();
-      setUser(userData);
-      router.push("/");
-    } catch (error) {
-      console.error("Failed to get user after login:", error);
-      throw error;
-    }
-  };
-
   const logout = () => {
     apiLogout();
     setUser(null);
@@ -155,7 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         loginWithCredentials,
-        login,
         logout,
         refreshUser,
       }}
