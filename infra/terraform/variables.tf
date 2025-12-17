@@ -60,3 +60,33 @@ variable "tags" {
     ManagedBy = "Terraform"
   }
 }
+
+variable "admin_name" {
+  description = "Admin user name"
+  type        = string
+  default     = "Administrator"
+}
+
+variable "admin_email" {
+  description = "Admin user email"
+  type        = string
+  sensitive   = true
+}
+
+variable "admin_phone" {
+  description = "Admin user phone number"
+  type        = string
+  default     = ""
+}
+
+variable "admin_password" {
+  description = "Admin user password"
+  type        = string
+  sensitive   = true
+}
+
+variable "secret_key" {
+  description = "JWT secret key for authentication"
+  type        = string
+  sensitive   = true
+}
