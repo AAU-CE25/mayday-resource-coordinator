@@ -21,6 +21,9 @@ import {
   login as apiLogin,
 } from "./api-client";
 
+// Roles that are allowed to access the coordinator dashboard
+const ALLOWED_ROLES = ["AUTHORITY", "VC"];
+
 interface AuthContextType {
   user: UserResponse | null;
   isLoading: boolean;
@@ -65,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await getCurrentUser();
         
         // Check if user has appropriate role for dashboard
-        if (userData.role === "SUV") {
+        if (!ALLOWED_ROLES.includes(userData.role)) {
           clearAuthToken();
           setUser(null);
           setIsLoading(false);
@@ -105,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await getCurrentUser();
       
       // Check if user has appropriate role for dashboard
-      if (userData.role === "SUV") {
+      if (!ALLOWED_ROLES.includes(userData.role)) {
         clearAuthToken();
         throw new Error("Access denied. This dashboard is for coordinators and administrators only.");
       }

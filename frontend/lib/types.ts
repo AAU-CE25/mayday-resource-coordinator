@@ -34,7 +34,7 @@ export interface UserResponse {
   email: string
   phonenumber?: string | null
   status: string
-  role?: string | null
+  role: string
 }
 
 // ------------------ Volunteer ------------------
