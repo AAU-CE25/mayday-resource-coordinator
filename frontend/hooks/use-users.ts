@@ -6,7 +6,7 @@ import { api } from '@/lib/api-client'
 export function useUsers() {
   return useQuery({
     queryKey: ['users'],
-    queryFn: () => api.get('/users/'),
+    queryFn: () => api.get('/users/?role=SUV'),
     refetchInterval: 5000
   })
 }

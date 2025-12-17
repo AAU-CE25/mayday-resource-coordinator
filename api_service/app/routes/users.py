@@ -13,9 +13,10 @@ router = APIRouter(prefix="/users", tags=["users"])
 def read_users(
     skip: int = Query(0, ge=0, description="Number of rows to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of rows to return"),
-    status: str | None = Query(None, description="Filter by status (available, assigned, unavailable)")
+    status: str | None = Query(None, description="Filter by status (available, assigned, unavailable)"),
+    role: str | None = Query(None, description="Filter by role (SUV, VC, AUTHORITY) or exclude with !=ROLE")
 ):
-    return UserLogic.get_users(skip=skip, limit=limit, status=status)
+    return UserLogic.get_users(skip=skip, limit=limit, status=status, role=role)
 
 @router.get("/{user_id}", response_model=UserResponse, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def read_user(user_id: int):
