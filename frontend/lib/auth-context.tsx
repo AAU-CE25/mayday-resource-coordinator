@@ -54,9 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!token) {
         setIsLoading(false);
         if (
-          !pathname?.startsWith("/login")
+          !pathname?.startsWith("/dashboard/login")
         ) {
-          router.push("/login");
+          router.push("/dashboard/login");
         }
         setChecked(true);
         return;
@@ -72,8 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setIsLoading(false);
           setChecked(true);
-          if (!pathname?.startsWith("/login")) {
-            router.push("/login");
+          if (!pathname?.startsWith("/dashboard/login")) {
+            router.push("/dashboard/login");
           }
           return;
         }
@@ -81,14 +81,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
 
         // If on login page with valid session, redirect to app
-        if (pathname?.startsWith("/login")) {
+        if (pathname?.startsWith("/dashboard/login")) {
           router.push("/");
         }
       } catch (error) {
         console.error("Failed to load user:", error);
         setUser(null);
-        if (!pathname?.startsWith("/login")) {
-          router.push("/login");
+        if (!pathname?.startsWith("/dashboard/login")) {
+          router.push("/dashboard/login");
         }
       } finally {
         setIsLoading(false);
@@ -117,14 +117,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response;
     } catch (error) {
       console.error("Failed to login:", error);
-      throw error;
+      // Re-throw with user-friendly message
+      if (error instanceof Error) {
+        // Check for common error patterns and provide friendly messages
+        if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          throw new Error("Invalid email or password");
+        }
+        if (error.message.includes("403") || error.message.includes("Forbidden")) {
+          throw new Error("Access denied");
+        }
+        if (error.message.includes("Network") || error.message.includes("fetch")) {
+          throw new Error("Unable to connect to server. Please try again.");
+        }
+        // Pass through custom error messages (like role check)
+        throw error;
+      }
+      throw new Error("Login failed. Please try again.");
     }
   };
 
   const logout = () => {
     apiLogout();
     setUser(null);
-    router.push("/login");
+    router.push("/dashboard/login");
   };
 
   const refreshUser = async () => {
