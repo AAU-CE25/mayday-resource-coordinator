@@ -11,10 +11,10 @@ import { useActiveAssignment } from "@/hooks/use-active-assignment"
 
 export default function Home() {
   const { user } = useAuth()
-  const { activeEvent, volunteerId, loading, refresh, leaveEvent } = useActiveAssignment(user)
+  const { activeEvent, volunteer, loading, refresh, leaveEvent } = useActiveAssignment(user)
   
   // Determine active tab based on assignment state
-  const activeTab: TabType = activeEvent && volunteerId ? "my-event" : "events"
+  const activeTab: TabType = activeEvent && volunteer ? "my-event" : "events"
   const [currentTab, setCurrentTab] = useState<TabType>(activeTab)
 
   // Update current tab when active tab changes
@@ -78,8 +78,8 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {currentTab === "events" && <EventsFeed onVolunteerJoined={handleVolunteerJoined} />}
-        {currentTab === "my-event" && activeEvent && volunteerId && (
-          <MyEventView event={activeEvent} volunteerId={volunteerId} onLeaveEvent={handleLeaveEvent} />
+        {currentTab === "my-event" && activeEvent && volunteer && (
+          <MyEventView event={activeEvent} volunteer={volunteer} onLeaveEvent={handleLeaveEvent} />
         )}
         {currentTab === "profile" && <ProfileView />}
       </main>

@@ -1,11 +1,11 @@
 "use client"
 
-import { Activity, AlertTriangle, Bell } from "lucide-react"
-
+import { Activity, AlertTriangle, LogOut, User } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { Button } from "@/components/ui/button"
 
 export function Header() {
-  // const { data: notifications } = useNotifications()
-  // const unreadCount = notifications?.filter((n: any) => !n.read).length || 0
+  const { user, logout } = useAuth()
 
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
@@ -25,19 +25,27 @@ export function Header() {
           <span className="text-sm font-medium text-foreground">System Active</span>
         </div>
 
-        {/* <NotificationsPopover>
-          <Button variant="outline" size="icon" className="relative bg-transparent">
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
-              >
-                {unreadCount}
-              </Badge>
-            )}
-          </Button>
-        </NotificationsPopover> */}
+        {user && (
+          <div className="flex items-center gap-2 border-l pl-3">
+            <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2">
+              <User className="h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{user.name}</span>
+                {user.role && (
+                  <span className="text-xs text-muted-foreground">{user.role}</span>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={logout}
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </header>
   )

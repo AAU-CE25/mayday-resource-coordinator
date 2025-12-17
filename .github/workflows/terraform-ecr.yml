@@ -1,4 +1,4 @@
-name: Terraform Container Registry
+name: Terraform Core
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
       - feature/YOUR_BRANCH_NAME
       - feature/MDAY-44-cloud-deployment
     paths:
-      - 'infra/terraform-ecr/**'
+      - 'infra/terraform-core/**'
       - '.github/workflows/setup-ecr.yml'
 
 env:
@@ -26,12 +26,12 @@ env:
   TF_VERSION: 1.0
 
 jobs:
-  terraform-ecr:
-    name: Terraform ECR - ${{ github.event.inputs.action || 'plan' }}
+  terraform-core:
+    name: Terraform Core - ${{ github.event.inputs.action || 'plan' }}
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: infra/terraform-ecr
+        working-directory: infra/terraform-core
     
     steps:
       - name: Checkout code
@@ -122,7 +122,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Terraform ECR Infrastructure" >> $GITHUB_STEP_SUMMARY
+          echo "## Terraform CORE Infrastructure" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Action:** ${{ github.event.inputs.action || 'plan' }}" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

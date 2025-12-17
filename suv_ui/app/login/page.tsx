@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { login as apiLogin } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
@@ -11,7 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   
-  const { login } = useAuth()
+  const { loginWithCredentials } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,8 +18,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await apiLogin({ email, password })
-      await login()
+      await loginWithCredentials({ email, password })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
     } finally {
@@ -44,7 +42,7 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome to Volunteer Portal</h1>
             <p className="text-gray-600 mt-2">Sign in to continue helping</p>
           </div>
 

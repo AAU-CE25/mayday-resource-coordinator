@@ -13,6 +13,16 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# Shared CloudWatch Log Group for all ECS services
+resource "aws_cloudwatch_log_group" "ecs_cluster" {
+  name              = "/aws/ecs/${var.cluster_name}/all"
+  retention_in_days = 7
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-ecs-logs"
+  })
+}
+
 # VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr

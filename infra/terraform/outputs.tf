@@ -79,4 +79,3 @@ output "suv_ui_service_name" {
 }
 
 
-# Note: ECR repository outputs are now in ../terraform-ecr/outputs.tf

@@ -114,9 +114,11 @@ export function ResourcesList() {
               const assignedEvent = resource.event_id
                 ? events?.find((e: any) => e.id === resource.event_id)
                 : null
-              const allocatedUser = !assignedEvent && resource.volunteer_id
+              const resourceOwner = resource.volunteer_id
                 ? users?.find((u: any) => u.id === resource.volunteer_id)
                 : null
+              const ownerUnavailable = resourceOwner?.status === "unavailable"
+              const assignDisabled = Boolean(assignedEvent) || ownerUnavailable
 
               return (
               <Card key={resource.id} className="p-4">
@@ -147,13 +149,18 @@ export function ResourcesList() {
                           </span>
                         </span>
                       </div>
-                    ) : allocatedUser ? (
+                    ) : resourceOwner ? (
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <User className="h-4 w-4 flex-shrink-0" />
                         <span className="truncate">
-                          <span className="mr-1">Allocated to:</span>
-                          <span className="font-medium text-foreground">
-                            {allocatedUser.name}
+                          <span className="mr-1">Belongs to:</span>
+                          <span
+                            className={`font-medium ${
+                              ownerUnavailable ? "text-destructive" : "text-foreground"
+                            }`}
+                          >
+                            {resourceOwner.name}
+                            {ownerUnavailable ? " (Unavailable)" : ""}
                           </span>
                         </span>
                       </div>
@@ -186,10 +193,19 @@ export function ResourcesList() {
                         variant="outline"
                         className="w-full"
                         onClick={() => handleAssign(resource)}
-                        disabled={Boolean(assignedEvent)}
+                        disabled={assignDisabled}
                       >
-                        {assignedEvent ? "Already assigned" : "Assign"}
+                        {assignedEvent
+                          ? "Already assigned"
+                          : ownerUnavailable
+                          ? "Owner unavailable"
+                          : "Assign"}
                       </Button>
+                      {ownerUnavailable && !assignedEvent && (
+                        <p className="mt-1 text-xs text-destructive text-center">
+                          Owner must be available before allocating this resource.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

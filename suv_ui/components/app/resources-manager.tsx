@@ -1,14 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  fetchVolunteerResources,
-  createResource,
-  updateResource,
-  deleteResource,
-  fetchEvents,
-  fetchAllVolunteers,
-} from "@/lib/api-client";
+import { useEffect, useState, useCallback } from "react";
+import { useResources, useEvents, useVolunteers } from "@/hooks";
 import type { ResourceAvailable, Event, Volunteer } from "@/lib/types";
 
 interface ResourcesManagerProps {
@@ -16,17 +9,17 @@ interface ResourcesManagerProps {
 }
 
 export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
+  const { fetchVolunteerResources, createResource, updateResource, deleteResource } = useResources();
+  const { fetchEvents } = useEvents();
+  const { fetchAllVolunteers } = useVolunteers();
+  
   const [resources, setResources] = useState<ResourceAvailable[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingResource, setEditingResource] =
     useState<ResourceAvailable | null>(null);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [assigningResource, setAssigningResource] =
-    useState<ResourceAvailable | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     resource_type: "equipment",
@@ -36,13 +29,7 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadResources();
-    loadEvents();
-    loadVolunteers();
-  }, [volunteerId]);
-
-  const loadResources = async () => {
+  const loadResources = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchVolunteerResources(volunteerId);
@@ -52,27 +39,33 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [volunteerId, fetchVolunteerResources]);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const data = await fetchEvents();
       setEvents(
-        data.filter((e) => e.status === "active" || e.status === "pending")
+        data.filter((e: Event) => e.status === "active" || e.status === "pending")
       );
     } catch (error) {
       console.error("Failed to load events:", error);
     }
-  };
+  }, [fetchEvents]);
 
-  const loadVolunteers = async () => {
+  const loadVolunteers = useCallback(async () => {
     try {
       const data = await fetchAllVolunteers();
       setVolunteers(data);
     } catch (error) {
       console.error("Failed to load volunteers:", error);
     }
-  };
+  }, [fetchAllVolunteers]);
+
+  useEffect(() => {
+    loadResources();
+    loadEvents();
+    loadVolunteers();
+  }, [loadResources, loadEvents, loadVolunteers]);
 
   const handleOpenAddDialog = () => {
     setFormData({
@@ -133,44 +126,6 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
     } catch (error) {
       console.error("Failed to delete resource:", error);
       alert("Failed to delete resource. Please try again.");
-    }
-  };
-
-  const handleOpenAssignDialog = (resource: ResourceAvailable) => {
-    setAssigningResource(resource);
-    setSelectedEventId(resource.event_id);
-    setIsAssignDialogOpen(true);
-  };
-
-  const handleAssignToEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!assigningResource) return;
-
-    setSubmitting(true);
-    try {
-      await updateResource(assigningResource.id, {
-        event_id: selectedEventId,
-        status: selectedEventId ? "in_use" : assigningResource.status,
-      });
-      await loadResources();
-      setIsAssignDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to assign resource:", error);
-      alert("Failed to assign resource. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleUnassignFromEvent = async (resourceId: number) => {
-    if (!confirm("Remove this resource from the event?")) return;
-
-    try {
-      await updateResource(resourceId, { event_id: null, status: "available" });
-      await loadResources();
-    } catch (error) {
-      console.error("Failed to unassign resource:", error);
-      alert("Failed to unassign resource. Please try again.");
     }
   };
 
@@ -287,32 +242,6 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
                         Quantity: {resource.quantity}
                       </p>
 
-                      {/* Allocated To Section */}
-                      {allocatedVolunteer && (
-                        <div className="mb-2 flex items-center gap-1.5 text-xs text-gray-600">
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          <span className="font-medium">Allocated to:</span>{" "}
-                          {allocatedVolunteer.name}
-                          {allocatedVolunteer.phonenumber && (
-                            <span className="text-gray-400">
-                              ({allocatedVolunteer.phonenumber})
-                            </span>
-                          )}
-                        </div>
-                      )}
-
                       {assignedEvent ? (
                         <div className="flex items-center gap-2 mt-2">
                           <div className="flex-1 bg-blue-50 border border-blue-200 rounded px-2 py-1.5">
@@ -321,35 +250,8 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
                               {assignedEvent.description}
                             </p>
                           </div>
-                          <button
-                            onClick={() => handleUnassignFromEvent(resource.id)}
-                            className="text-xs text-red-600 hover:text-red-700 font-medium"
-                            title="Remove from event"
-                          >
-                            Remove
-                          </button>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => handleOpenAssignDialog(resource)}
-                          className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                        >
-                          <svg
-                            className="w-3 h-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 4v16m8-8H4"
-                            />
-                          </svg>
-                          Assign to Event
-                        </button>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       <button
@@ -530,77 +432,6 @@ export function ResourcesManager({ volunteerId }: ResourcesManagerProps) {
         </div>
       )}
 
-      {/* Assign to Event Dialog */}
-      {isAssignDialogOpen && assigningResource && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Assign Resource to Event
-              </h3>
-
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-900">
-                  {assigningResource.name}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {assigningResource.description}
-                </p>
-              </div>
-
-              <form onSubmit={handleAssignToEvent} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Event
-                  </label>
-                  {events.length === 0 ? (
-                    <p className="text-sm text-gray-500">
-                      No active events available
-                    </p>
-                  ) : (
-                    <select
-                      required
-                      value={selectedEventId || ""}
-                      onChange={(e) =>
-                        setSelectedEventId(
-                          e.target.value ? parseInt(e.target.value) : null
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select an event...</option>
-                      {events.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.description} -{" "}
-                          {event.location.address?.street || "No address"}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsAssignDialogOpen(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || !selectedEventId}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? "Assigning..." : "Assign"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

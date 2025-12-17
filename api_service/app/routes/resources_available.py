@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from api_service.app.auth.role_checker import require_role
 from domain.schemas import (
     ResourceAvailableCreate,
     ResourceAvailableResponse,
@@ -9,17 +10,17 @@ from api_service.app.logic import ResourceLogic
 router = APIRouter(prefix="/resources/available", tags=["resources_available"])
 
 
-@router.post("/", response_model=ResourceAvailableResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ResourceAvailableResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def create_resource_available(resource: ResourceAvailableCreate):
     return ResourceLogic.create_resource_available(resource)
 
 
-@router.get("/", response_model=list[ResourceAvailableResponse])
+@router.get("/", response_model=list[ResourceAvailableResponse], dependencies=[Depends(require_role(["AUTHORITY", "VC"]))])
 def read_resources_available():
     return ResourceLogic.get_resources_available()
 
 
-@router.get("/{resource_id}", response_model=ResourceAvailableResponse)
+@router.get("/{resource_id}", response_model=ResourceAvailableResponse, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def read_resource_available(resource_id: int):
     resource = ResourceLogic.get_resource_available(resource_id)
     if not resource:
@@ -27,7 +28,7 @@ def read_resource_available(resource_id: int):
     return resource
 
 
-@router.put("/{resource_id}", response_model=ResourceAvailableResponse)
+@router.put("/{resource_id}", response_model=ResourceAvailableResponse, dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def update_resource_available(resource_id: int, resource: ResourceAvailableUpdate):
     db_resource = ResourceLogic.get_resource_available(resource_id)
     if not db_resource:
@@ -36,7 +37,7 @@ def update_resource_available(resource_id: int, resource: ResourceAvailableUpdat
     return updated
 
 
-@router.delete("/{resource_id}")
+@router.delete("/{resource_id}", dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def delete_resource_available(resource_id: int):
     resource = ResourceLogic.get_resource_available(resource_id)
     if not resource:
