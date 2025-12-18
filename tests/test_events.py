@@ -27,19 +27,19 @@ def sample_event():
     }
 
 class TestEvents:
-    def test_create_event(self, sample_event):
+    def test_create_event(self, client, sample_event):
         response = client.post("/events/", json=sample_event)
         assert response.status_code == 201
         data = response.json()
         assert data["description"] == sample_event["description"]
         assert data["priority"] == sample_event["priority"]
 
-    def test_get_events(self):
+    def test_get_events(self, client):
         response = client.get("/events/")
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
-    def test_create_event_missing_required_field(self):
+    def test_create_event_missing_required_field(self, client):
         invalid_event = {
             "priority": 3,
             "status": "pending"
@@ -47,18 +47,18 @@ class TestEvents:
         response = client.post("/events/", json=invalid_event)
         assert response.status_code == 422
 
-    def test_create_event_invalid_priority(self, sample_event):
+    def test_create_event_invalid_priority(self, client, sample_event):
         sample_event["priority"] = 10
         response = client.post("/events/", json=sample_event)
         assert response.status_code == 422
 
-    def test_get_event_by_id(self, sample_event):
+    def test_get_event_by_id(self, client, sample_event):
         created = client.post("/events/", json=sample_event).json()
         response = client.get(f"/events/{created['id']}")
         assert response.status_code == 200
         assert response.json()["id"] == created["id"]
 
-    def test_update_event(self, sample_event):
+    def test_update_event(self, client, sample_event):
         created = client.post("/events/", json=sample_event).json()
         update_payload = {"status": "completed", "priority": 2}
 
@@ -68,7 +68,7 @@ class TestEvents:
         assert updated["status"] == "completed"
         assert updated["priority"] == 2
 
-    def test_delete_event(self, sample_event):
+    def test_delete_event(self, client, sample_event):
         created = client.post("/events/", json=sample_event).json()
         response = client.delete(f"/events/{created['id']}")
         assert response.status_code == 204
@@ -76,15 +76,15 @@ class TestEvents:
         not_found = client.get(f"/events/{created['id']}")
         assert not_found.status_code == 404
 
-    def test_delete_event_not_found(self):
+    def test_delete_event_not_found(self, client):
         response = client.delete("/events/999999")
         assert response.status_code == 404
 
-    def test_update_event_not_found(self):
+    def test_update_event_not_found(self, client):
         response = client.put("/events/999999", json={"status": "active"})
         assert response.status_code == 404
 
-    def test_filter_events_by_priority_and_status(self, sample_event):
+    def test_filter_events_by_priority_and_status(self, client, sample_event):
         # Create two events with different priority/status
         event_a = sample_event.copy()
         event_a["priority"] = 1
@@ -104,7 +104,7 @@ class TestEvents:
         assert by_status.status_code == 200
         assert all(ev["status"] == "pending" for ev in by_status.json())
 
-    def test_get_events_with_pagination(self, sample_event):
+    def test_get_events_with_pagination(self, client, sample_event):
         for idx in range(3):
             e = sample_event.copy()
             e["description"] = f"Event {idx}"
@@ -114,7 +114,7 @@ class TestEvents:
         assert paged.status_code == 200
         assert len(paged.json()) == 1
 
-    def test_ingest_event_happy_path(self):
+    def test_ingest_event_happy_path(self, client):
         payload = {
             "event": {
                 "description": "Ingested Event",
@@ -145,6 +145,6 @@ class TestEvents:
         assert len(event_needed) == 1
         assert event_needed[0]["event_id"] == event_id
 
-    def test_ingest_event_invalid_payload_returns_400(self):
+    def test_ingest_event_invalid_payload_returns_400(self, client):
         resp = client.post("/events/ingest", json={"bad": "payload"})
         assert resp.status_code == 400
