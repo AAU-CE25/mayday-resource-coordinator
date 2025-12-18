@@ -59,3 +59,54 @@ class TestVolunteers:
         response = client.get("/volunteers/999999")
         assert response.status_code == 404
         assert response.json()["detail"] == "Volunteer not found"
+
+    def test_update_volunteer_status(self, client, created_user_id, created_event_id):
+        create_resp = client.post(
+            "/volunteers/",
+            json={"user_id": created_user_id, "event_id": created_event_id, "status": "active"},
+        )
+        volunteer = create_resp.json()
+
+        update_resp = client.put(
+            f"/volunteers/{volunteer['id']}",
+            json={"id": volunteer["id"], "status": "completed"},
+        )
+        assert update_resp.status_code == 200
+        assert update_resp.json()["status"] == "completed"
+
+    def test_update_volunteer_not_found(self, client):
+        resp = client.put("/volunteers/999999", json={"id": 999999, "status": "completed"})
+        assert resp.status_code == 404
+
+    def test_filter_volunteers_by_status_and_event(self, client, created_user_id, created_event_id):
+        # Seed two volunteers with different statuses
+        client.post(
+            "/volunteers/",
+            json={"user_id": created_user_id, "event_id": created_event_id, "status": "active"},
+        )
+        client.post(
+            "/volunteers/",
+            json={"user_id": created_user_id, "event_id": created_event_id, "status": "completed"},
+        )
+
+        active_only = client.get("/volunteers/?status=active")
+        assert active_only.status_code == 200
+        assert all(v["status"] == "active" for v in active_only.json())
+
+        by_event = client.get(f"/volunteers/?event_id={created_event_id}")
+        assert by_event.status_code == 200
+        assert len(by_event.json()) >= 2
+
+    def test_create_volunteer_invalid_event_returns_400(self, client, created_user_id):
+        resp = client.post(
+            "/volunteers/",
+            json={"user_id": created_user_id, "event_id": 999999, "status": "active"},
+        )
+        assert resp.status_code == 400
+
+    def test_create_volunteer_invalid_user_returns_400(self, client, created_event_id):
+        resp = client.post(
+            "/volunteers/",
+            json={"user_id": 999999, "event_id": created_event_id, "status": "active"},
+        )
+        assert resp.status_code == 400
