@@ -84,6 +84,11 @@ module "api_service" {
   postgres_user                  = var.postgres_user
   postgres_password              = var.postgres_password
   postgres_db                    = var.postgres_db
+  admin_name                     = var.admin_name
+  admin_email                    = var.admin_email
+  admin_phone                    = var.admin_phone
+  admin_password                 = var.admin_password
+  secret_key                     = var.secret_key
   tags                           = var.tags
 
   depends_on = [module.database]

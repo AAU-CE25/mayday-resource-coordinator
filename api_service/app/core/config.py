@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     REVERSE_GEOCODING_ENABLED: bool = False  # OSM geocoding
     CORS_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
+    # Bootstrap admin user (optional)
+    ADMIN_NAME: Optional[str] = None
+    ADMIN_EMAIL: Optional[str] = None
+    ADMIN_PHONE: Optional[str] = None
+    ADMIN_PASSWORD: Optional[str] = None
+
     @model_validator(mode="after")
     def ensure_secure_configuration(self):
         if (

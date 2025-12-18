@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/YOUR_BRANCH_NAME
-      - feature/MDAY-44-cloud-deployment
+      - staging
     paths:
       - 'infra/terraform/**'
       - '.github/workflows/terraform.yml'
@@ -97,11 +96,14 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        if: github.event.inputs.action == 'plan'
+        if: github.event_name == 'pull_request' || github.event.inputs.action == 'plan'
         run: |
           terraform plan -no-color -input=false \
             -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
             -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="admin_email=${{ secrets.ADMIN_DEFAULT_MAIL }}" \
+            -var="admin_password=${{ secrets.ADMIN_DEFAULT_PASSWORD }}" \
+            -var="secret_key=${{ secrets.JWT_SECRET_KEY }}" \
             -var="cluster_name=${{ github.event.inputs.cluster_name || 'mayday-cluster' }}" \
             -out=tfplan
         continue-on-error: false
@@ -116,11 +118,14 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        if: github.event.inputs.action == 'apply'
+        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')) || github.event.inputs.action == 'apply'
         run: |
           terraform apply -auto-approve -input=false \
             -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
             -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="admin_email=${{ secrets.ADMIN_EMAIL }}" \
+            -var="admin_password=${{ secrets.ADMIN_DEFAULT_PASSWORD }}" \
+            -var="secret_key=${{ secrets.JWT_SECRET_KEY }}" \
             -var="cluster_name=${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
 
       - name: Check and Create Admin User
@@ -172,6 +177,9 @@ jobs:
           terraform destroy -auto-approve -input=false \
             -var="aws_account_id=${{ vars.AWS_ACCOUNT_ID_KAJ }}" \
             -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="admin_email=${{ secrets.ADMIN_EMAIL }}" \
+            -var="admin_password=${{ secrets.ADMIN_DEFAULT_PASSWORD }}" \
+            -var="secret_key=${{ secrets.JWT_SECRET_KEY }}" \
             -var="cluster_name=${{ github.event.inputs.cluster_name || 'mayday-cluster' }}"
 
       - name: Terraform Output

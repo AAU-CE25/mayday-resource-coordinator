@@ -40,30 +40,37 @@ function getApiBaseUrl(): string {
 console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
 
 /**
- * Get auth token from sessionStorage (expires when browser closes - more secure)
+ * Get auth token from localStorage (persists across page reloads)
  */
 export function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return sessionStorage.getItem('auth_token')
+    const token = localStorage.getItem('auth_token')
+    if (!token) {
+      console.warn('[TOKEN] No token in localStorage')
+    } else {
+      console.log('[TOKEN] Retrieved token:', token.substring(0, 30) + '...')
+    }
+    return token
   }
   return null
 }
 
 /**
- * Set auth token in sessionStorage
+ * Set auth token in localStorage
  */
 export function setAuthToken(token: string) {
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem('auth_token', token)
+    localStorage.setItem('auth_token', token)
+    console.log('[TOKEN] Saved token to localStorage:', token.substring(0, 30) + '...')
   }
 }
 
 /**
- * Clear auth token from sessionStorage
+ * Clear auth token from localStorage
  */
 export function clearAuthToken() {
   if (typeof window !== 'undefined') {
-    sessionStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_token')
   }
 }
 
@@ -76,23 +83,38 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
   const url = `${getApiBaseUrl()}${path}`
   const token = getAuthToken()
   
+  console.log(`[API] Fetching ${endpoint}`)
+  console.log(`[API] Token available: ${token ? 'YES (' + token.substring(0, 20) + '...)' : 'NO'}`)
+  
   try {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    }
+    
+    console.log(`[API] Headers:`, Object.keys(headers))
+    
     const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      },
+      headers,
       cache: "no-store", // Always fetch fresh data
       ...options,
     })
 
-    // Handle unauthorized - clear token and redirect
+    console.log(`[API] Response status for ${endpoint}: ${response.status}`)
+
+    // Handle unauthorized - clear token and redirect (but not for login endpoint)
     if (response.status === 401) {
-      clearAuthToken()
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
+      const isLoginEndpoint = endpoint.includes('/auth/login')
+      
+      if (!isLoginEndpoint) {
+        clearAuthToken()
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
+        }
       }
-      throw new Error('Session expired. Please login again.')
+      
+      const errorText = await response.text().catch(() => 'Unauthorized')
+      throw new Error(`API error ${response.status}: ${errorText}`)
     }
 
     if (!response.ok) {
