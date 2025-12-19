@@ -15,7 +15,7 @@ def create_resource_available(resource: ResourceAvailableCreate):
     return ResourceLogic.create_resource_available(resource)
 
 
-@router.get("/", response_model=list[ResourceAvailableResponse], dependencies=[Depends(require_role(["AUTHORITY", "VC"]))])
+@router.get("/", response_model=list[ResourceAvailableResponse], dependencies=[Depends(require_role(["AUTHORITY", "VC", "SUV"]))])
 def read_resources_available():
     return ResourceLogic.get_resources_available()
 
