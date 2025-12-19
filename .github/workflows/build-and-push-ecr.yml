@@ -199,28 +199,13 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}"
 
   trigger-deployment:
-    name: Trigger ECS Deployment
+    name: Deploy to ECS
     needs: build-and-push
-    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - name: Trigger Deploy to ECS workflow
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const result = await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'deploy-to-ecs.yml',
-              ref: 'main',
-              inputs: {
-                services: 'all'
-              }
-            });
-            console.log('Deployment workflow triggered successfully');
-            console.log(result);
+    uses: ./.github/workflows/deploy-to-ecs.yml
+    secrets: inherit
+    with:
+      services: 'all'
 
 
           
