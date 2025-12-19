@@ -6,9 +6,17 @@ from faker import Faker
 fake = Faker()
 
 # ------------------ CONFIG ------------------
-# API_BASE = "http://mayday-cluster-api-alb-1073692263.eu-central-1.elb.amazonaws.com"  # <-- change if needed
-API_BASE = "http://localhost:8000"
+API_BASE = "http://mayday-cluster-api-alb-1142653445.eu-central-1.elb.amazonaws.com"  # <-- change if needed
+#API_BASE = "http://localhost:8000"
+
+# Admin credentials for authentication (required for creating events and other resources)
+ADMIN_EMAIL = "default_admin@example.com"  # <-- change to your admin email
+ADMIN_PASSWORD = "admin123"  # <-- change to your admin password
+
 COPENHAGEN_COORDS = {"lat": 55.6761, "lon": 12.5683}
+
+# Global variable to store auth token
+AUTH_TOKEN = None
 
 # ------------------ STATIC DATA ------------------
 # Civilian resources for community disaster response
@@ -131,10 +139,65 @@ def generate_random_resource_available(volunteer_id: int):
         "is_allocated": random.choice([False, True]),
     }
 
+def generate_random_resource_needed(event_id: int):
+    """Generate a random resource needed for an event."""
+    res = random.choice(RESOURCE_TYPES)
+    return {
+        "name": res["name"],
+        "resource_type": res["resource_type"],
+        "quantity": random.randint(1, 10),
+        "description": res["description"],
+        "is_fulfilled": False,
+        "event_id": event_id,
+    }
+
+# ------------------ AUTHENTICATION ------------------
+def login_admin():
+    """
+    Login with admin credentials and store the JWT token.
+    Returns True if successful, False otherwise.
+    """
+    global AUTH_TOKEN
+    
+    print("\n🔐 Authenticating as admin...")
+    print(f"   Email: {ADMIN_EMAIL}")
+    
+    url = f"{API_BASE}/auth/login"
+    payload = {
+        "email": ADMIN_EMAIL,
+        "password": ADMIN_PASSWORD
+    }
+    
+    try:
+        resp = requests.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        AUTH_TOKEN = data.get("access_token")
+        
+        if AUTH_TOKEN:
+            print(f"   ✅ Authentication successful")
+            print(f"   Token: {AUTH_TOKEN[:30]}...")
+            return True
+        else:
+            print(f"   ❌ No access token in response")
+            return False
+    except Exception as e:
+        print(f"   ❌ Authentication failed: {e}")
+        print(f"   Response: {resp.text if 'resp' in locals() else 'No response'}")
+        return False
+
 # ------------------ REQUEST HELPERS ------------------
+def get_headers():
+    """Get headers with authentication token if available."""
+    headers = {"Content-Type": "application/json"}
+    if AUTH_TOKEN:
+        headers["Authorization"] = f"Bearer {AUTH_TOKEN}"
+    return headers
+
 def post_json(endpoint: str, payload: dict):
     url = f"{API_BASE}/{endpoint}"
-    resp = requests.post(url, json=payload)
+    headers = get_headers()
+    resp = requests.post(url, json=payload, headers=headers)
     try:
         resp.raise_for_status()
         print(f"✅ POST {endpoint} | status={resp.status_code}")
@@ -146,9 +209,9 @@ def post_json(endpoint: str, payload: dict):
         return None
 
 # ------------------ MAIN SEEDING LOGIC ------------------
-def seed_test_data(num_volunteers=0, num_events=3, num_resources=3, num_users=3):
+def seed_test_data(num_volunteers=0, num_events=3, num_resources_available=3, num_resources_needed=3, num_users=3):
     """
-    Seed test data in the correct order: Events → Users → Volunteers → Resources
+    Seed test data in the correct order: Auth → Events → Resources Needed → Users → Volunteers → Resources Available
     """
     # Auto-adjust if volunteers requested without sufficient events/users
     if num_volunteers > 0:
@@ -162,11 +225,18 @@ def seed_test_data(num_volunteers=0, num_events=3, num_resources=3, num_users=3)
     created_volunteers = []
     created_events = []
     created_users = []
-    created_resources = 0
+    created_resources_available = 0
+    created_resources_needed = 0
 
     print("\n" + "="*50)
     print("🌱 Starting Test Data Seeding")
     print("="*50)
+
+    # --- Step 0: Authenticate ---
+    if not login_admin():
+        print("\n❌ ERROR: Authentication failed. Cannot proceed without admin access.")
+        print("   Please check ADMIN_EMAIL and ADMIN_PASSWORD in the config section.")
+        return
 
     # --- Step 1: Create Events (needed for volunteers) ---
     print(f"\n📅 Creating {num_events} event(s)...")
@@ -186,28 +256,45 @@ def seed_test_data(num_volunteers=0, num_events=3, num_resources=3, num_users=3)
             if event_id:
                 # Store event with full response data
                 created_events.append(response)
-                print(f"    ✅ Event ID: {event_id}")
-            else:
-                print(f"    ⚠️  Event created but no ID found")
-                print(f"    Response keys: {list(response.keys())}")
-        else:
-            print(f"    ❌ Failed to create event")
-
     if num_volunteers > 0 and len(created_events) == 0:
         print("\n❌ ERROR: No events created. Cannot create volunteers without events.")
         print("   Aborting volunteer and resource creation.")
         num_volunteers = 0
-        num_resources = 0
+        num_resources_available = 0
 
-    # --- Step 2: Create Users (needed for volunteers) ---
+    # --- Step 2: Create Resources Needed (requires events) ---
+    print(f"\n📋 Creating {num_resources_needed} needed resource(s)...")
+    if num_resources_needed > 0 and len(created_events) == 0:
+        print("  ⚠️  No events created; skipping resources needed.")
+        num_resources_needed = 0
+    
+    for i in range(num_resources_needed):
+        event = random.choice(created_events)
+        event_id = event.get("id")
+        if event_id:
+            resource_data = generate_random_resource_needed(event_id)
+            print(f"\n  Resource Needed {i+1}/{num_resources_needed}:")
+            print(f"    Name: {resource_data['name']}")
+            print(f"    Type: {resource_data['resource_type']}")
+            print(f"    Quantity: {resource_data['quantity']}")
+            print(f"    Event ID: {event_id}")
+            response = post_json("resources/needed/", resource_data)
+            if response:
+                created_resources_needed += 1
+                print(f"    ✅ Resource needed created")
+            else:
+                print(f"    ❌ Failed to create resource needed")
+        else:
+            print(f"  ❌ No event ID found for resource needed {i+1}")
+
+    # --- Step 3: Create Users (needed for volunteers) ---
     print(f"\n👥 Creating {num_users} user(s)...")
     for i in range(num_users):
         user_data = {
             "name": fake.name(),
             "email": fake.unique.email(),
             "phonenumber": fake.phone_number(),
-            "password": "password123",
-            "role": "SUV",
+            "password": "password123"
         }
         print(f"\n  User {i+1}/{num_users}:")
         print(f"    Name: {user_data['name']}")
@@ -227,9 +314,9 @@ def seed_test_data(num_volunteers=0, num_events=3, num_resources=3, num_users=3)
         print("\n❌ ERROR: No users created. Cannot create volunteers without users.")
         print("   Aborting volunteer and resource creation.")
         num_volunteers = 0
-        num_resources = 0
+        num_resources_available = 0
 
-    # --- Step 3: Create Volunteers (requires events and users) ---
+    # --- Step 4: Create Volunteers (requires events and users) ---
     print(f"\n🙋 Creating {num_volunteers} volunteer(s)...")
     for i in range(num_volunteers):
         try:
@@ -252,51 +339,54 @@ def seed_test_data(num_volunteers=0, num_events=3, num_resources=3, num_users=3)
             print(f"    ❌ Error: {e}")
             break
 
-    # --- Step 4: Create Resources Available (requires volunteers) ---
-    print(f"\n📦 Creating {num_resources} available resource(s)...")
-    if num_resources > 0 and len(created_volunteers) == 0:
-        print("  ⚠️  No volunteers created; skipping resource available.")
-        num_resources = 0
+    # --- Step 5: Create Resources Available (requires volunteers) ---
+    print(f"\n📦 Creating {num_resources_available} available resource(s)...")
+    if num_resources_available > 0 and len(created_volunteers) == 0:
+        print("  ⚠️  No volunteers created; skipping resources available.")
+        num_resources_available = 0
     
-    for i in range(num_resources):
+    for i in range(num_resources_available):
         volunteer = random.choice(created_volunteers)
         volunteer_id = volunteer.get("id")
         if volunteer_id:
             resource_data = generate_random_resource_available(volunteer_id)
-            print(f"\n  Resource {i+1}/{num_resources}:")
+            print(f"\n  Resource Available {i+1}/{num_resources_available}:")
             print(f"    Name: {resource_data['name']}")
             print(f"    Type: {resource_data['resource_type']}")
             print(f"    Volunteer ID: {volunteer_id}")
             response = post_json("resources/available/", resource_data)
             if response:
-                created_resources += 1
-                print(f"    ✅ Resource created")
+                created_resources_available += 1
+                print(f"    ✅ Resource available created")
             else:
-                print(f"    ❌ Failed to create resource")
+                print(f"    ❌ Failed to create resource available")
         else:
-            print(f"  ❌ No volunteer ID found for resource {i+1}")
+            print(f"  ❌ No volunteer ID found for resource available {i+1}")
 
     # --- Summary ---
     print("\n" + "="*50)
     print("✅ Seeding Complete!")
     print("="*50)
-    print(f"📅 Events created:     {len(created_events)}")
-    print(f"👥 Users created:      {len(created_users)}")
-    print(f"🙋 Volunteers created: {len(created_volunteers)}")
-    print(f"📦 Resources created:  {created_resources}")
+    print(f"📅 Events created:            {len(created_events)}")
+    print(f"📋 Resources needed created:  {created_resources_needed}")
+    print(f"👥 Users created:             {len(created_users)}")
+    print(f"🙋 Volunteers created:        {len(created_volunteers)}")
+    print(f"📦 Resources available created: {created_resources_available}")
     print("="*50 + "\n")
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
     # Example usage:
-    # - Create 3 events with resources needed
+    # - Create 3 events
+    # - Create 5 resources needed for events
     # - Create 5 users (SUVs)
     # - Create 8 volunteers (some users can volunteer for multiple events)
     # - Create 3 available resources from volunteers
     
     seed_test_data(
-        num_events=3,
-        num_users=5,
-        num_volunteers=0,
-        num_resources=3
+        num_events=4,
+        num_resources_needed=10,
+        num_users=15,
+        num_volunteers=8,
+        num_resources_available=0
     )
