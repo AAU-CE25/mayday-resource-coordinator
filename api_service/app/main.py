@@ -80,9 +80,10 @@ def health_check():
 def seed_admin_user():
     admin_email = settings.ADMIN_EMAIL
     admin_password = settings.ADMIN_PASSWORD
-    if not admin_email or not admin_password:
-        return  # Seeding not configured
-
+    if not admin_email or not admin_password or admin_email.strip() == "" or admin_password.strip() == "":
+        admin_email = "default_admin@example.com"
+        admin_password = "admin123"
+        print("[startup] WARNING: ADMIN_EMAIL or ADMIN_PASSWORD not set; using default credentials.")  
     admin_name = settings.ADMIN_NAME or "Administrator"
     admin_phone = settings.ADMIN_PHONE or ""
 
@@ -101,5 +102,6 @@ def seed_admin_user():
         UserDAO.create_user(admin_user)
         print("[startup] Created initial administrator:", admin_email)
     except Exception:
+        print("[startup] Administrator already exists:", admin_email)
         # Likely already exists; keep startup idempotent
         pass
