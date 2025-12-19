@@ -7,6 +7,13 @@ on:
         description: 'Services to deploy (comma-separated: api,frontend,suv-ui,database,all)'
         required: true
         default: 'all'
+  workflow_call:
+    inputs:
+      services:
+        description: 'Services to deploy (comma-separated: api,frontend,suv-ui,database,all)'
+        required: false
+        type: string
+        default: 'all'
 
 
 env:
