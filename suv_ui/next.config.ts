@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   basePath: '/suv',
   // Ensure trailing slashes are handled consistently
   trailingSlash: false,
+  // Remove console logs in production builds
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'], // Keep error and warn logs
+    } : false,
+  },
 };
 
 export default nextConfig;

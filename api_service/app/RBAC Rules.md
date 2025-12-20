@@ -312,23 +312,37 @@ The system has three user roles with different permission levels:
 
 ## Access Control Summary Table
 
-| Endpoint Group | AUTHORITY | VC | SUV |
-|----------------|-----------|-----|-----|
-| **Authentication** | ✅ Full | ✅ Full | ✅ Full |
-| **Users - List All** | ✅ | ✅ | ❌ |
-| **Users - View/Update Own** | ✅ | ✅ | ✅ |
-| **Users - Admin Operations** | ✅ | ✅ | ❌ |
-| **Users - Delete** | ✅ | ❌ | ❌ |
-| **Events - Read** | ✅ | ✅ | ✅ Read-only |
-| **Events - Create/Update/Delete** | ✅ | ❌ | ❌ |
-| **Events - Ingest** | ✅ | ❌ | ❌ |
-| **Resources Needed - Read** | ✅ | ✅ | ✅ Read-only |
-| **Resources Needed - Write** | ✅ | ✅ | ❌ |
-| **Resources Available - List All** | ✅ | ✅ | ❌ |
-| **Resources Available - CRUD** | ✅ | ✅ | ✅ |
-| **Volunteers** | ✅ Full | ✅ Full | ✅ Full |
-| **Locations** | ✅ Full | ✅ Full | ❌ |
-| **Statistics** | ✅ | ✅ | ❌ |
+| Resource | Operation | AUTHORITY | VC | SUV |
+|----------|-----------|-----------|-----|-----|
+| **Authentication** | Register/Login | ✅ | ✅ | ✅ |
+| **Users** | Create | ❌ | ❌ | ❌ |
+| | Read (List All) | ✅ | ✅ | ❌ |
+| | Read (Single/Own) | ✅ | ✅ | ✅ |
+| | Update (Own Profile) | ✅ | ✅ | ✅ |
+| | Update (Admin Fields) | ✅ | ✅ | ❌ |
+| | Delete | ✅ | ❌ | ❌ |
+| **Events** | Create | ✅ | ❌ | ❌ |
+| | Read (List/Single) | ✅ | ✅ | ✅ |
+| | Update | ✅ | ❌ | ❌ |
+| | Delete | ✅ | ❌ | ❌ |
+| | Ingest (OSM API) | ✅ | ❌ | ❌ |
+| **Resources Needed** | Create | ✅ | ✅ | ❌ |
+| | Read (List/Single) | ✅ | ✅ | ✅ |
+| | Update | ✅ | ✅ | ❌ |
+| | Delete | ✅ | ✅ | ❌ |
+| **Resources Available** | Create | ✅ | ✅ | ✅ |
+| | Read (List/Single) | ✅ | ✅ | ✅ |
+| | Update | ✅ | ✅ | ✅ |
+| | Delete | ✅ | ✅ | ✅ |
+| **Volunteers** | Create | ✅ | ✅ | ✅ |
+| | Read (List/Single) | ✅ | ✅ | ✅ |
+| | Update | ✅ | ✅ | ✅ |
+| | Delete | ✅ | ✅ | ✅ |
+| **Locations** | Create | ✅ | ✅ | ❌ |
+| | Read (List/Single) | ✅ | ✅ | ❌ |
+| | Update | ✅ | ✅ | ❌ |
+| | Delete | ✅ | ✅ | ❌ |
+| **Statistics** | Read | ✅ | ✅ | ❌ |
 
 ---
 
