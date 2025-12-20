@@ -312,37 +312,40 @@ The system has three user roles with different permission levels:
 
 ## Access Control Summary Table
 
-| Resource | Operation | AUTHORITY | VC | SUV |
-|----------|-----------|-----------|-----|-----|
-| **Authentication** | Register/Login | ✅ | ✅ | ✅ |
-| **Users** | Create | ❌ | ❌ | ❌ |
-| | Read (List All) | ✅ | ✅ | ❌ |
-| | Read (Single/Own) | ✅ | ✅ | ✅ |
-| | Update (Own Profile) | ✅ | ✅ | ✅ |
-| | Update (Admin Fields) | ✅ | ✅ | ❌ |
-| | Delete | ✅ | ❌ | ❌ |
-| **Events** | Create | ✅ | ❌ | ❌ |
-| | Read (List/Single) | ✅ | ✅ | ✅ |
-| | Update | ✅ | ❌ | ❌ |
-| | Delete | ✅ | ❌ | ❌ |
-| | Ingest (OSM API) | ✅ | ❌ | ❌ |
-| **Resources Needed** | Create | ✅ | ✅ | ❌ |
-| | Read (List/Single) | ✅ | ✅ | ✅ |
-| | Update | ✅ | ✅ | ❌ |
-| | Delete | ✅ | ✅ | ❌ |
-| **Resources Available** | Create | ✅ | ✅ | ✅ |
-| | Read (List/Single) | ✅ | ✅ | ✅ |
-| | Update | ✅ | ✅ | ✅ |
-| | Delete | ✅ | ✅ | ✅ |
-| **Volunteers** | Create | ✅ | ✅ | ✅ |
-| | Read (List/Single) | ✅ | ✅ | ✅ |
-| | Update | ✅ | ✅ | ✅ |
-| | Delete | ✅ | ✅ | ✅ |
-| **Locations** | Create | ✅ | ✅ | ❌ |
-| | Read (List/Single) | ✅ | ✅ | ❌ |
-| | Update | ✅ | ✅ | ❌ |
-| | Delete | ✅ | ✅ | ❌ |
-| **Statistics** | Read | ✅ | ✅ | ❌ |
+| Role | Create | Read | Update | Delete | Special |
+|------|--------|------|--------|--------|---------|
+| **Authentication** |
+| AUTHORITY | ✅ Register | ✅ Own Profile | ✅ Own Profile | — | — |
+| VC | ✅ Register | ✅ Own Profile | ✅ Own Profile | — | — |
+| SUV | ✅ Register | ✅ Own Profile | ✅ Own Profile | — | — |
+| **Users** |
+| AUTHORITY | ❌ | ✅ All | ✅ All + Admin Fields | ✅ | — |
+| VC | ❌ | ✅ All | ✅ All + Admin Fields | ❌ | — |
+| SUV | ❌ | ✅ Own | ✅ Own | ❌ | — |
+| **Events** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | ✅ Ingest (OSM) |
+| VC | ❌ | ✅ | ❌ | ❌ | — |
+| SUV | ❌ | ✅ | ❌ | ❌ | — |
+| **Resources Needed** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ❌ | ✅ | ❌ | ❌ | — |
+| **Resources Available** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ✅ | ✅ | ✅ | ✅ | — |
+| **Volunteers** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ✅ | ✅ | ✅ | ✅ | — |
+| **Locations** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ❌ | ❌ | ❌ | ❌ | — |
+| **Statistics** |
+| AUTHORITY | — | ✅ | — | — | — |
+| VC | — | ✅ | — | — | — |
+| SUV | — | ❌ | — | — | — |
 
 ---
 
