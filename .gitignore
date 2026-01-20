@@ -229,3 +229,5 @@ mayday-venv/*
 temp/
 
 osm_data/
+
+.DS_Store

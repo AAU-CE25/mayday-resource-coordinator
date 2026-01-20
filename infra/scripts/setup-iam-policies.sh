@@ -163,19 +163,29 @@ main() {
     
     # Define policies to create/update
     declare -a POLICY_FILES=(
-        "github-terraform-networking-policy.json"
-        "github-terraform-services-policy.json"
-        "github-ecr-push-policy.json"
-        "github-ecs-deploy-policy.json"
-        "github-terraform-ecr-policy.json"
+        "service-dynamodb-policy.json"
+        "service-apigateway-policy.json"
+        "service-s3-policy.json"
+        "service-ecr-policy.json"
+        "service-ecs-policy.json"
+        "service-ec2-policy.json"
+        "service-lambda-policy.json"
+        "service-cloudwatch-policy.json"
+        "service-iam-policy.json"
+        "service-servicediscovery-policy.json"
     )
     
     declare -a POLICY_DESCRIPTIONS=(
-        "GitHub Actions Terraform workflow - manages VPC, subnets, NAT, ALB networking"
-        "GitHub Actions Terraform workflow - manages ECS, ECR, IAM, autoscaling services"
-        "GitHub Actions ECR workflow - builds and pushes Docker images"
-        "GitHub Actions ECS workflow - deploys services to ECS Fargate"
-        "GitHub Actions Terraform workflow - manages ECR repositories and lifecycle policies"
+        "GitHub Actions Service-specific policy for DynamoDB table management and data access"
+        "GitHub Actions Service-specific policy for API Gateway management"
+        "GitHub Actions Service-specific policy for S3 bucket and object management"
+        "GitHub Actions Service-specific policy for ECR repository and image management"
+        "GitHub Actions Service-specific policy for ECS cluster, service, and task management"
+        "GitHub Actions Service-specific policy for EC2, VPC, networking, and load balancer management"
+        "GitHub Actions Service-specific policy for Lambda function management"
+        "GitHub Actions Service-specific policy for CloudWatch Logs and Metrics"
+        "GitHub Actions Service-specific policy for IAM role management"
+        "GitHub Actions Service-specific policy for AWS Cloud Map Service Discovery and Route53"
     )
     
     # Process each policy

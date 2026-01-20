@@ -1,0 +1,34 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "APIGatewayManagement",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:GET",
+        "apigateway:POST",
+        "apigateway:PUT",
+        "apigateway:PATCH",
+        "apigateway:DELETE"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:*::/apis",
+        "arn:aws:apigateway:*::/apis/*",
+        "arn:aws:apigateway:*::/restapis",
+        "arn:aws:apigateway:*::/restapis/*"
+      ]
+    },
+    {
+      "Sid": "APIGatewayTagging",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:TagResource",
+        "apigateway:UntagResource",
+        "apigateway:GetTags"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:*::/tags/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ServiceDiscoveryNamespaceManagement",
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:CreatePrivateDnsNamespace",
+        "servicediscovery:CreatePublicDnsNamespace",
+        "servicediscovery:CreateHttpNamespace",
+        "servicediscovery:DeleteNamespace",
+        "servicediscovery:GetNamespace",
+        "servicediscovery:ListNamespaces",
+        "servicediscovery:UpdatePrivateDnsNamespace",
+        "servicediscovery:UpdatePublicDnsNamespace",
+        "servicediscovery:UpdateHttpNamespace"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ServiceDiscoveryServiceManagement",
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:CreateService",
+        "servicediscovery:DeleteService",
+        "servicediscovery:GetService",
+        "servicediscovery:ListServices",
+        "servicediscovery:UpdateService"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ServiceDiscoveryInstanceManagement",
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:RegisterInstance",
+        "servicediscovery:DeregisterInstance",
+        "servicediscovery:GetInstance",
+        "servicediscovery:GetInstancesHealthStatus",
+        "servicediscovery:ListInstances",
+        "servicediscovery:UpdateInstanceCustomHealthStatus"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ServiceDiscoveryOperations",
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:GetOperation",
+        "servicediscovery:ListOperations"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ServiceDiscoveryTagging",
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:TagResource",
+        "servicediscovery:UntagResource",
+        "servicediscovery:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Route53ForServiceDiscovery",
+      "Effect": "Allow",
+      "Action": [
+        "route53:CreateHostedZone",
+        "route53:DeleteHostedZone",
+        "route53:GetHostedZone",
+        "route53:ListHostedZones",
+        "route53:ListHostedZonesByVPC",
+        "route53:GetChange",
+        "route53:ListResourceRecordSets",
+        "route53:ChangeResourceRecordSets",
+        "route53:ChangeTagsForResource",
+        "route53:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
