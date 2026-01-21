@@ -5,9 +5,9 @@ function getApiBaseUrl(): string {
   let apiUrl = process.env.API_URL
   
   if (!apiUrl) {
-    apiUrl = 'http://localhost:8000'  // Default for local development
+    apiUrl = 'http://mayday-cluster-api-alb-1789067592.eu-central-1.elb.amazonaws.com'  // Default for local development
     console.warn(
-      'API_URL is not set. Defaulting to http://localhost:8000'
+      'API_URL is not set. Defaulting to http://mayday-cluster-api-alb-1789067592.eu-central-1.elb.amazonaws.com'
     )
   }
   

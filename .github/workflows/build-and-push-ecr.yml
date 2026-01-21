@@ -136,6 +136,20 @@ jobs:
         if: steps.should_build.outputs.build == 'true'
         uses: docker/setup-buildx-action@v3
 
+      - name: Set API URL for build
+        if: steps.should_build.outputs.build == 'true'
+        id: set_api_url
+        run: |
+          # Use GitHub variable or fall back to ALB URL
+          API_URL="${{ vars.API_URL }}"
+          if [ -z "$API_URL" ]; then
+            API_URL="DEFAULT_ALB_URL_PLACEHOLDER"
+            echo "⚠️  API_URL variable not set in GitHub, using default: $API_URL"
+          else
+            echo "✓ Using API_URL from GitHub variables: $API_URL"
+          fi
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         if: steps.should_build.outputs.build == 'true'
         uses: docker/build-push-action@v5
@@ -149,7 +163,7 @@ jobs:
           no-cache: true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-            API_URL=${{ vars.API_URL }}
+            API_URL=${{ steps.set_api_url.outputs.api_url }}
 
       - name: Image digest
         if: steps.should_build.outputs.build == 'true'

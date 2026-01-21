@@ -15,7 +15,7 @@ import type { User, AuthTokenResponse, LoginCredentials, RegisterData } from "./
 
 // Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
-  const apiUrl = process.env.API_URL
+  const apiUrl = "http://mayday-cluster-api-alb-1789067592.eu-central-1.elb.amazonaws.com"
   
   if (!apiUrl) {
     throw new Error(
