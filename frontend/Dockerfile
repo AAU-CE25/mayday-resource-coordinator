@@ -2,9 +2,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Build-time environment variable with default value
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Accept API_URL as build argument with default
+ARG API_URL=http://localhost:8000
+ENV API_URL=${API_URL}
 
 COPY package*.json ./
 RUN npm install

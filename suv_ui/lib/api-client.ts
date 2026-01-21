@@ -1,6 +1,6 @@
 /**
  * API client for fetching data from backend
- * Base URL must be configured via NEXT_PUBLIC_API_URL environment variable
+ * Base URL must be configured via API_URL environment variable
  * 
  * This file contains ONLY core HTTP functions and authentication API calls.
  * Domain-specific functions are in their respective hooks:
@@ -15,11 +15,11 @@ import type { User, AuthTokenResponse, LoginCredentials, RegisterData } from "./
 
 // Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL
+  const apiUrl = process.env.API_URL
   
   if (!apiUrl) {
     throw new Error(
-      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'API_URL environment variable is not set. ' +
       'Please configure it in your .env file or build arguments.'
     )
   }
@@ -27,7 +27,7 @@ function getApiBaseUrl(): string {
   // Validate that URL includes protocol
   if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
     throw new Error(
-      `NEXT_PUBLIC_API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
+      `API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
     )
   }
   
@@ -37,7 +37,7 @@ function getApiBaseUrl(): string {
   console.log('API Base URL:', cleanUrl)
   return cleanUrl
 }
-console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
+console.log('API_URL:', process.env.API_URL)
 
 /**
  * Get auth token from localStorage (persists across page reloads)

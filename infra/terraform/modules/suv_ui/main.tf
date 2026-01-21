@@ -29,7 +29,7 @@ resource "aws_ecs_task_definition" "suv_ui" {
 
     environment = [
       {
-        name  = "NEXT_PUBLIC_API_URL"
+        name  = "API_URL"
         value = var.api_url
       },
       {

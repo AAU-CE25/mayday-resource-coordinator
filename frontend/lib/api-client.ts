@@ -2,19 +2,19 @@ import type { UserResponse, LoginCredentials, AuthTokenResponse } from "./types"
 
 // Get API URL from environment variable - throws if not configured
 function getApiBaseUrl(): string {
-  let apiUrl = process.env.NEXT_PUBLIC_API_URL
+  let apiUrl = process.env.API_URL
   
   if (!apiUrl) {
     apiUrl = 'http://localhost:8000'  // Default for local development
     console.warn(
-      'NEXT_PUBLIC_API_URL is not set. Defaulting to http://localhost:8000'
+      'API_URL is not set. Defaulting to http://localhost:8000'
     )
   }
   
   // Validate that URL includes protocol
   if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
     throw new Error(
-      `NEXT_PUBLIC_API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
+      `API_URL must include protocol (http:// or https://). Got: ${apiUrl}`
     )
   }
   
