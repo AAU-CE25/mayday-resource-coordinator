@@ -84,9 +84,9 @@ export function EventDetailsDialog({
 
   return (
     <div className="fixed inset-0 bg-gray-50 bg-opacity-95 z-10 flex items-end sm:items-center sm:justify-center backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full sm:max-w-lg sm:rounded-lg flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold text-gray-900">Event Details</h2>
           <button
             onClick={onClose}
@@ -109,8 +109,9 @@ export function EventDetailsDialog({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-4 space-y-4">
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto flex-1">
+          <div className="p-4 space-y-4 pb-24">{/* Added pb-24 for bottom nav clearance */}
           {/* Description */}
           <div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -363,6 +364,7 @@ export function EventDetailsDialog({
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ from faker import Faker
 fake = Faker()
 
 # ------------------ CONFIG ------------------
-API_BASE = "http://mayday-cluster-api-alb-1142653445.eu-central-1.elb.amazonaws.com"  # <-- change if needed
+API_BASE = "http://mayday-cluster-api-alb-1789067592.eu-central-1.elb.amazonaws.com"  # <-- change if needed
 #API_BASE = "http://localhost:8000"
 
 # Admin credentials for authentication (required for creating events and other resources)
