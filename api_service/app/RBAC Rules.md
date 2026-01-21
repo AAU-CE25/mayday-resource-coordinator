@@ -312,23 +312,40 @@ The system has three user roles with different permission levels:
 
 ## Access Control Summary Table
 
-| Endpoint Group | AUTHORITY | VC | SUV |
-|----------------|-----------|-----|-----|
-| **Authentication** | ✅ Full | ✅ Full | ✅ Full |
-| **Users - List All** | ✅ | ✅ | ❌ |
-| **Users - View/Update Own** | ✅ | ✅ | ✅ |
-| **Users - Admin Operations** | ✅ | ✅ | ❌ |
-| **Users - Delete** | ✅ | ❌ | ❌ |
-| **Events - Read** | ✅ | ✅ | ✅ Read-only |
-| **Events - Create/Update/Delete** | ✅ | ❌ | ❌ |
-| **Events - Ingest** | ✅ | ❌ | ❌ |
-| **Resources Needed - Read** | ✅ | ✅ | ✅ Read-only |
-| **Resources Needed - Write** | ✅ | ✅ | ❌ |
-| **Resources Available - List All** | ✅ | ✅ | ❌ |
-| **Resources Available - CRUD** | ✅ | ✅ | ✅ |
-| **Volunteers** | ✅ Full | ✅ Full | ✅ Full |
-| **Locations** | ✅ Full | ✅ Full | ❌ |
-| **Statistics** | ✅ | ✅ | ❌ |
+| Role | Create | Read | Update | Delete | Special |
+|------|--------|------|--------|--------|---------|
+| **Authentication** |
+| AUTHORITY | ✅ Register | ✅ Own Profile | ✅ Own Profile | — | — |
+| VC | ✅ Register | ✅ Own Profile | ✅ Own Profile | — | — |
+| SUV | ✅ Register | ✅ Own Profile | ✅ Own Profile | — | — |
+| **Users** |
+| AUTHORITY | ❌ | ✅ All | ✅ All + Admin Fields | ✅ | — |
+| VC | ❌ | ✅ All | ✅ All + Admin Fields | ❌ | — |
+| SUV | ❌ | ✅ Own | ✅ Own | ❌ | — |
+| **Events** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | ✅ Ingest (OSM) |
+| VC | ❌ | ✅ | ❌ | ❌ | — |
+| SUV | ❌ | ✅ | ❌ | ❌ | — |
+| **Resources Needed** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ❌ | ✅ | ❌ | ❌ | — |
+| **Resources Available** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ✅ | ✅ | ✅ | ✅ | — |
+| **Volunteers** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ✅ | ✅ | ✅ | ✅ | — |
+| **Locations** |
+| AUTHORITY | ✅ | ✅ | ✅ | ✅ | — |
+| VC | ✅ | ✅ | ✅ | ✅ | — |
+| SUV | ❌ | ❌ | ❌ | ❌ | — |
+| **Statistics** |
+| AUTHORITY | — | ✅ | — | — | — |
+| VC | — | ✅ | — | — | — |
+| SUV | — | ❌ | — | — | — |
 
 ---
 

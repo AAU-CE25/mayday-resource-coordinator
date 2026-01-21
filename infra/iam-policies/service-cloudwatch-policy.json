@@ -1,0 +1,62 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CloudWatchLogsManagement",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy",
+        "logs:ListTagsLogGroup",
+        "logs:TagLogGroup",
+        "logs:UntagLogGroup",
+        "logs:ListTagsForResource",
+        "logs:TagResource",
+        "logs:UntagResource"
+      ],
+      "Resource": [
+        "arn:aws:logs:*:*:log-group:/aws/ecs/*",
+        "arn:aws:logs:*:*:log-group:/aws/lambda/*",
+        "arn:aws:logs:*:*:log-group:/aws/mayday-*",
+        "arn:aws:logs:*:*:log-group:/ecs/mayday-*"
+      ]
+    },
+    {
+      "Sid": "CloudWatchLogsStreaming",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": [
+        "arn:aws:logs:*:*:log-group:/aws/ecs/*:*",
+        "arn:aws:logs:*:*:log-group:/aws/lambda/*:*",
+        "arn:aws:logs:*:*:log-group:/aws/mayday-*:*",
+        "arn:aws:logs:*:*:log-group:/ecs/mayday-*:*"
+      ]
+    },
+    {
+      "Sid": "CloudWatchLogsList",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:ListLogGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchMetrics",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:ListMetrics"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
