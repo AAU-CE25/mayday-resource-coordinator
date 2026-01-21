@@ -149,6 +149,7 @@ jobs:
           no-cache: true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+            API_URL=${{ vars.API_URL }}
 
       - name: Image digest
         if: steps.should_build.outputs.build == 'true'
